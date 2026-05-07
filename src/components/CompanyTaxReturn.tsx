@@ -4,22 +4,23 @@
  */
 
 import React, { useMemo } from 'react';
-import { JournalEntry } from '../types';
-import { CHART_OF_ACCOUNTS, COMPANY_TAX_LABELS } from '../constants';
+import { Account, JournalEntry } from '../types';
+import { COMPANY_TAX_LABELS } from '../constants';
 import { Building2, Info } from 'lucide-react';
 
 interface CompanyTaxReturnProps {
+  accounts: Account[];
   entries: JournalEntry[];
 }
 
-export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({ entries }) => {
+export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({ accounts, entries }) => {
   const taxData = useMemo(() => {
     const labelBalances: Record<string, number> = {};
 
     // Aggregate by company tax label
     entries.forEach(entry => {
       entry.lines.forEach(line => {
-        const account = CHART_OF_ACCOUNTS.find(a => a.id === line.accountId);
+        const account = accounts.find(a => a.id === line.accountId);
         if (account?.companyTaxLabel) {
           const amount = (Number(line.credit) || 0) - (Number(line.debit) || 0);
           // For expenses, we usually want positive values for the return

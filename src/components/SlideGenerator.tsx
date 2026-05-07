@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { JournalEntry, Entity } from '../types';
-import { CHART_OF_ACCOUNTS } from '../constants';
+import { Account, JournalEntry, Entity } from '../types';
 import { GoogleGenAI, Type } from '@google/genai';
 import { motion, AnimatePresence } from 'motion/react';
 import { Loader2, Play, ChevronLeft, ChevronRight, Presentation, Download } from 'lucide-react';
 
 interface SlideGeneratorProps {
+  accounts: Account[];
   entries: JournalEntry[];
   entity: Entity;
 }
@@ -20,7 +20,7 @@ interface Slide {
   };
 }
 
-export const SlideGenerator: React.FC<SlideGeneratorProps> = ({ entries, entity }) => {
+export const SlideGenerator: React.FC<SlideGeneratorProps> = ({ accounts, entries, entity }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -28,7 +28,7 @@ export const SlideGenerator: React.FC<SlideGeneratorProps> = ({ entries, entity 
 
   const tbData = useMemo(() => {
     const balances: Record<string, { debit: number; credit: number }> = {};
-    CHART_OF_ACCOUNTS.forEach(acc => {
+    accounts.forEach(acc => {
       balances[acc.id] = { debit: 0, credit: 0 };
     });
     entries.forEach(entry => {
@@ -39,7 +39,7 @@ export const SlideGenerator: React.FC<SlideGeneratorProps> = ({ entries, entity 
         }
       });
     });
-    return CHART_OF_ACCOUNTS.map(acc => {
+    return accounts.map(acc => {
       const { debit, credit } = balances[acc.id];
       let balance = 0;
       if (['Asset', 'Expense'].includes(acc.type)) {
@@ -66,6 +66,9 @@ export const SlideGenerator: React.FC<SlideGeneratorProps> = ({ entries, entity 
         You are an expert financial analyst. Generate a professional presentation summarizing the financial state of the entity.
         Entity Name: ${entity.name}
         Entity Type: ${entity.type}
+        Registration: ${entity.registrationNumber || 'N/A'}
+        Address: ${entity.businessAddress || 'N/A'}
+        Contact: ${entity.contactPerson || 'N/A'}
 
         Here is the trial balance data:
         ${financialSummary}

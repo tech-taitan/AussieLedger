@@ -6,15 +6,15 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, X } from 'lucide-react';
 import { Account, JournalEntry, JournalLine } from '../types';
-import { CHART_OF_ACCOUNTS } from '../constants';
 import { cn } from '../lib/utils';
 
 interface JournalFormProps {
+  accounts: Account[];
   onSave: (entry: JournalEntry) => void;
   onCancel: () => void;
 }
 
-export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) => {
+export const JournalForm: React.FC<JournalFormProps> = ({ accounts, onSave, onCancel }) => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [reference, setReference] = useState('');
   const [description, setDescription] = useState('');
@@ -22,15 +22,38 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
     { accountId: '', description: '', debit: 0, credit: 0, taxAmount: 0 },
     { accountId: '', description: '', debit: 0, credit: 0, taxAmount: 0 },
   ]);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [lineErrors, setLineErrors] = useState<Record<number, Record<string, string>>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const addLine = () => {
-    setLines([...lines, { accountId: '', description: '', debit: 0, credit: 0, taxAmount: 0 }]);
+  const totalDebits = lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0);
+  const totalCredits = lines.reduce((sum, l) => sum + (Number(l.credit) || 0), 0);
+  const isBalanced = Math.abs(totalDebits - totalCredits) < 0.001;
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    if (!date) errors.date = 'Date is required';
+    if (!reference.trim()) errors.reference = 'Reference is required';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const removeLine = (index: number) => {
-    if (lines.length > 2) {
-      setLines(lines.filter((_, i) => i !== index));
+  useEffect(() => {
+    validateForm();
+  }, [date, reference]);
+
+  const validateLine = (line: JournalLine) => {
+    const errors: Record<string, string> = {};
+    if (line.debit > 0 && line.credit > 0) {
+      errors.amount = 'Cannot have both Debit & Credit';
     }
+    if (line.debit === 0 && line.credit === 0) {
+      errors.amount = 'Enter a debit or credit';
+    }
+    if (!line.accountId) {
+      errors.accountId = 'Account is required';
+    }
+    return errors;
   };
 
   const updateLine = (index: number, field: keyof JournalLine, value: any) => {
@@ -41,14 +64,14 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
       newLines[index].isManualTax = true;
     }
 
-    // Auto-calculate GST if account is GST-coded and tax hasn't been manually overridden
+    // Auto-calculate GST
     if (field === 'accountId' || field === 'debit' || field === 'credit') {
       if (field === 'accountId') {
-        newLines[index].isManualTax = false; // Reset manual override on account change
+        newLines[index].isManualTax = false;
       }
       
       if (!newLines[index].isManualTax) {
-        const account = CHART_OF_ACCOUNTS.find(a => a.id === newLines[index].accountId);
+        const account = accounts.find(a => a.id === newLines[index].accountId);
         if (account?.gstCode === 'GST') {
           const amount = (Number(newLines[index].debit) || 0) + (Number(newLines[index].credit) || 0);
           newLines[index].taxAmount = amount / 11;
@@ -58,16 +81,45 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
       }
     }
     
+    // Update line-specific errors
+    const errors = validateLine(newLines[index]);
+    setLineErrors(prev => ({ ...prev, [index]: errors }));
     setLines(newLines);
   };
 
-  const totalDebits = lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0);
-  const totalCredits = lines.reduce((sum, l) => sum + (Number(l.credit) || 0), 0);
-  const isBalanced = Math.abs(totalDebits - totalCredits) < 0.001;
+  const addLine = () => {
+    setLines([...lines, { accountId: '', description: '', debit: 0, credit: 0, taxAmount: 0 }]);
+  };
+
+  const removeLine = (index: number) => {
+    if (lines.length > 2) {
+      setLines(lines.filter((_, i) => i !== index));
+      const newLineErrors = { ...lineErrors };
+      delete newLineErrors[index];
+      setLineErrors(newLineErrors);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isBalanced) return;
+    
+    // Mark everything as touched
+    const allTouched: Record<string, boolean> = { all: true, date: true, reference: true };
+    setTouched(allTouched);
+
+    const isFormValid = validateForm();
+    const currentLineErrors: Record<number, Record<string, string>> = {};
+    lines.forEach((line, index) => {
+      const errs = validateLine(line);
+      if (Object.keys(errs).length > 0) currentLineErrors[index] = errs;
+    });
+    setLineErrors(currentLineErrors);
+
+    const hasLineErrors = Object.keys(currentLineErrors).length > 0;
+
+    if (!isBalanced || hasLineErrors || !isFormValid) {
+      return;
+    }
 
     onSave({
       id: crypto.randomUUID(),
@@ -91,23 +143,37 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="col-header block mb-1">Date</label>
+            <label className="col-header block mb-1 flex justify-between">
+              Date
+              {touched.date && formErrors.date && <span className="text-red-500 text-[10px] uppercase font-bold tracking-tight">{formErrors.date}</span>}
+            </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-[var(--line)] p-3 lg:p-2 focus:outline-none focus:border-[var(--ink)] text-base"
+              onBlur={() => setTouched(prev => ({ ...prev, date: true }))}
+              className={cn(
+                "w-full border p-3 lg:p-2 focus:outline-none text-base",
+                touched.date && formErrors.date ? "border-red-500 bg-red-50" : "border-[var(--line)] focus:border-[var(--ink)]"
+              )}
               required
             />
           </div>
           <div>
-            <label className="col-header block mb-1">Reference</label>
+            <label className="col-header block mb-1 flex justify-between">
+              Reference
+              {touched.reference && formErrors.reference && <span className="text-red-500 text-[10px] uppercase font-bold tracking-tight">{formErrors.reference}</span>}
+            </label>
             <input
               type="text"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
+              onBlur={() => setTouched(prev => ({ ...prev, reference: true }))}
               placeholder="e.g. INV-001"
-              className="w-full border border-[var(--line)] p-3 lg:p-2 focus:outline-none focus:border-[var(--ink)] text-base"
+              className={cn(
+                "w-full border p-3 lg:p-2 focus:outline-none text-base",
+                touched.reference && formErrors.reference ? "border-red-500 bg-red-50" : "border-[var(--line)] focus:border-[var(--ink)]"
+              )}
               required
             />
           </div>
@@ -138,21 +204,30 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
               </thead>
               <tbody>
                 {lines.map((line, index) => (
-                  <tr key={index} className="border-b border-[var(--line)]">
-                    <td className="py-2 px-1">
+                  <tr key={index} className={cn(
+                    "border-b transition-colors",
+                    lineErrors[index] && Object.keys(lineErrors[index]).length > 0 ? "border-red-200 bg-red-50" : "border-[var(--line)]"
+                  )}>
+                    <td className="py-2 px-1 relative">
                       <select
                         value={line.accountId}
                         onChange={(e) => updateLine(index, 'accountId', e.target.value)}
-                        className="w-full border-none focus:ring-0 bg-transparent text-sm"
+                        className={cn(
+                          "w-full border-none focus:ring-0 bg-transparent text-sm",
+                          lineErrors[index]?.accountId ? "text-red-600 font-bold" : ""
+                        )}
                         required
                       >
                         <option value="">Select Account...</option>
-                        {CHART_OF_ACCOUNTS.map((acc) => (
+                        {accounts.map((acc) => (
                           <option key={acc.id} value={acc.id}>
                             {acc.code} - {acc.name}
                           </option>
                         ))}
                       </select>
+                      {lineErrors[index]?.accountId && (
+                        <div className="absolute -bottom-1 left-1 text-[8px] text-red-500 font-bold uppercase tracking-tighter">Required</div>
+                      )}
                     </td>
                     <td className="py-2 px-1">
                       <input
@@ -163,23 +238,29 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
                         placeholder="Line description"
                       />
                     </td>
-                    <td className="py-2 px-1">
+                    <td className="py-2 px-1 relative">
                       <input
                         type="number"
                         step="0.01"
                         value={line.debit || ''}
                         onChange={(e) => updateLine(index, 'debit', parseFloat(e.target.value) || 0)}
-                        className="w-full text-right border-none focus:ring-0 bg-transparent data-value text-sm"
+                        className={cn(
+                          "w-full text-right border-none focus:ring-0 bg-transparent data-value text-sm",
+                          lineErrors[index]?.amount ? "text-red-600" : ""
+                        )}
                         placeholder="0.00"
                       />
                     </td>
-                    <td className="py-2 px-1">
+                    <td className="py-2 px-1 relative">
                       <input
                         type="number"
                         step="0.01"
                         value={line.credit || ''}
                         onChange={(e) => updateLine(index, 'credit', parseFloat(e.target.value) || 0)}
-                        className="w-full text-right border-none focus:ring-0 bg-transparent data-value text-sm"
+                        className={cn(
+                          "w-full text-right border-none focus:ring-0 bg-transparent data-value text-sm",
+                          lineErrors[index]?.amount ? "text-red-600" : ""
+                        )}
                         placeholder="0.00"
                       />
                     </td>
@@ -192,6 +273,9 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
                         className="w-full text-right border-none focus:ring-0 bg-transparent data-value text-sm text-gray-600"
                         placeholder="0.00"
                       />
+                      {lineErrors[index]?.amount && (
+                        <div className="absolute bottom-0 right-1 text-[8px] text-red-500 font-bold uppercase">{lineErrors[index].amount}</div>
+                      )}
                     </td>
                     <td className="py-2 px-1 text-center">
                       <button
@@ -211,7 +295,13 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
           {/* Mobile Lines View */}
           <div className="lg:hidden space-y-4">
             {lines.map((line, index) => (
-              <div key={index} className="p-4 border border-[var(--line)] bg-gray-50 space-y-3 relative">
+              <div 
+                key={index} 
+                className={cn(
+                  "p-4 border relative space-y-3",
+                  lineErrors[index] && Object.keys(lineErrors[index]).length > 0 ? "border-red-300 bg-red-50" : "border-[var(--line)] bg-gray-50"
+                )}
+              >
                 <button
                   type="button"
                   onClick={() => removeLine(index)}
@@ -221,15 +311,21 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
                 </button>
                 
                 <div>
-                  <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Account</label>
+                  <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1 flex justify-between">
+                    Account
+                    {lineErrors[index]?.accountId && <span className="text-red-500 tracking-tighter">Required</span>}
+                  </label>
                   <select
                     value={line.accountId}
                     onChange={(e) => updateLine(index, 'accountId', e.target.value)}
-                    className="w-full border border-[var(--line)] p-2 bg-white text-sm"
+                    className={cn(
+                      "w-full border p-2 bg-white text-sm",
+                      lineErrors[index]?.accountId ? "border-red-500" : "border-[var(--line)]"
+                    )}
                     required
                   >
                     <option value="">Select Account...</option>
-                    {CHART_OF_ACCOUNTS.map((acc) => (
+                    {accounts.map((acc) => (
                       <option key={acc.id} value={acc.id}>
                         {acc.code} - {acc.name}
                       </option>
@@ -256,7 +352,10 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
                       step="0.01"
                       value={line.debit || ''}
                       onChange={(e) => updateLine(index, 'debit', parseFloat(e.target.value) || 0)}
-                      className="w-full border border-[var(--line)] p-2 bg-white text-sm data-value"
+                      className={cn(
+                        "w-full border p-2 bg-white text-sm data-value",
+                        lineErrors[index]?.amount ? "border-red-500 text-red-600" : "border-[var(--line)]"
+                      )}
                       placeholder="0.00"
                     />
                   </div>
@@ -267,11 +366,18 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
                       step="0.01"
                       value={line.credit || ''}
                       onChange={(e) => updateLine(index, 'credit', parseFloat(e.target.value) || 0)}
-                      className="w-full border border-[var(--line)] p-2 bg-white text-sm data-value"
+                      className={cn(
+                        "w-full border p-2 bg-white text-sm data-value",
+                        lineErrors[index]?.amount ? "border-red-500 text-red-600" : "border-[var(--line)]"
+                      )}
                       placeholder="0.00"
                     />
                   </div>
                 </div>
+                
+                {lineErrors[index]?.amount && (
+                  <div className="text-[10px] text-red-600 font-bold uppercase text-center">{lineErrors[index].amount}</div>
+                )}
                 
                 <div className="flex justify-between items-center mt-2 pt-2 border-t border-[var(--line)]">
                   <label className="text-[10px] font-bold uppercase text-gray-400">GST Amount</label>
@@ -318,12 +424,17 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
         </div>
 
         {!isBalanced && (
-          <div className="text-red-600 text-sm italic text-center sm:text-right">
-            Out of balance by {Math.abs(totalDebits - totalCredits).toFixed(2)}
+          <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm italic text-center rounded-sm">
+            Out of balance by <strong>${Math.abs(totalDebits - totalCredits).toFixed(2)}</strong>. Journals must balance before posting.
           </div>
         )}
 
         <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-[var(--line-strong)]">
+          {touched.all && (Object.keys(lineErrors).some(k => Object.keys(lineErrors[parseInt(k)]).length > 0) || lines.some(l => !l.accountId)) && (
+            <div className="flex-1 flex items-center text-red-500 text-xs font-bold uppercase">
+              Please fix accounting errors in lines
+            </div>
+          )}
           <button
             type="button"
             onClick={onCancel}
@@ -333,8 +444,10 @@ export const JournalForm: React.FC<JournalFormProps> = ({ onSave, onCancel }) =>
           </button>
           <button
             type="submit"
-            disabled={!isBalanced || lines.some(l => !l.accountId)}
-            className="w-full sm:w-auto px-6 py-3 sm:py-2 bg-[var(--ink)] text-white disabled:opacity-50 flex justify-center items-center gap-2 text-sm font-medium"
+            className={cn(
+              "w-full sm:w-auto px-6 py-3 sm:py-2 bg-[var(--ink)] text-white flex justify-center items-center gap-2 text-sm font-medium transition-opacity",
+              (!isBalanced || lines.some(l => !l.accountId) || Object.values(lineErrors).some(e => Object.keys(e).length > 0)) ? "opacity-50" : "hover:opacity-90"
+            )}
           >
             <Save size={18} /> Post Journal
           </button>

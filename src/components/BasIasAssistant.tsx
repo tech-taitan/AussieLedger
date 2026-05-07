@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
-import { JournalEntry } from '../types';
-import { CHART_OF_ACCOUNTS } from '../constants';
+import { Account, JournalEntry } from '../types';
 import { FileSignature, Info } from 'lucide-react';
 
 interface BasIasAssistantProps {
+  accounts: Account[];
   entries: JournalEntry[];
 }
 
-export const BasIasAssistant: React.FC<BasIasAssistantProps> = ({ entries }) => {
+export const BasIasAssistant: React.FC<BasIasAssistantProps> = ({ accounts, entries }) => {
   const basData = useMemo(() => {
     let g1 = 0; // Total sales
     let g2 = 0; // Export sales (assuming 0 for simplicity)
@@ -21,7 +21,7 @@ export const BasIasAssistant: React.FC<BasIasAssistantProps> = ({ entries }) => 
 
     entries.forEach(entry => {
       entry.lines.forEach(line => {
-        const account = CHART_OF_ACCOUNTS.find(a => a.id === line.accountId);
+        const account = accounts.find(a => a.id === line.accountId);
         if (!account) return;
 
         const creditAmount = Number(line.credit) || 0;

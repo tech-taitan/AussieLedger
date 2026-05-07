@@ -4,22 +4,23 @@
  */
 
 import React, { useMemo } from 'react';
-import { JournalEntry } from '../types';
-import { CHART_OF_ACCOUNTS, TRUST_TAX_LABELS } from '../constants';
+import { Account, JournalEntry } from '../types';
+import { TRUST_TAX_LABELS } from '../constants';
 import { Landmark, Info } from 'lucide-react';
 
 interface TrustTaxReturnProps {
+  accounts: Account[];
   entries: JournalEntry[];
 }
 
-export const TrustTaxReturn: React.FC<TrustTaxReturnProps> = ({ entries }) => {
+export const TrustTaxReturn: React.FC<TrustTaxReturnProps> = ({ accounts, entries }) => {
   const taxData = useMemo(() => {
     const labelBalances: Record<string, number> = {};
 
     // Aggregate by trust tax label
     entries.forEach(entry => {
       entry.lines.forEach(line => {
-        const account = CHART_OF_ACCOUNTS.find(a => a.id === line.accountId);
+        const account = accounts.find(a => a.id === line.accountId);
         if (account?.trustTaxLabel) {
           const amount = (Number(line.credit) || 0) - (Number(line.debit) || 0);
           // For expenses, we usually want positive values for the return

@@ -4,22 +4,23 @@
  */
 
 import React, { useMemo } from 'react';
-import { JournalEntry } from '../types';
-import { CHART_OF_ACCOUNTS, TAX_LABELS } from '../constants';
+import { Account, JournalEntry } from '../types';
+import { TAX_LABELS } from '../constants';
 import { FileText, Info } from 'lucide-react';
 
 interface TaxReturnAssistantProps {
+  accounts: Account[];
   entries: JournalEntry[];
 }
 
-export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({ entries }) => {
+export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({ accounts, entries }) => {
   const taxData = useMemo(() => {
     const labelBalances: Record<string, number> = {};
 
     // Aggregate by tax label
     entries.forEach(entry => {
       entry.lines.forEach(line => {
-        const account = CHART_OF_ACCOUNTS.find(a => a.id === line.accountId);
+        const account = accounts.find(a => a.id === line.accountId);
         if (account?.taxLabel) {
           const amount = (Number(line.credit) || 0) - (Number(line.debit) || 0);
           // For expenses (6L, 6N, 6Q), we usually want positive values for the return

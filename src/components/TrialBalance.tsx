@@ -4,19 +4,19 @@
  */
 
 import React, { useMemo } from 'react';
-import { JournalEntry, TrialBalanceRow } from '../types';
-import { CHART_OF_ACCOUNTS } from '../constants';
+import { Account, JournalEntry, TrialBalanceRow } from '../types';
 
 interface TrialBalanceProps {
+  accounts: Account[];
   entries: JournalEntry[];
 }
 
-export const TrialBalance: React.FC<TrialBalanceProps> = ({ entries }) => {
+export const TrialBalance: React.FC<TrialBalanceProps> = ({ accounts, entries }) => {
   const tbData = useMemo(() => {
     const balances: Record<string, { debit: number; credit: number }> = {};
 
     // Initialize with all accounts
-    CHART_OF_ACCOUNTS.forEach(acc => {
+    accounts.forEach(acc => {
       balances[acc.id] = { debit: 0, credit: 0 };
     });
 
@@ -31,7 +31,7 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({ entries }) => {
     });
 
     // Convert to rows
-    const rows: TrialBalanceRow[] = CHART_OF_ACCOUNTS.map(acc => {
+    const rows: TrialBalanceRow[] = accounts.map(acc => {
       const { debit, credit } = balances[acc.id];
       let balance = 0;
       

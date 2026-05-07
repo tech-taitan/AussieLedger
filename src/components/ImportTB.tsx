@@ -6,15 +6,15 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import { ImportedAccount, JournalEntry, Account } from '../types';
-import { CHART_OF_ACCOUNTS } from '../constants';
 import { GoogleGenAI, Type } from "@google/genai";
 import { cn } from '../lib/utils';
 
 interface ImportTBProps {
+  accounts: Account[];
   onImport: (entries: JournalEntry[]) => void;
 }
 
-export const ImportTB: React.FC<ImportTBProps> = ({ onImport }) => {
+export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
   const [fileData, setFileData] = useState<ImportedAccount[]>([]);
   const [isMapping, setIsMapping] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -57,7 +57,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({ onImport }) => {
         I have a list of accounts from an external system and I need to map them to my internal Chart of Accounts.
         
         Internal Chart of Accounts:
-        ${CHART_OF_ACCOUNTS.map(a => `${a.id}: ${a.code} - ${a.name} (${a.type})`).join('\n')}
+        ${accounts.map(a => `${a.id}: ${a.code} - ${a.name} (${a.type})`).join('\n')}
         
         External Accounts to map:
         ${fileData.map(a => `${a.externalCode} ${a.externalName}`).join('\n')}
@@ -247,7 +247,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({ onImport }) => {
                         )}
                       >
                         <option value="">Select Mapping...</option>
-                        {CHART_OF_ACCOUNTS.map(acc => (
+                        {accounts.map(acc => (
                           <option key={acc.id} value={acc.id}>
                             {acc.code} - {acc.name}
                           </option>
@@ -307,7 +307,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({ onImport }) => {
                       )}
                     >
                       <option value="">Select Mapping...</option>
-                      {CHART_OF_ACCOUNTS.map(acc => (
+                      {accounts.map(acc => (
                         <option key={acc.id} value={acc.id}>
                           {acc.code} - {acc.name}
                         </option>

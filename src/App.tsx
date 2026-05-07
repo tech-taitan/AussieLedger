@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -20,12 +20,20 @@ import {
   Menu,
   X,
   Layers,
+  ListTree,
   Briefcase,
   Globe,
   Scale,
-  Presentation
+  Presentation,
+  Search,
+  Filter,
+  Archive,
+  Trash2,
+  CheckSquare,
+  Square,
+  Power
 } from 'lucide-react';
-import { JournalEntry, Entity } from './types';
+import { JournalEntry, Entity, AuditLog } from './types';
 import { JournalForm } from './components/JournalForm';
 import { TrialBalance } from './components/TrialBalance';
 import { TaxReturnAssistant } from './components/TaxReturnAssistant';
@@ -34,25 +42,38 @@ import { TrustTaxReturn } from './components/TrustTaxReturn';
 import { BasIasAssistant } from './components/BasIasAssistant';
 import { ImportTB } from './components/ImportTB';
 import { SlideGenerator } from './components/SlideGenerator';
+import { EntityForm } from './components/EntityForm';
+import { FinancialTrendChart } from './components/FinancialTrendChart';
+import { AuditTrail } from './components/AuditTrail';
+import { AccountManager } from './components/AccountManager';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
+import { CHART_OF_ACCOUNTS } from './constants';
 
-type View = 'master-dashboard' | 'dashboard' | 'journals' | 'trial-balance' | 'tax-return' | 'company-tax' | 'trust-tax' | 'bas-ias' | 'import' | 'slide-generator';
+type View = 'master-dashboard' | 'dashboard' | 'journals' | 'trial-balance' | 'tax-return' | 'company-tax' | 'trust-tax' | 'bas-ias' | 'import' | 'slide-generator' | 'edit-entity' | 'audit-trail' | 'coa-manager';
 
 const DEFAULT_ENTITIES: Entity[] = [
-  { id: 'ent-1', name: 'Acme Corp Pty Ltd', type: 'Company' },
-  { id: 'ent-2', name: 'Smith Family Trust', type: 'Trust' },
-  { id: 'ent-3', name: 'Tech Innovations', type: 'Company' },
-  { id: 'ent-4', name: 'Pearson Specter Litt', type: 'US Big Law Firm' },
+  { id: 'ent-1', name: 'Acme Corp Pty Ltd', type: 'Company', registrationNumber: 'ABN 12 345 678 901', businessAddress: '123 Business St, Sydney NSW 2000', contactPerson: 'John Smith', status: 'Active' },
+  { id: 'ent-2', name: 'Smith Family Trust', type: 'Trust', registrationNumber: 'ABN 98 765 432 109', businessAddress: '45 Family Ln, Melbourne VIC 3000', contactPerson: 'Jane Smith', status: 'Active' },
+  { id: 'ent-3', name: 'Tech Innovations', type: 'Company', registrationNumber: 'ABN 45 678 901 234', businessAddress: '101 Innovation Blvd, Brisbane QLD 4000', contactPerson: 'Mike Tech', status: 'Active' },
+  { id: 'ent-4', name: 'Pearson Specter Litt', type: 'US Big Law Firm', registrationNumber: 'EIN 12-3456789', businessAddress: '601 Lexington Ave, New York, NY 10022', contactPerson: 'Harvey Specter', status: 'Active' },
 ];
 
 export default function App() {
   const [view, setView] = useState<View>('master-dashboard');
-  const [entities] = useState<Entity[]>(DEFAULT_ENTITIES);
+  const [entities, setEntities] = useState<Entity[]>(DEFAULT_ENTITIES);
+  const [accounts, setAccounts] = useState(CHART_OF_ACCOUNTS);
+  const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [activeEntityId, setActiveEntityId] = useState<string | null>(null);
   const [allEntries, setAllEntries] = useState<Record<string, JournalEntry[]>>({});
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [showNewJournal, setShowNewJournal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Filtering State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   // Close sidebar on view change (mobile)
   useEffect(() => {
@@ -61,6 +82,15 @@ export default function App() {
 
   // Load data from localStorage
   useEffect(() => {
+    const savedEntities = localStorage.getItem('ledger_entities_list');
+    if (savedEntities) {
+      try {
+        setEntities(JSON.parse(savedEntities));
+      } catch (e) {
+        console.error('Failed to parse saved entities', e);
+      }
+    }
+
     const savedAll = localStorage.getItem('ledger_all_entries');
     if (savedAll) {
       try {
@@ -78,9 +108,39 @@ export default function App() {
         }
       }
     }
+
+    const savedLogs = localStorage.getItem('ledger_audit_logs');
+    if (savedLogs) {
+      try {
+        setAuditLogs(JSON.parse(savedLogs));
+      } catch (e) {
+        console.error('Failed to parse saved audit logs', e);
+      }
+    }
+
+    const savedAccounts = localStorage.getItem('ledger_chart_of_accounts');
+    if (savedAccounts) {
+      try {
+        setAccounts(JSON.parse(savedAccounts));
+      } catch (e) {
+        console.error('Failed to parse saved accounts', e);
+      }
+    }
   }, []);
 
   // Save data to localStorage
+  useEffect(() => {
+    localStorage.setItem('ledger_entities_list', JSON.stringify(entities));
+  }, [entities]);
+
+  useEffect(() => {
+    localStorage.setItem('ledger_chart_of_accounts', JSON.stringify(accounts));
+  }, [accounts]);
+
+  useEffect(() => {
+    localStorage.setItem('ledger_audit_logs', JSON.stringify(auditLogs));
+  }, [auditLogs]);
+
   useEffect(() => {
     if (Object.keys(allEntries).length > 0) {
       localStorage.setItem('ledger_all_entries', JSON.stringify(allEntries));
@@ -89,6 +149,62 @@ export default function App() {
 
   const entries = activeEntityId ? (allEntries[activeEntityId] || []) : [];
 
+  const filteredEntries = useMemo(() => {
+    return entries.filter(entry => {
+      const matchesSearch = !searchQuery || 
+        entry.reference.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        entry.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesDateFrom = !dateFrom || entry.date >= dateFrom;
+      const matchesDateTo = !dateTo || entry.date <= dateTo;
+
+      return matchesSearch && matchesDateFrom && matchesDateTo;
+    });
+  }, [entries, searchQuery, dateFrom, dateTo]);
+
+  const toggleEntitySelection = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedEntityIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkArchive = () => {
+    setEntities(prev => prev.map(entity => 
+      selectedEntityIds.includes(entity.id) ? { ...entity, status: 'Archived' as const } : entity
+    ));
+    addAuditLog('UPDATE_ENTITY', `Bulk archived ${selectedEntityIds.length} entities`);
+    setSelectedEntityIds([]);
+  };
+
+  const handleBulkDeactivate = () => {
+    setEntities(prev => prev.map(entity => 
+      selectedEntityIds.includes(entity.id) ? { ...entity, status: 'Deactivated' as const } : entity
+    ));
+    addAuditLog('UPDATE_ENTITY', `Bulk deactivated ${selectedEntityIds.length} entities`);
+    setSelectedEntityIds([]);
+  };
+
+  const handleBulkDelete = () => {
+    if (window.confirm(`Are you sure you want to delete ${selectedEntityIds.length} entities? This action cannot be undone.`)) {
+      setEntities(prev => prev.filter(entity => !selectedEntityIds.includes(entity.id)));
+      addAuditLog('UPDATE_ENTITY', `Bulk deleted ${selectedEntityIds.length} entities`);
+      setSelectedEntityIds([]);
+    }
+  };
+
+  const addAuditLog = (action: AuditLog['action'], details: string, entityId?: string) => {
+    const newLog: AuditLog = {
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      user: 'Tristan (Admin)',
+      action,
+      entityId,
+      details
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+  };
+
   const handleSaveEntry = (entry: JournalEntry) => {
     if (!activeEntityId) return;
     setAllEntries(prev => ({
@@ -96,6 +212,7 @@ export default function App() {
       [activeEntityId]: [entry, ...(prev[activeEntityId] || [])]
     }));
     setShowNewJournal(false);
+    addAuditLog('POST_JOURNAL', `Posted journal entry ${entry.reference}: ${entry.description}`, activeEntityId);
   };
 
   const handleImport = (newEntries: JournalEntry[]) => {
@@ -104,6 +221,26 @@ export default function App() {
       ...prev,
       [activeEntityId]: [...newEntries, ...(prev[activeEntityId] || [])]
     }));
+    addAuditLog('IMPORT_DATA', `Imported ${newEntries.length} journal entries via Trial Balance import`, activeEntityId);
+  };
+
+  const handleUpdateEntity = (updatedEntity: Entity) => {
+    setEntities(prev => prev.map(e => e.id === updatedEntity.id ? updatedEntity : e));
+    setView('dashboard');
+    addAuditLog('UPDATE_ENTITY', `Updated entity details for ${updatedEntity.name}`, updatedEntity.id);
+  };
+
+  const handleCreateEntity = (newEntity: Entity) => {
+    setEntities(prev => [...prev, newEntity]);
+    setActiveEntityId(newEntity.id);
+    setView('dashboard');
+    addAuditLog('CREATE_ENTITY', `Created new entity: ${newEntity.name} (${newEntity.type})`, newEntity.id);
+  };
+
+  const handleSaveCOA = (updatedAccounts: any[]) => {
+    setAccounts(updatedAccounts);
+    setView('master-dashboard');
+    addAuditLog('IMPORT_DATA', 'Updated Chart of Accounts configuration', '');
   };
 
   const totalRevenue = entries.reduce((sum, entry) => {
@@ -161,6 +298,12 @@ export default function App() {
             onClick={() => { setView('master-dashboard'); setActiveEntityId(null); }} 
             icon={<Layers size={18} />} 
             label="Master Dashboard" 
+          />
+          <NavButton 
+            active={view === 'audit-trail'} 
+            onClick={() => setView('audit-trail')} 
+            icon={<History size={18} />} 
+            label="System Audit" 
           />
           {activeEntityId && (
             <>
@@ -265,7 +408,7 @@ export default function App() {
                     className="text-sm font-bold bg-transparent border-none focus:ring-0 cursor-pointer hover:bg-gray-50 p-1 rounded outline-none"
                   >
                     <option value="" disabled>Select Entity</option>
-                    {entities.map(ent => (
+                    {entities.filter(ent => ent.status !== 'Archived').map(ent => (
                       <option key={ent.id} value={ent.id}>{ent.name}</option>
                     ))}
                   </select>
@@ -295,6 +438,7 @@ export default function App() {
                 exit={{ opacity: 0, y: -20 }}
               >
                 <JournalForm 
+                  accounts={accounts}
                   onSave={handleSaveEntry} 
                   onCancel={() => setShowNewJournal(false)} 
                 />
@@ -309,32 +453,139 @@ export default function App() {
               >
                 {view === 'master-dashboard' && (
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2 mb-6">
-                      <Layers className="text-indigo-600" size={24} />
-                      <h2 className="text-2xl font-bold">Master Dashboard</h2>
+                    <div className="flex justify-between items-center mb-6">
+                      <div className="flex items-center gap-2">
+                        <Layers className="text-indigo-600" size={24} />
+                        <h2 className="text-2xl font-bold">Master Dashboard</h2>
+                      </div>
+                      <button 
+                        onClick={() => setView('edit-entity')} // Reusing edit-entity view for creation if activeEntityId is null
+                        className="bg-[var(--ink)] text-white px-4 py-2 text-sm font-medium flex items-center gap-2 hover:opacity-90 transition-opacity"
+                      >
+                        <Plus size={18} />
+                        Add Entity
+                      </button>
+                      <button 
+                        onClick={() => setView('coa-manager')}
+                        className="border border-[var(--line-strong)] bg-white px-4 py-2 text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                      >
+                        <ListTree size={18} className="text-gray-400" />
+                        Configure Accounts
+                      </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                      {entities.map(entity => {
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 relative">
+                      <AnimatePresence>
+                        {selectedEntityIds.length > 0 && (
+                          <motion.div 
+                            initial={{ y: 50, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 50, opacity: 0 }}
+                            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-white border border-[var(--ink)] shadow-2xl p-4 flex items-center gap-6 rounded-sm min-w-[300px]"
+                          >
+                            <div className="flex items-center gap-2 pr-6 border-r border-[var(--line)]">
+                              <div className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                                {selectedEntityIds.length}
+                              </div>
+                              <span className="text-sm font-bold uppercase tracking-tight">Selected</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-4">
+                              <button 
+                                onClick={handleBulkArchive}
+                                className="flex items-center gap-2 text-xs font-bold uppercase text-gray-600 hover:text-indigo-600 transition-colors"
+                              >
+                                <Archive size={16} />
+                                Archive
+                              </button>
+                              <button 
+                                onClick={handleBulkDeactivate}
+                                className="flex items-center gap-2 text-xs font-bold uppercase text-gray-600 hover:text-orange-600 transition-colors"
+                              >
+                                <Power size={16} />
+                                Deactivate
+                              </button>
+                              <button 
+                                onClick={handleBulkDelete}
+                                className="flex items-center gap-2 text-xs font-bold uppercase text-gray-600 hover:text-rose-600 transition-colors"
+                              >
+                                <Trash2 size={16} />
+                                Delete
+                              </button>
+                            </div>
+                            
+                            <button 
+                               onClick={() => setSelectedEntityIds([])}
+                               className="ml-4 text-xs font-bold uppercase text-gray-400 hover:text-[var(--ink)]"
+                            >
+                              Cancel
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {entities.filter(e => e.status !== 'Archived').map(entity => {
                         const entityEntries = allEntries[entity.id] || [];
-                        const rev = entityEntries.reduce((sum, e) => sum + e.lines.reduce((ls, l) => l.accountId.startsWith('4-') ? ls + (Number(l.credit) - Number(l.debit)) : ls, 0), 0);
-                        const exp = entityEntries.reduce((sum, e) => sum + e.lines.reduce((ls, l) => l.accountId.startsWith('6-') ? ls + (Number(l.debit) - Number(l.credit)) : ls, 0), 0);
+                        const isSelected = selectedEntityIds.includes(entity.id);
+                        const rev = entityEntries.reduce((sum, e) => sum + e.lines.reduce((ls, l) => {
+                          const acc = accounts.find(a => a.id === l.accountId);
+                          return acc?.type === 'Revenue' ? ls + (Number(l.credit) - Number(l.debit)) : ls;
+                        }, 0), 0);
+                        const exp = entityEntries.reduce((sum, e) => sum + e.lines.reduce((ls, l) => {
+                          const acc = accounts.find(a => a.id === l.accountId);
+                          return acc?.type === 'Expense' ? ls + (Number(l.debit) - Number(l.credit)) : ls;
+                        }, 0), 0);
                         const profit = rev - exp;
 
                         return (
                           <div 
                             key={entity.id} 
-                            className="bg-white p-6 border border-[var(--line-strong)] shadow-sm hover:border-[var(--ink)] transition-colors cursor-pointer flex flex-col group"
+                            className={`bg-white p-6 border ${isSelected ? 'border-indigo-600' : 'border-[var(--line-strong)]'} shadow-sm hover:border-[var(--ink)] transition-colors cursor-pointer flex flex-col group relative`}
                             onClick={() => { setActiveEntityId(entity.id); setView('dashboard'); }}
                           >
-                            <div className="flex justify-between items-start mb-4">
+                            <div 
+                              className="absolute top-4 right-4 z-10 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => toggleEntitySelection(entity.id, e)}
+                            >
+                              {isSelected ? (
+                                <CheckSquare size={20} className="text-indigo-600" />
+                              ) : (
+                                <Square size={20} className="text-gray-300" />
+                              )}
+                            </div>
+
+                            <div className="flex justify-between items-start mb-4 pr-6">
                               <div>
                                 <h3 className="font-bold text-lg group-hover:underline">{entity.name}</h3>
-                                <span className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded-full mt-2 inline-block">{entity.type}</span>
+                                <div className="flex gap-2 items-center mt-1">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">{entity.type}</span>
+                                  {entity.status === 'Deactivated' && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 bg-red-50 text-red-600 rounded-full">Deactivated</span>
+                                  )}
+                                  {entity.registrationNumber && (
+                                    <span className="text-[10px] text-gray-400 font-mono">{entity.registrationNumber}</span>
+                                  )}
+                                </div>
                               </div>
                               {entity.type === 'US Big Law Firm' ? <Scale className="text-blue-600" /> : 
                                entity.type === 'Trust' ? <Briefcase className="text-emerald-600" /> : 
                                <Building2 className="text-gray-400" />}
                             </div>
+                            
+                            <div className="mb-4 space-y-1">
+                              {entity.businessAddress && (
+                                <div className="text-[10px] text-gray-500 flex items-center gap-1">
+                                  <Globe size={10} />
+                                  <span className="truncate">{entity.businessAddress}</span>
+                                </div>
+                              )}
+                              {entity.contactPerson && (
+                                <div className="text-[10px] text-gray-500 flex items-center gap-1">
+                                  <div className="w-2.5 h-2.5 rounded-full bg-gray-200 flex items-center justify-center text-[8px]">👤</div>
+                                  <span>{entity.contactPerson}</span>
+                                </div>
+                              )}
+                            </div>
+
                             <div className="mt-auto space-y-3 pt-4 border-t border-[var(--line)]">
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-500">Revenue</span>
@@ -359,44 +610,145 @@ export default function App() {
                   </div>
                 )}
 
-                {view === 'dashboard' && (
+                {view === 'dashboard' && activeEntityId && (
                   <div className="space-y-8">
+                    {/* Entity Details Header */}
+                    {entities.find(e => e.id === activeEntityId) && (
+                      <div className="bg-white border border-[var(--line-strong)] shadow-sm p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <h2 className="text-2xl font-bold">{entities.find(e => e.id === activeEntityId)?.name}</h2>
+                          <div className="flex gap-3 text-xs text-gray-500 mt-1">
+                            <span className="font-bold text-blue-600">{entities.find(e => e.id === activeEntityId)?.type}</span>
+                            {entities.find(e => e.id === activeEntityId)?.registrationNumber && (
+                              <span>• {entities.find(e => e.id === activeEntityId)?.registrationNumber}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right text-xs space-y-1">
+                          {entities.find(e => e.id === activeEntityId)?.businessAddress && (
+                            <div className="flex items-center md:justify-end gap-1 text-gray-400">
+                              <Globe size={12} />
+                              <span>{entities.find(e => e.id === activeEntityId)?.businessAddress}</span>
+                            </div>
+                          )}
+                          {entities.find(e => e.id === activeEntityId)?.contactPerson && (
+                            <div className="flex items-center md:justify-end gap-1 text-gray-400">
+                              <span>Contact: {entities.find(e => e.id === activeEntityId)?.contactPerson}</span>
+                            </div>
+                          )}
+                          <button 
+                            onClick={() => setView('edit-entity')}
+                            className="text-blue-600 hover:underline mt-2 inline-block font-medium"
+                          >
+                            Edit Entity Details
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Stats Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <StatCard 
                         label="Total Revenue" 
-                        value={totalRevenue} 
+                        value={filteredEntries.reduce((sum, entry) => {
+                          return sum + entry.lines.reduce((lSum, line) => {
+                            const account = accounts.find(a => a.id === line.accountId);
+                            if (account?.type === 'Revenue') return lSum + (Number(line.credit) - Number(line.debit));
+                            return lSum;
+                          }, 0);
+                        }, 0)} 
                         icon={<TrendingUp className="text-green-600" />} 
                         trend="+12% vs last month"
                       />
                       <StatCard 
                         label="Total Expenses" 
-                        value={totalExpenses} 
+                        value={filteredEntries.reduce((sum, entry) => {
+                          return sum + entry.lines.reduce((lSum, line) => {
+                            const account = accounts.find(a => a.id === line.accountId);
+                            if (account?.type === 'Expense') return lSum + (Number(line.debit) - Number(line.credit));
+                            return lSum;
+                          }, 0);
+                        }, 0)} 
                         icon={<ArrowDownRight className="text-red-600" />} 
                         trend="-5% vs last month"
                       />
                       <StatCard 
                         label="Net Profit" 
-                        value={netProfit} 
+                        value={filteredEntries.reduce((sum, entry) => {
+                          return sum + entry.lines.reduce((lSum, line) => {
+                            const account = accounts.find(a => a.id === line.accountId);
+                            if (account?.type === 'Revenue') return lSum + (Number(line.credit) - Number(line.debit));
+                            if (account?.type === 'Expense') return lSum - (Number(line.debit) - Number(line.credit));
+                            return lSum;
+                          }, 0);
+                        }, 0)} 
                         icon={<ArrowUpRight className="text-blue-600" />} 
                         trend="Healthy margin"
                         highlight
                       />
                     </div>
 
+                    {/* Financial Trend Chart */}
+                    <FinancialTrendChart accounts={accounts} entries={filteredEntries} />
+
+                    {/* Filter Bar */}
+                    <div className="bg-white border border-[var(--line-strong)] p-4 flex flex-col sm:flex-row gap-4 items-end sm:items-center">
+                      <div className="flex-1 w-full">
+                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Search Entries</label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                          <input 
+                            type="text"
+                            placeholder="Search reference or description..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-[var(--line)] text-sm focus:outline-none focus:border-[var(--ink)]"
+                          />
+                        </div>
+                      </div>
+                      <div className="w-full sm:w-auto">
+                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">From Date</label>
+                        <input 
+                          type="date"
+                          value={dateFrom}
+                          onChange={(e) => setDateFrom(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-50 border border-[var(--line)] text-sm focus:outline-none focus:border-[var(--ink)]"
+                        />
+                      </div>
+                      <div className="w-full sm:w-auto">
+                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">To Date</label>
+                        <input 
+                          type="date"
+                          value={dateTo}
+                          onChange={(e) => setDateTo(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-50 border border-[var(--line)] text-sm focus:outline-none focus:border-[var(--ink)]"
+                        />
+                      </div>
+                      {(searchQuery || dateFrom || dateTo) && (
+                        <button 
+                          onClick={() => { setSearchQuery(''); setDateFrom(''); setDateTo(''); }}
+                          className="text-xs text-rose-600 font-medium hover:underline pb-2 px-2"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
                     {/* Recent Entries */}
                     <div className="bg-white border border-[var(--line-strong)] shadow-sm">
                       <div className="p-4 border-b border-[var(--line)] flex justify-between items-center">
-                        <h3 className="col-header">Recent Journal Entries</h3>
+                        <h3 className="col-header">
+                          {searchQuery || dateFrom || dateTo ? 'Matching Journal Entries' : 'Recent Journal Entries'}
+                        </h3>
                         <History size={16} className="text-gray-400" />
                       </div>
                       <div className="divide-y divide-[var(--line)]">
-                        {entries.length === 0 ? (
+                        {filteredEntries.length === 0 ? (
                           <div className="p-12 text-center text-gray-400 italic">
-                            No entries found. Create your first journal to see data.
+                            No entries found matching filters.
                           </div>
                         ) : (
-                          entries.slice(0, 5).map(entry => (
+                          filteredEntries.slice(0, (searchQuery || dateFrom || dateTo) ? 20 : 5).map(entry => (
                             <div key={entry.id} className="p-4 hover:bg-gray-50 flex justify-between items-center">
                               <div>
                                 <div className="font-medium">{entry.description || 'No description'}</div>
@@ -418,25 +770,70 @@ export default function App() {
                 )}
 
                 {view === 'journals' && (
-                  <div className="bg-white border border-[var(--line-strong)] shadow-sm overflow-hidden">
-                    <div className="p-4 border-b border-[var(--line-strong)]">
-                      <h3 className="col-header">All Journal Entries</h3>
+                  <div className="space-y-4">
+                    {/* Filter Bar */}
+                    <div className="bg-white border border-[var(--line-strong)] p-4 flex flex-col sm:flex-row gap-4 items-end sm:items-center">
+                      <div className="flex-1 w-full">
+                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Search</label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                          <input 
+                            type="text"
+                            placeholder="Filter by reference or description..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-[var(--line)] text-sm focus:outline-none focus:border-[var(--ink)]"
+                          />
+                        </div>
+                      </div>
+                      <div className="w-full sm:w-auto">
+                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">From</label>
+                        <input 
+                          type="date"
+                          value={dateFrom}
+                          onChange={(e) => setDateFrom(e.target.value)}
+                          className="px-3 py-2 bg-gray-50 border border-[var(--line)] text-sm focus:outline-none focus:border-[var(--ink)]"
+                        />
+                      </div>
+                      <div className="w-full sm:w-auto">
+                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">To</label>
+                        <input 
+                          type="date"
+                          value={dateTo}
+                          onChange={(e) => setDateTo(e.target.value)}
+                          className="px-3 py-2 bg-gray-50 border border-[var(--line)] text-sm focus:outline-none focus:border-[var(--ink)]"
+                        />
+                      </div>
+                      {(searchQuery || dateFrom || dateTo) && (
+                        <button 
+                          onClick={() => { setSearchQuery(''); setDateFrom(''); setDateTo(''); }}
+                          className="text-xs text-rose-600 font-medium hover:underline pb-2 px-2"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
-                    <div className="overflow-x-auto -mx-4 sm:mx-0">
-                      <div className="inline-block min-w-full align-middle">
-                        <table className="min-w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-[var(--line)]">
-                              <th className="col-header text-left p-4 whitespace-nowrap">Date</th>
-                              <th className="col-header text-left p-4 whitespace-nowrap">Reference</th>
-                              <th className="col-header text-left p-4 hidden md:table-cell">Description</th>
-                              <th className="col-header text-right p-4 whitespace-nowrap">Amount</th>
-                              <th className="col-header text-center p-4 hidden sm:table-cell">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {entries.map(entry => (
-                              <tr key={entry.id} className="data-row">
+
+                    <div className="bg-white border border-[var(--line-strong)] shadow-sm overflow-hidden">
+                      <div className="p-4 border-b border-[var(--line-strong)] flex justify-between items-center">
+                        <h3 className="col-header">Journal Ledger</h3>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">{filteredEntries.length} entries FOUND</span>
+                      </div>
+                      <div className="overflow-x-auto -mx-4 sm:mx-0">
+                        <div className="inline-block min-w-full align-middle">
+                          <table className="min-w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-[var(--line)]">
+                                <th className="col-header text-left p-4 whitespace-nowrap">Date</th>
+                                <th className="col-header text-left p-4 whitespace-nowrap">Reference</th>
+                                <th className="col-header text-left p-4 hidden md:table-cell">Description</th>
+                                <th className="col-header text-right p-4 whitespace-nowrap">Amount</th>
+                                <th className="col-header text-center p-4 hidden sm:table-cell">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredEntries.map(entry => (
+                                <tr key={entry.id} className="data-row">
                                 <td className="p-4 data-value whitespace-nowrap">{entry.date}</td>
                                 <td className="p-4 font-medium whitespace-nowrap">{entry.reference}</td>
                                 <td className="p-4 text-gray-600 hidden md:table-cell">{entry.description}</td>
@@ -453,20 +850,71 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {view === 'trial-balance' && <TrialBalance entries={entries} />}
-                {view === 'tax-return' && <TaxReturnAssistant entries={entries} />}
-                {view === 'company-tax' && <CompanyTaxReturn entries={entries} />}
-                {view === 'trust-tax' && <TrustTaxReturn entries={entries} />}
-                {view === 'bas-ias' && <BasIasAssistant entries={entries} />}
+                {view === 'trial-balance' && (
+                  <div className="space-y-4">
+                    <div className="bg-white border border-[var(--line-strong)] p-4 flex gap-4 items-center">
+                      <div className="flex items-center gap-2 text-indigo-600">
+                        <Filter size={18} />
+                        <span className="text-xs font-bold uppercase">Report Filters</span>
+                      </div>
+                      <div className="h-4 w-[1px] bg-gray-200 mx-2" />
+                      <div className="flex-1 flex gap-4">
+                        <input 
+                          type="date"
+                          value={dateFrom}
+                          onChange={(e) => setDateFrom(e.target.value)}
+                          className="bg-transparent border-b border-gray-200 text-sm focus:outline-none focus:border-indigo-600 px-1"
+                        />
+                        <span className="text-gray-400">to</span>
+                        <input 
+                          type="date"
+                          value={dateTo}
+                          onChange={(e) => setDateTo(e.target.value)}
+                          className="bg-transparent border-b border-gray-200 text-sm focus:outline-none focus:border-indigo-600 px-1"
+                        />
+                      </div>
+                      {(dateFrom || dateTo) && (
+                        <button 
+                          onClick={() => { setDateFrom(''); setDateTo(''); }}
+                          className="text-xs text-rose-600 font-medium"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <TrialBalance accounts={accounts} entries={filteredEntries} />
+                  </div>
+                )}
+                {view === 'tax-return' && <TaxReturnAssistant accounts={accounts} entries={filteredEntries} />}
+                {view === 'company-tax' && <CompanyTaxReturn accounts={accounts} entries={filteredEntries} />}
+                {view === 'trust-tax' && <TrustTaxReturn accounts={accounts} entries={filteredEntries} />}
+                {view === 'bas-ias' && <BasIasAssistant accounts={accounts} entries={filteredEntries} />}
                 {view === 'slide-generator' && activeEntityId && (
                   <SlideGenerator 
-                    entries={entries} 
+                    accounts={accounts}
+                    entries={filteredEntries} 
                     entity={entities.find(e => e.id === activeEntityId)!} 
                   />
                 )}
-                {view === 'import' && <ImportTB onImport={handleImport} />}
+                {view === 'edit-entity' && (
+                  <EntityForm 
+                    entity={activeEntityId ? entities.find(e => e.id === activeEntityId) : undefined}
+                    onSave={activeEntityId ? handleUpdateEntity : handleCreateEntity}
+                    onCancel={() => activeEntityId ? setView('dashboard') : setView('master-dashboard')}
+                  />
+                )}
+                {view === 'audit-trail' && <AuditTrail logs={auditLogs} />}
+                {view === 'coa-manager' && (
+                  <AccountManager 
+                    accounts={accounts} 
+                    onSave={handleSaveCOA} 
+                    onCancel={() => setView('master-dashboard')} 
+                  />
+                )}
+                {view === 'import' && <ImportTB accounts={accounts} onImport={handleImport} />}
               </motion.div>
             )}
           </AnimatePresence>

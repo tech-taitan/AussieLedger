@@ -9,6 +9,10 @@ export interface Entity {
   id: string;
   name: string;
   type: string;
+  registrationNumber?: string;
+  businessAddress?: string;
+  contactPerson?: string;
+  status: 'Active' | 'Archived' | 'Deactivated';
 }
 
 export interface Account {
@@ -55,4 +59,13 @@ export interface ImportedAccount {
   mappedAccountId?: string;
   confidence?: number;
   reasoning?: string;
+}
+
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  user: string;
+  action: 'CREATE_ENTITY' | 'UPDATE_ENTITY' | 'POST_JOURNAL' | 'DELETE_JOURNAL' | 'IMPORT_DATA';
+  entityId?: string;
+  details: string;
 }
