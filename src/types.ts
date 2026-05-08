@@ -13,6 +13,10 @@ export interface Entity {
   businessAddress?: string;
   contactPerson?: string;
   status: 'Active' | 'Archived' | 'Deactivated';
+  taxAgentName?: string;
+  taxAgentPhone?: string;
+  taxAgentEmail?: string;
+  notes?: string;
 }
 
 export interface Account {

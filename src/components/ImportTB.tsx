@@ -4,10 +4,18 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, ArrowRight } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, ArrowRight, X, Settings2 } from 'lucide-react';
 import { ImportedAccount, JournalEntry, Account } from '../types';
 import { GoogleGenAI, Type } from "@google/genai";
 import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
+
+interface ColumnMapping {
+  code: number;
+  name: number;
+  debit: number;
+  credit: number;
+}
 
 interface ImportTBProps {
   accounts: Account[];
@@ -16,9 +24,18 @@ interface ImportTBProps {
 
 export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
   const [fileData, setFileData] = useState<ImportedAccount[]>([]);
+  const [rawRows, setRawRows] = useState<string[][]>([]);
   const [isMapping, setIsMapping] = useState(false);
+  const [isColumnMapping, setIsColumnMapping] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mappingComplete, setMappingComplete] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [columnMapping, setColumnMapping] = useState<ColumnMapping>({
+    code: 0,
+    name: 1,
+    debit: 2,
+    credit: 3
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,23 +45,32 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
-      const rows = text.split('\n').map(row => row.split(','));
+      const lines = text.split('\n').filter(l => l.trim() !== '');
+      const rows = lines.map(row => {
+        // Simple CSV split handling some quoted values
+        return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+      });
       
-      // Basic CSV parsing (assuming Code, Name, Debit, Credit)
-      // Skip header
-      const imported: ImportedAccount[] = rows.slice(1)
-        .filter(row => row.length >= 4 && (row[2] || row[3]))
-        .map(row => ({
-          externalCode: row[0]?.trim() || '',
-          externalName: row[1]?.trim() || '',
-          debit: parseFloat(row[2]) || 0,
-          credit: parseFloat(row[3]) || 0,
-        }));
-
-      setFileData(imported);
-      setIsMapping(true);
+      setRawRows(rows);
+      setIsColumnMapping(true);
     };
     reader.readAsText(file);
+  };
+
+  const processColumnMapping = () => {
+    // Skip header and map based on configuration
+    const imported: ImportedAccount[] = rawRows.slice(1)
+      .filter(row => row.length > Math.max(columnMapping.code, columnMapping.name, columnMapping.debit, columnMapping.credit))
+      .map(row => ({
+        externalCode: row[columnMapping.code] || '',
+        externalName: row[columnMapping.name] || '',
+        debit: parseFloat(row[columnMapping.debit]?.replace(/[^0-9.-]+/g, '')) || 0,
+        credit: parseFloat(row[columnMapping.credit]?.replace(/[^0-9.-]+/g, '')) || 0,
+      }));
+
+    setFileData(imported);
+    setIsColumnMapping(false);
+    setIsMapping(true);
   };
 
   const runAIMapping = async () => {
@@ -135,19 +161,20 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
     setFileData([]);
     setIsMapping(false);
     setMappingComplete(false);
+    setShowPreview(false);
   };
 
   return (
     <div className="space-y-6">
-      {!isMapping ? (
+      {!isMapping && !isColumnMapping ? (
         <div className="bg-white p-6 sm:p-12 border-2 border-dashed border-[var(--line-strong)] flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4">
             <Upload size={32} />
           </div>
           <h2 className="text-xl font-medium mb-2">Upload Trial Balance</h2>
           <p className="text-gray-500 text-sm max-w-md mb-6 px-4">
-            Upload your existing Trial Balance in CSV format (Code, Name, Debit, Credit). 
-            Our AI will automatically map your accounts to the LedgerAU Chart of Accounts.
+            Upload your existing Trial Balance in CSV format. 
+            You can configure column mappings and our AI will assist with account matching.
           </p>
           <input
             type="file"
@@ -164,6 +191,93 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
           </button>
           <div className="mt-4 text-[10px] text-gray-400 uppercase tracking-widest font-bold px-4">
             Supports Xero, MYOB, and QuickBooks exports
+          </div>
+        </div>
+      ) : isColumnMapping ? (
+        <div className="bg-white border border-[var(--line-strong)] shadow-sm">
+          <div className="p-4 border-b border-[var(--line-strong)] flex items-center gap-3 bg-gray-50">
+            <Settings2 className="text-blue-600" size={20} />
+            <div>
+              <h3 className="font-medium text-sm">Configure Column Mapping</h3>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Step 1 of 2: Define your data structure</p>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            <div className="mb-6 bg-blue-50 border border-blue-100 p-4 rounded flex items-start gap-3">
+              <AlertCircle className="text-blue-500 shrink-0 mt-0.5" size={16} />
+              <div className="text-xs text-blue-700 leading-relaxed">
+                Matches the columns from your uploaded CSV to the required ledger fields. 
+                Common formats vary between software providers.
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {(['code', 'name', 'debit', 'credit'] as const).map((field) => (
+                <div key={field} className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">
+                    {field} Column
+                  </label>
+                  <select
+                    value={columnMapping[field]}
+                    onChange={(e) => setColumnMapping(prev => ({ ...prev, [field]: parseInt(e.target.value) }))}
+                    className="w-full border border-[var(--line)] p-2 text-sm bg-white focus:outline-none focus:border-[var(--ink)]"
+                  >
+                    {rawRows[0]?.map((header, colIdx) => (
+                      <option key={colIdx} value={colIdx}>
+                        Col {colIdx + 1}: {header || '(Empty)'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+
+            <div className="border border-[var(--line)] overflow-hidden">
+              <div className="bg-gray-50 p-2 text-[10px] font-bold uppercase text-gray-400 tracking-wider border-b border-[var(--line)]">
+                Data Preview (First 5 Rows)
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-white border-b border-[var(--line)]">
+                      {rawRows[0]?.map((header, idx) => (
+                        <th key={idx} className="p-2 text-left bg-gray-50/50 border-r border-[var(--line)] last:border-r-0">
+                          <div className="text-gray-400 font-mono">Col {idx + 1}</div>
+                          <div className="truncate max-w-[120px]">{header}</div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rawRows.slice(1, 6).map((row, rowIdx) => (
+                      <tr key={rowIdx} className="border-b border-[var(--line)] last:border-b-0">
+                        {row.map((cell, cellIdx) => (
+                          <td key={cellIdx} className="p-2 border-r border-[var(--line)] last:border-r-0 text-gray-600">
+                            <div className="truncate max-w-[120px]">{cell}</div>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-gray-50 border-t border-[var(--line-strong)] flex justify-end gap-3">
+            <button
+              onClick={() => setIsColumnMapping(false)}
+              className="px-6 py-2 text-sm font-medium border border-[var(--line)] hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={processColumnMapping}
+              className="bg-[var(--ink)] text-white px-8 py-2 text-sm font-bold uppercase tracking-widest hover:opacity-90"
+            >
+              Continue to Account Mapping
+            </button>
           </div>
         </div>
       ) : (
@@ -340,15 +454,136 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
               Ready to import {fileData.filter(i => i.mappedAccountId).length} of {fileData.length} accounts.
             </div>
             <button
-              onClick={handleConfirmImport}
+              onClick={() => setShowPreview(true)}
               disabled={!fileData.some(i => i.mappedAccountId)}
-              className="w-full sm:w-auto bg-[var(--ink)] text-white px-8 py-3 font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3 font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              Confirm & Import
+              Preview Import
+              <ArrowRight size={18} />
             </button>
           </div>
         </div>
       )}
+
+      <AnimatePresence>
+        {showPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPreview(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-4xl bg-white shadow-2xl border border-[var(--line-strong)] flex flex-col max-h-full"
+            >
+              <div className="p-6 border-b border-[var(--line-strong)] bg-gray-50 flex justify-between items-center shrink-0">
+                <div>
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <CheckCircle2 size={24} className="text-green-500" />
+                    Review Import Data
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">Please confirm the totals and mappings before finalizing.</p>
+                </div>
+                <button 
+                  onClick={() => setShowPreview(false)}
+                  className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="p-4 bg-blue-50 border border-blue-100">
+                    <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Accounts</div>
+                    <div className="text-2xl font-bold">{fileData.filter(i => i.mappedAccountId).length}</div>
+                  </div>
+                  <div className="p-4 bg-gray-100/50 border border-gray-200">
+                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Debits</div>
+                    <div className="text-2xl font-bold font-mono text-green-600">
+                      ${fileData.filter(i => i.mappedAccountId).reduce((sum, i) => sum + i.debit, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-gray-100/50 border border-gray-200">
+                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Credits</div>
+                    <div className="text-2xl font-bold font-mono text-rose-600">
+                      ${fileData.filter(i => i.mappedAccountId).reduce((sum, i) => sum + i.credit, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+
+                {Math.abs(fileData.filter(i => i.mappedAccountId).reduce((sum, i) => sum + i.debit, 0) - fileData.filter(i => i.mappedAccountId).reduce((sum, i) => sum + i.credit, 0)) > 0.01 && (
+                  <div className="mb-6 p-4 bg-amber-50 border border-amber-200 flex items-start gap-3">
+                    <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={18} />
+                    <div className="text-sm text-amber-800">
+                      <p className="font-bold">Caution: Trial Balance Out of Balance</p>
+                      <p className="opacity-80">Finalizing this import will result in an unbalanced journal entry.</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border border-[var(--line)]">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-[var(--line)]">
+                        <th className="text-[10px] font-bold uppercase text-gray-400 p-3 text-left">Internal Mapping</th>
+                        <th className="text-[10px] font-bold uppercase text-gray-400 p-3 text-left">External Source</th>
+                        <th className="text-[10px] font-bold uppercase text-gray-400 p-3 text-right">Debit</th>
+                        <th className="text-[10px] font-bold uppercase text-gray-400 p-3 text-right">Credit</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--line)]">
+                      {fileData.filter(i => i.mappedAccountId).map((item, idx) => {
+                        const mappedAccount = accounts.find(a => a.id === item.mappedAccountId);
+                        return (
+                          <tr key={idx} className="hover:bg-gray-50/50">
+                            <td className="p-3">
+                              <div className="font-bold text-gray-800 text-xs">{mappedAccount?.name}</div>
+                              <div className="text-[10px] text-gray-400 font-mono italic">{mappedAccount?.code}</div>
+                            </td>
+                            <td className="p-3">
+                              <div className="text-gray-600 text-xs">{item.externalName}</div>
+                              <div className="text-[10px] text-gray-400 font-mono">{item.externalCode}</div>
+                            </td>
+                            <td className="p-3 text-right font-mono text-xs">
+                              {item.debit > 0 ? `$${item.debit.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '-'}
+                            </td>
+                            <td className="p-3 text-right font-mono text-xs">
+                              {item.credit > 0 ? `$${item.credit.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '-'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="p-6 bg-gray-50 border-t border-[var(--line-strong)] flex flex-col sm:flex-row justify-end items-center gap-4 shrink-0">
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="w-full sm:w-auto px-6 py-2 text-sm font-bold uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Go Back
+                </button>
+                <button
+                  onClick={handleConfirmImport}
+                  className="w-full sm:w-auto bg-[var(--ink)] text-white px-10 py-3 text-xs font-bold uppercase tracking-widest hover:bg-black transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <CheckCircle2 size={16} />
+                  Confirm & Finalize
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

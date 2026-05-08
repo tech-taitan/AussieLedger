@@ -34,47 +34,47 @@ export const CHART_OF_ACCOUNTS: Account[] = [
 ];
 
 export const TAX_LABELS = {
-  '6S': 'Total Business Income',
-  '6K': 'Gross Interest',
-  '6L': 'Salary and Wage Expenses',
-  '6N': 'All Other Expenses',
-  '6Q': 'Cost of Sales',
+  '6S': { title: 'Total Business Income', description: 'Includes gross payments where ABN not quoted and other business income.' },
+  '6K': { title: 'Gross Interest', description: 'Total interest earned from bank accounts, term deposits, and other investments.' },
+  '6L': { title: 'Salary and Wage Expenses', description: 'Total gross salaries and wages paid to employees, including directors fees.' },
+  '6N': { title: 'All Other Expenses', description: 'Operational expenses not specifically categorised elsewhere in the return.' },
+  '6Q': { title: 'Cost of Sales', description: 'Direct costs attributable to the production of the goods sold by the business.' },
 };
 
 export const COMPANY_TAX_LABELS = {
   INCOME: {
-    '6A': 'Gross sales',
-    '6F': 'Gross interest',
-    '6T': 'Total income (Calculated)'
+    '6A': { title: 'Gross sales', description: 'Total sales of goods and services, excluding GST.' },
+    '6F': { title: 'Gross interest', description: 'Income from interest-bearing accounts and investments.' },
+    '6T': { title: 'Total income', description: 'Calculated sum of all income items for the period.' }
   },
   EXPENSES: {
-    '6A_EXP': 'Cost of sales',
-    '6C': 'Superannuation expenses',
-    '6G': 'Rent expenses',
-    '6X': 'All other expenses',
-    '6S': 'Total expenses (Calculated)'
+    '6A_EXP': { title: 'Cost of sales', description: 'Direct costs of goods sold or services provided.' },
+    '6C': { title: 'Superannuation expenses', description: 'Employer superannuation contributions for employees.' },
+    '6G': { title: 'Rent expenses', description: 'Expenses for rent on business premises.' },
+    '6X': { title: 'All other expenses', description: 'General business and administrative expenses.' },
+    '6S': { title: 'Total expenses', description: 'Calculated sum of all expense items for the period.' }
   },
   RECONCILIATION: {
-    '7T': 'Taxable income or loss'
+    '7T': { title: 'Taxable income or loss', description: 'The final figure on which tax is calculated after adjustments.' }
   }
 };
 
 export const TRUST_TAX_LABELS = {
   INCOME: {
-    '5B': 'Gross payments (Sales)',
-    '11J': 'Gross interest',
-    '5T': 'Total business income (Calculated)'
+    '5B': { title: 'Gross payments (Sales)', description: 'Total gross business income from sales of goods or services.' },
+    '11J': { title: 'Gross interest', description: 'Interest income derived by the trust.' },
+    '5T': { title: 'Total business income', description: 'Aggregate business income from all sources.' }
   },
   EXPENSES: {
-    '5E': 'Cost of sales',
-    '5F': 'Rent expenses',
-    '5L': 'Superannuation expenses',
-    '5M': 'Total salary and wage expenses',
-    '5N': 'All other expenses',
-    '5S': 'Total expenses (Calculated)'
+    '5E': { title: 'Cost of sales', description: 'Direct costs associated with earning business income.' },
+    '5F': { title: 'Rent expenses', description: 'Lease and rent payments for business-related properties.' },
+    '5L': { title: 'Superannuation expenses', description: 'Compulsory superannuation for trust employees.' },
+    '5M': { title: 'Total salary and wage expenses', description: 'Gross salaries, wages and other benefits paid.' },
+    '5N': { title: 'All other expenses', description: 'Miscellaneous business deductions.' },
+    '5S': { title: 'Total expenses', description: 'Sum of all deductible expenses for the trust.' }
   },
   RECONCILIATION: {
-    '26': 'Total net income or loss'
+    '26': { title: 'Total net income or loss', description: 'Net trust income to be distributed to beneficiaries.' }
   }
 };
 

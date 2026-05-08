@@ -33,7 +33,7 @@ import {
   Square,
   Power
 } from 'lucide-react';
-import { JournalEntry, Entity, AuditLog } from './types';
+import { JournalEntry, Entity, AuditLog, Account } from './types';
 import { JournalForm } from './components/JournalForm';
 import { TrialBalance } from './components/TrialBalance';
 import { TaxReturnAssistant } from './components/TaxReturnAssistant';
@@ -53,11 +53,157 @@ import { CHART_OF_ACCOUNTS } from './constants';
 type View = 'master-dashboard' | 'dashboard' | 'journals' | 'trial-balance' | 'tax-return' | 'company-tax' | 'trust-tax' | 'bas-ias' | 'import' | 'slide-generator' | 'edit-entity' | 'audit-trail' | 'coa-manager';
 
 const DEFAULT_ENTITIES: Entity[] = [
-  { id: 'ent-1', name: 'Acme Corp Pty Ltd', type: 'Company', registrationNumber: 'ABN 12 345 678 901', businessAddress: '123 Business St, Sydney NSW 2000', contactPerson: 'John Smith', status: 'Active' },
-  { id: 'ent-2', name: 'Smith Family Trust', type: 'Trust', registrationNumber: 'ABN 98 765 432 109', businessAddress: '45 Family Ln, Melbourne VIC 3000', contactPerson: 'Jane Smith', status: 'Active' },
+  { id: 'ent-1', name: 'Acme Corp Pty Ltd', type: 'Company', registrationNumber: 'ABN 12 345 678 901', businessAddress: '123 Business St, Sydney NSW 2000', contactPerson: 'John Smith', status: 'Active', taxAgentName: 'Sarah Jenkins', taxAgentPhone: '02 9999 8888', taxAgentEmail: 'sarah@taxpro.com.au' },
+  { id: 'ent-2', name: 'Smith Family Trust', type: 'Trust', registrationNumber: 'ABN 98 765 432 109', businessAddress: '45 Family Ln, Melbourne VIC 3000', contactPerson: 'Jane Smith', status: 'Active', taxAgentName: 'Sarah Jenkins', taxAgentPhone: '02 9999 8888', taxAgentEmail: 'sarah@taxpro.com.au' },
   { id: 'ent-3', name: 'Tech Innovations', type: 'Company', registrationNumber: 'ABN 45 678 901 234', businessAddress: '101 Innovation Blvd, Brisbane QLD 4000', contactPerson: 'Mike Tech', status: 'Active' },
   { id: 'ent-4', name: 'Pearson Specter Litt', type: 'US Big Law Firm', registrationNumber: 'EIN 12-3456789', businessAddress: '601 Lexington Ave, New York, NY 10022', contactPerson: 'Harvey Specter', status: 'Active' },
 ];
+
+interface EntityCardProps {
+  key?: React.Key;
+  entity: Entity;
+  isSelected: boolean;
+  toggleSelection: (id: string, e?: React.MouseEvent) => void;
+  onClick: () => void;
+  rev: number;
+  exp: number;
+  profit: number;
+}
+
+function EntityCard({ entity, isSelected, toggleSelection, onClick, rev, exp, profit }: EntityCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <motion.div 
+      layout
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
+      className={cn(
+        "bg-white p-6 border transition-all cursor-pointer flex flex-col group relative overflow-hidden",
+        isSelected ? "border-indigo-600 ring-1 ring-indigo-600 shadow-md" : "border-[var(--line-strong)] hover:border-[var(--ink)] shadow-sm hover:shadow-md"
+      )}
+    >
+      <div 
+        className={cn(
+          "absolute top-4 right-4 z-20 p-1 transition-opacity",
+          isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        )}
+        onClick={(e) => toggleSelection(entity.id, e)}
+      >
+        {isSelected ? (
+          <CheckSquare size={20} className="text-indigo-600" />
+        ) : (
+          <Square size={20} className="text-gray-300" />
+        )}
+      </div>
+
+      <div className="flex justify-between items-start mb-4 pr-6">
+        <div>
+          <h3 className="font-bold text-lg group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{entity.name}</h3>
+          <div className="flex gap-2 items-center mt-1">
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">{entity.type}</span>
+            {entity.status === 'Deactivated' && (
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-red-50 text-red-600 rounded-full">Deactivated</span>
+            )}
+            {entity.registrationNumber && (
+              <span className="text-[10px] text-gray-400 font-mono">{entity.registrationNumber}</span>
+            )}
+          </div>
+        </div>
+        <div className="p-2 bg-gray-50 rounded-sm">
+          {entity.type === 'US Big Law Firm' ? <Scale size={18} className="text-blue-600" /> : 
+           entity.type === 'Trust' ? <Briefcase size={18} className="text-emerald-600" /> : 
+           <Building2 size={18} className="text-gray-400" />}
+        </div>
+      </div>
+      
+      <div className="mb-4 space-y-1">
+        {entity.businessAddress && (
+          <div className="text-[10px] text-gray-500 flex items-center gap-1">
+            <Globe size={10} />
+            <span className="truncate">{entity.businessAddress}</span>
+          </div>
+        )}
+        {entity.contactPerson && (
+          <div className="text-[10px] text-gray-500 flex items-center gap-1">
+            <div className="w-2.5 h-2.5 rounded-full bg-gray-200 flex items-center justify-center text-[8px]">👤</div>
+            <span>{entity.contactPerson}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-auto pt-4 border-t border-[var(--line)]">
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Net Profit</div>
+            <div className={cn(
+              "text-xl font-bold font-mono tracking-tighter",
+              profit >= 0 ? "text-green-600" : "text-rose-600"
+            )}>
+              ${profit.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </div>
+          </div>
+          <motion.div
+            animate={{ rotate: isHovered ? 180 : 0 }}
+            className="text-gray-300"
+          >
+            <ArrowUpRight size={14} />
+          </motion.div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <div className="pt-4 mt-4 border-t border-dashed border-[var(--line)] space-y-2">
+              <div className="flex justify-between text-[11px]">
+                <span className="text-gray-500 uppercase font-bold tracking-wider">Gross Revenue</span>
+                <span className="font-mono font-bold text-gray-900">${rev.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between text-[11px]">
+                <span className="text-gray-500 uppercase font-bold tracking-wider">Total Expenses</span>
+                <span className="font-mono font-bold text-rose-500">-${exp.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between text-[11px] pt-1 pt-2 border-t border-gray-50">
+                <span className="text-gray-500 uppercase font-bold tracking-wider">Margin</span>
+                <span className="font-mono font-bold text-indigo-600">
+                  {rev > 0 ? ((profit / rev) * 100).toFixed(1) : "0"}%
+                </span>
+              </div>
+              {entity.notes && (
+                <div className="pt-2 border-t border-gray-100 mt-2">
+                  <span className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">Entity Notes</span>
+                  <p className="text-[10px] text-gray-600 mt-0.5 line-clamp-3 italic leading-relaxed">
+                    "{entity.notes}"
+                  </p>
+                </div>
+              )}
+            </div>
+            <button 
+              className="mt-6 w-full py-2 bg-[var(--ink)] text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors"
+              onClick={(e) => { e.stopPropagation(); onClick(); }}
+            >
+              Open Ledger →
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {!isHovered && (
+        <div className="mt-4 text-center opacity-30 group-hover:opacity-100 transition-opacity">
+          <span className="text-[9px] font-bold uppercase tracking-tighter text-gray-400">Hover for details</span>
+        </div>
+      )}
+    </motion.div>
+  );
+};
 
 export default function App() {
   const [view, setView] = useState<View>('master-dashboard');
@@ -146,6 +292,11 @@ export default function App() {
       localStorage.setItem('ledger_all_entries', JSON.stringify(allEntries));
     }
   }, [allEntries]);
+
+  const handleUpdateAccount = (updatedAccount: Account) => {
+    setAccounts(prev => prev.map(a => a.id === updatedAccount.id ? updatedAccount : a));
+    addAuditLog('IMPORT_DATA', `Updated tax mapping for account ${updatedAccount.code} - ${updatedAccount.name}`, '');
+  };
 
   const entries = activeEntityId ? (allEntries[activeEntityId] || []) : [];
 
@@ -537,73 +688,16 @@ export default function App() {
                         const profit = rev - exp;
 
                         return (
-                          <div 
-                            key={entity.id} 
-                            className={`bg-white p-6 border ${isSelected ? 'border-indigo-600' : 'border-[var(--line-strong)]'} shadow-sm hover:border-[var(--ink)] transition-colors cursor-pointer flex flex-col group relative`}
+                          <EntityCard 
+                            key={entity.id}
+                            entity={entity}
+                            isSelected={isSelected}
+                            toggleSelection={toggleEntitySelection}
                             onClick={() => { setActiveEntityId(entity.id); setView('dashboard'); }}
-                          >
-                            <div 
-                              className="absolute top-4 right-4 z-10 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => toggleEntitySelection(entity.id, e)}
-                            >
-                              {isSelected ? (
-                                <CheckSquare size={20} className="text-indigo-600" />
-                              ) : (
-                                <Square size={20} className="text-gray-300" />
-                              )}
-                            </div>
-
-                            <div className="flex justify-between items-start mb-4 pr-6">
-                              <div>
-                                <h3 className="font-bold text-lg group-hover:underline">{entity.name}</h3>
-                                <div className="flex gap-2 items-center mt-1">
-                                  <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">{entity.type}</span>
-                                  {entity.status === 'Deactivated' && (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 bg-red-50 text-red-600 rounded-full">Deactivated</span>
-                                  )}
-                                  {entity.registrationNumber && (
-                                    <span className="text-[10px] text-gray-400 font-mono">{entity.registrationNumber}</span>
-                                  )}
-                                </div>
-                              </div>
-                              {entity.type === 'US Big Law Firm' ? <Scale className="text-blue-600" /> : 
-                               entity.type === 'Trust' ? <Briefcase className="text-emerald-600" /> : 
-                               <Building2 className="text-gray-400" />}
-                            </div>
-                            
-                            <div className="mb-4 space-y-1">
-                              {entity.businessAddress && (
-                                <div className="text-[10px] text-gray-500 flex items-center gap-1">
-                                  <Globe size={10} />
-                                  <span className="truncate">{entity.businessAddress}</span>
-                                </div>
-                              )}
-                              {entity.contactPerson && (
-                                <div className="text-[10px] text-gray-500 flex items-center gap-1">
-                                  <div className="w-2.5 h-2.5 rounded-full bg-gray-200 flex items-center justify-center text-[8px]">👤</div>
-                                  <span>{entity.contactPerson}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="mt-auto space-y-3 pt-4 border-t border-[var(--line)]">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Revenue</span>
-                                <span className="font-medium data-value">${rev.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Expenses</span>
-                                <span className="font-medium data-value">${exp.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                              </div>
-                              <div className="flex justify-between text-sm font-bold pt-2 border-t border-[var(--line)]">
-                                <span>Net Profit</span>
-                                <span className={`data-value ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>${profit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                              </div>
-                            </div>
-                            <button className="mt-6 w-full py-2 bg-gray-50 group-hover:bg-[var(--ink)] group-hover:text-white text-sm font-medium border border-[var(--line)] transition-colors">
-                              Manage Entity
-                            </button>
-                          </div>
+                            rev={rev}
+                            exp={exp}
+                            profit={profit}
+                          />
                         );
                       })}
                     </div>
@@ -643,6 +737,22 @@ export default function App() {
                             Edit Entity Details
                           </button>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Entity Notes Dashboard Section */}
+                    {entities.find(e => e.id === activeEntityId)?.notes && (
+                      <div className="bg-amber-50 border border-amber-200 p-4 shadow-sm relative group overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                          <BookOpen size={64} />
+                        </div>
+                        <div className="flex items-center gap-2 mb-2 text-amber-800">
+                          <BookOpen size={16} />
+                          <h4 className="text-xs font-bold uppercase tracking-wider">Internal Entity Notes</h4>
+                        </div>
+                        <p className="text-sm text-amber-900 italic font-serif leading-relaxed relative z-10">
+                          "{entities.find(e => e.id === activeEntityId)?.notes}"
+                        </p>
                       </div>
                     )}
 
@@ -888,9 +998,9 @@ export default function App() {
                     <TrialBalance accounts={accounts} entries={filteredEntries} />
                   </div>
                 )}
-                {view === 'tax-return' && <TaxReturnAssistant accounts={accounts} entries={filteredEntries} />}
-                {view === 'company-tax' && <CompanyTaxReturn accounts={accounts} entries={filteredEntries} />}
-                {view === 'trust-tax' && <TrustTaxReturn accounts={accounts} entries={filteredEntries} />}
+                {view === 'tax-return' && <TaxReturnAssistant accounts={accounts} entries={filteredEntries} onUpdateAccount={handleUpdateAccount} />}
+                {view === 'company-tax' && <CompanyTaxReturn accounts={accounts} entries={filteredEntries} onUpdateAccount={handleUpdateAccount} />}
+                {view === 'trust-tax' && <TrustTaxReturn accounts={accounts} entries={filteredEntries} onUpdateAccount={handleUpdateAccount} />}
                 {view === 'bas-ias' && <BasIasAssistant accounts={accounts} entries={filteredEntries} />}
                 {view === 'slide-generator' && activeEntityId && (
                   <SlideGenerator 

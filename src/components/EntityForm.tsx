@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Entity } from '../types';
-import { Save, X, Building2 } from 'lucide-react';
+import { Save, X, Building2, UserCheck } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface EntityFormProps {
@@ -23,7 +23,11 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
     registrationNumber: '',
     businessAddress: '',
     contactPerson: '',
-    status: 'Active'
+    status: 'Active',
+    taxAgentName: '',
+    taxAgentPhone: '',
+    taxAgentEmail: '',
+    notes: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -53,6 +57,10 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
       newErrors.businessAddress = 'Enter a complete address';
     }
 
+    if (data.taxAgentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.taxAgentEmail)) {
+      newErrors.taxAgentEmail = 'Invalid email format';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -80,6 +88,10 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
       if (value && value.trim().length < 10) newErrors.businessAddress = 'Address too short';
       else delete newErrors.businessAddress;
     }
+    if (field === 'taxAgentEmail') {
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) newErrors.taxAgentEmail = 'Invalid email';
+      else delete newErrors.taxAgentEmail;
+    }
     setErrors(newErrors);
   };
 
@@ -95,6 +107,9 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
         registrationNumber: true,
         contactPerson: true,
         businessAddress: true,
+        taxAgentName: true,
+        taxAgentPhone: true,
+        taxAgentEmail: true,
       });
     }
   };
@@ -211,6 +226,63 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
               placeholder="Street, Suburb, State, Postcode"
             />
           </div>
+        </div>
+
+        <div className="pt-6 border-t border-[var(--line)]">
+          <h4 className="text-sm font-bold uppercase text-[var(--ink)] mb-4 flex items-center gap-2">
+            <UserCheck size={16} />
+            Tax Agent Details
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase text-gray-500 tracking-wider">Agent Name</label>
+              <input
+                type="text"
+                placeholder="Agent Full Name"
+                value={formData.taxAgentName || ''}
+                onChange={(e) => handleChange('taxAgentName' as keyof Entity, e.target.value)}
+                className="w-full p-2 border border-[var(--line)] focus:ring-1 focus:ring-[var(--ink)] outline-none transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase text-gray-500 tracking-wider">Contact Number</label>
+              <input
+                type="text"
+                placeholder="e.g. 0400 000 000"
+                value={formData.taxAgentPhone || ''}
+                onChange={(e) => handleChange('taxAgentPhone' as keyof Entity, e.target.value)}
+                className="w-full p-2 border border-[var(--line)] focus:ring-1 focus:ring-[var(--ink)] outline-none transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase text-gray-500 tracking-wider flex justify-between">
+                Email Address
+                {touched.taxAgentEmail && errors.taxAgentEmail && <span className="text-red-500 lowercase font-medium">{errors.taxAgentEmail}</span>}
+              </label>
+              <input
+                type="email"
+                placeholder="agent@example.com"
+                value={formData.taxAgentEmail || ''}
+                onChange={(e) => handleChange('taxAgentEmail' as keyof Entity, e.target.value)}
+                onBlur={() => setTouched({ ...touched, taxAgentEmail: true })}
+                className={cn(
+                  "w-full p-2 border border-[var(--line)] focus:ring-1 focus:ring-[var(--ink)] outline-none transition-colors",
+                  touched.taxAgentEmail && errors.taxAgentEmail ? "border-red-500 bg-red-50" : "focus:border-[var(--ink)]"
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-6 border-t border-[var(--line)]">
+          <label className="text-xs font-bold uppercase text-gray-500 tracking-wider block mb-2">Entity Notes</label>
+          <textarea
+            rows={4}
+            value={formData.notes || ''}
+            onChange={(e) => handleChange('notes' as keyof Entity, e.target.value)}
+            className="w-full p-3 border border-[var(--line)] focus:ring-1 focus:ring-[var(--ink)] outline-none resize-none bg-gray-50/30 transition-colors"
+            placeholder="Add internal notes about this entity, specific handling instructions, or historical context..."
+          />
         </div>
 
         <div className="pt-6 border-t border-[var(--line)] flex flex-col sm:flex-row justify-end gap-3">
