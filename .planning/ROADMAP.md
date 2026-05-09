@@ -1,0 +1,198 @@
+# Roadmap: AussieLedger
+
+**Created:** 2026-05-10
+**Granularity:** Standard (6 phases)
+**Coverage:** 70/70 v1 requirements mapped
+
+---
+
+## Phases
+
+- [ ] **Phase 1: Safety Net** — Remove regulatory theatre, install test infrastructure, lock in decimal arithmetic and schema versioning before any user data accumulates
+- [ ] **Phase 2: Decompose and Tax Engine** — Break up the monolithic App.tsx, extract pure tax functions into a shared lib, remove AI key from client bundle, introduce period model
+- [ ] **Phase 3: Durable Persistence** — Replace localStorage with a StorageAdapter backed by IndexedDB (no-server) and SQLite (server); add export/import
+- [ ] **Phase 4: Bookkeeping Core** — Full 80–150 account CoA with GST codes and tax-label pre-mapping, complete journal CRUD, TB import, entity management with AU-specific fields
+- [ ] **Phase 5: Tax Outputs** — All four AU return types (Individual, Company, Trust, Partnership), BAS/IAS, and print-ready working-paper output
+- [ ] **Phase 6: Personas, Wizard, and Deployment** — Dual consumer/agent modes, year-end preparation wizard, anomaly flags, in-context help, and open-source deployment polish
+
+---
+
+## Phase Details
+
+### Phase 1: Safety Net
+
+**Goal:** The codebase is safe to build on — misleading ATO theatre is gone, Vitest runs in CI with at least one golden test per return type, decimal arithmetic is installed, and a schema version field exists on every persisted type
+
+**Depends on:** Nothing (first phase)
+
+**Requirements:** FND-05, FND-06, FND-07, FND-08, FND-09, ENT-02, DEP-05
+
+**Success Criteria** (what must be TRUE):
+1. No page in the running app shows "ATO Connected", "ATO Connected (Simulated)", "Pearson Specter Litt", "US Big Law Firm", or any hard-coded percentage trend string
+2. A persistent, non-dismissable working-paper disclaimer is visible on every tax output surface ("AussieLedger produces a working paper only. It is not tax advice...")
+3. `npm run test` runs Vitest in CI (GitHub Actions) and passes; there is at least one golden-output test per tax return type (Individual, Company, Trust, Partnership) and per-label tests for BAS arithmetic
+4. `decimal.js` (or equivalent) is installed and used for all monetary arithmetic; no bare `/11` or float multiplication remains in financial calculations
+5. Every persisted type in `src/types.ts` carries a `_v: number` schema-version field; a migration runner stub exists ready to be wired to real migrations in Phase 3
+6. The Entity form validates ABN (11-digit modulus-89 checksum) and TFN (format-only check) with inline feedback before save
+
+**Plans:** TBD
+
+---
+
+### Phase 2: Decompose and Tax Engine
+
+**Goal:** App.tsx is a thin orchestrator, all tax math lives in pure testable functions in `lib/tax/`, the Gemini API key is removed from the client bundle, and a canonical AU period module drives all date defaults
+
+**Depends on:** Phase 1
+
+**Requirements:** FND-04, TAX-01, TAX-03, TAX-04, TAX-05, BOOK-08, BOOK-10
+
+**Success Criteria** (what must be TRUE):
+1. `src/App.tsx` is ≤ 250 lines; `useEntities`, `useJournals`, and `useAccounts` hooks exist and own their respective state; shell components (Sidebar, Header, BottomNav) are extracted into `src/components/shell/`
+2. `src/lib/tax/{individual,company,trust,partnership,bas}.ts` exist as pure functions with no React imports; Vitest unit tests cover each rollup function with golden outputs verified against ATO instructions
+3. All tax-rate and threshold constants live in a single FY-versioned module (`src/lib/tax/labels/fy2026.ts`); no magic numbers remain in any component
+4. Every account in the default CoA has a pre-set GST code from the AU set (GST, FRE, INP, N-T, CAP) and a tax-label mapping for every relevant entity type; users can override these mappings in the CoA editor
+5. `src/lib/period.ts` exists; every date-range default in the app derives from it; no `new Date(year, 0, 1)` or December 31 hardcodes remain; BAS quarter boundaries match ATO-prescribed periods
+6. A self-hosted instance started with no `GEMINI_API_KEY` configured runs fully — no broken pages, no console errors — because AI features are optional and gated
+
+**Plans:** TBD
+
+---
+
+### Phase 3: Durable Persistence
+
+**Goal:** User data survives a browser cache clear in both deployment shapes; the StorageAdapter interface hides the underlying store from all components and hooks; JSON export/import works end-to-end
+
+**Depends on:** Phase 2
+
+**Requirements:** FND-01, FND-02, FND-03, DEP-02
+
+**Success Criteria** (what must be TRUE):
+1. After a user enters journals and clears the browser cache (cookies + site data), the data is still present on next load — either from IndexedDB (no-server shape) or SQLite (server shape)
+2. A prominent "Export data" action in the main navigation produces a complete JSON file containing all entities, journals, accounts, and audit logs
+3. A user can import a previously-exported JSON file on a fresh instance and restore all data exactly
+4. `npm run dev` (no server) starts successfully with IndexedDB as the persistence backend; `npm run dev:full` (Vite + Express server) starts successfully with SQLite as the persistence backend; both produce working apps
+5. A schema migration round-trip test passes: data serialised in v0 format is correctly upgraded to the current schema by the migration runner without data loss
+
+**Plans:** TBD
+
+---
+
+### Phase 4: Bookkeeping Core
+
+**Goal:** Users can manage a complete Australian SME chart of accounts, record and edit journals with full audit history, import an opening trial balance from CSV/XLSX, and view a correctly-period-filtered trial balance
+
+**Depends on:** Phase 3
+
+**Requirements:** BOOK-01, BOOK-02, BOOK-03, BOOK-04, BOOK-05, BOOK-06, BOOK-07, BOOK-09, BOOK-11, BOOK-12, ENT-01, ENT-03, ENT-04, ENT-05, ENT-06, ENT-07, ENT-08, IMP-01, IMP-02, IMP-03, IMP-04, IMP-05, IMP-06
+
+**Success Criteria** (what must be TRUE):
+1. A user can browse a default CoA of 80–150 Australian SME accounts grouped under parent headings (e.g. "Operating Expenses" → "Rent", "Utilities"); parent rows show subtotals on the trial balance
+2. A user can create a journal entry, post it, then edit or reverse it; the original and reversal both appear in the immutable audit trail with before/after values and timestamps
+3. A user can upload a CSV or XLSX trial balance, use the column-mapping UI to confirm column choices, match unrecognised accounts to the internal CoA (or create new ones), and post an opening-balances journal — without needing an AI API key
+4. Re-uploading the same CSV does not create duplicate opening-balance journals (idempotent import)
+5. A Trust entity carries a beneficiary register (name + share); a Partnership entity carries a partner register (name + percentage); these registers are used by Phase 5 return assembly
+
+**Plans:** TBD
+
+---
+
+### Phase 5: Tax Outputs
+
+**Goal:** Every Australian entity type produces a correct, print-ready working paper that a user can hand to their tax agent or transcribe into myGov; BAS and IAS cover all required GST and PAYG labels using decimal arithmetic
+
+**Depends on:** Phase 4
+
+**Requirements:** BAS-01, BAS-02, BAS-03, BAS-04, BAS-05, BAS-06, TAX-02, IND-01, IND-02, IND-03, COY-01, COY-02, COY-03, COY-04, TRT-01, TRT-02, TRT-03, PSP-01, PSP-02
+
+**Success Criteria** (what must be TRUE):
+1. A BAS produced for a period with a mix of GST-taxable, GST-free (FRE), and input-taxed (INP) transactions shows correct values for G1, G2, G3, G10, G11, 1A, 1B, W1, W2, and T7; the totals match a hand-calculated reference to the cent
+2. A Company return shows the tax rate (25% or 30%) derived from the Base Rate Entity test with its basis stated explicitly ("25% applied — passive income below 80% threshold"); a unit test confirms a 90%-dividend-income company triggers 30%
+3. A Trust return includes a per-beneficiary distribution statement that reconciles to the trust's net income; a mandatory streaming disclaimer is visible on the output
+4. An Individual return populates all business-schedule labels (P1, P2, P8, item 15) from the entity's GL and calculates marginal-rate tax payable using FY-versioned brackets including LITO and Medicare levy
+5. The print output (via browser print or `@media print` CSS) for any return type shows ATO field codes alongside plain-English labels (e.g. "Gross business income (6S): $142,000"), contains the working-paper disclaimer, and contains no screen UI chrome (sidebar, nav buttons, hover states)
+
+**Plans:** TBD
+
+---
+
+### Phase 6: Personas, Wizard, and Deployment
+
+**Goal:** Both consumer/owner and tax-agent personas are fully working; the year-end wizard walks a non-accountant to a finalised working paper; the project is ready for public open-source use
+
+**Depends on:** Phase 5
+
+**Requirements:** UX-01, UX-02, UX-03, UX-04, UX-05, PERS-01, PERS-02, PERS-03, DEP-01, DEP-03, DEP-04
+
+**Success Criteria** (what must be TRUE):
+1. A user in owner mode lands on their primary entity dashboard with the year-end wizard one click away; a user in agent mode lands on a multi-client list with fast entity switching; switching modes via a setting preserves all data
+2. The year-end wizard completes a full sequence — review unmapped accounts, confirm CoA GST codes, check unreconciled items, preview tax output, attest ("I confirm these are genuine business expenses"), finalise — and refuses to reach "finalise" until all unmapped accounts are resolved
+3. Anomaly flags (unbalanced journal entries, unmapped accounts referenced in posted entries, GST code mismatches, accounts missing tax-label mappings) surface in-context on the relevant screen, not only in a separate report
+4. Every ATO label and field in tax output has a tooltip or side-panel showing a plain-English explanation of what it means and what data populates it; the help text never states whether an expense is deductible
+5. A new user can clone the repository, run `npm install && npm run build`, serve the built output, and have a fully working instance with no paid services configured; the README documents both single-user local and small-firm VPS deployment shapes; a CONTRIBUTING.md states the schema-migration rule
+
+**Plans:** TBD
+
+---
+
+## Progress Table
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Safety Net | 0/? | Not started | - |
+| 2. Decompose and Tax Engine | 0/? | Not started | - |
+| 3. Durable Persistence | 0/? | Not started | - |
+| 4. Bookkeeping Core | 0/? | Not started | - |
+| 5. Tax Outputs | 0/? | Not started | - |
+| 6. Personas, Wizard, and Deployment | 0/? | Not started | - |
+
+---
+
+## Requirement Coverage
+
+| Category | Count | Phases |
+|----------|-------|--------|
+| Foundation (FND) | 9 | 1 (FND-05, 06, 07, 08, 09), 2 (FND-04), 3 (FND-01, 02, 03) |
+| Bookkeeping Core (BOOK) | 12 | 2 (BOOK-08, 10), 4 (BOOK-01–07, 09, 11, 12) |
+| Entity Management (ENT) | 8 | 1 (ENT-02), 4 (ENT-01, 03–08) |
+| Trial Balance Import (IMP) | 6 | 4 (IMP-01–06) |
+| BAS / IAS (BAS) | 6 | 5 (BAS-01–06) |
+| Tax Shared (TAX) | 5 | 2 (TAX-01, 03, 04, 05), 5 (TAX-02) |
+| Individual Return (IND) | 3 | 5 (IND-01–03) |
+| Company Return (COY) | 4 | 5 (COY-01–04) |
+| Trust Return (TRT) | 3 | 5 (TRT-01–03) |
+| Partnership Return (PSP) | 2 | 5 (PSP-01–02) |
+| Guidance / UX (UX) | 5 | 6 (UX-01–05) |
+| Personas (PERS) | 3 | 6 (PERS-01–03) |
+| Deployment (DEP) | 5 | 1 (DEP-05), 3 (DEP-02), 6 (DEP-01, 03, 04) |
+
+**Total: 70/70 requirements mapped. No orphans.**
+
+---
+
+## Phase Ordering Rationale
+
+- **Phase 1 before everything:** Three blocking risks (ATO theatre, no tests, float arithmetic) must be cleared before any user data accumulates and before tax math is written or refactored.
+- **Phase 2 before Phase 3:** The StorageAdapter hooks depend on `useJournals`, `useEntities`, `useAccounts` existing; pure tax functions must be in `lib/tax/` before they can be tested without a DOM.
+- **Phase 3 before Phase 4:** Journal edit/reverse, beneficiary register, and CoA expansion all write to persistence; they must use the StorageAdapter, not localStorage directly.
+- **Phase 4 before Phase 5:** BAS G1/G10/G11 bucketing and all tax return label rollups require a CoA with GST codes and tax-label mappings. Trust/Partnership returns require beneficiary/partner registers from entity management.
+- **Phase 5 before Phase 6:** The year-end wizard preview step requires correct, complete tax return components.
+- **Persona and wizard work deferred to Phase 6:** Mode is a rendering concern — both modes read/write identical underlying data. If scope must be cut, Phases 1–5 deliver a complete correct single-mode tool; Phase 6 is additive.
+
+---
+
+## Research Flags
+
+**Before Phase 4 begins:**
+- CoA default account list and tax-label pre-mappings: correct mapping of 80–150 AU SME account names to NAT form labels for all four entity types. Review NAT 0660/0656/0659/0976 label sets before designing seed data.
+
+**Before Phase 5 begins:**
+- Trust streaming boundaries and BRE passive-income test. Confirm current-year individual marginal rates, LITO phase-out thresholds, and Medicare levy against ATO tax tables before building Individual return rollup.
+
+**Before Phase 6 begins:**
+- Verify `@react-pdf/renderer` React 19 compatibility before committing to it for PDF export upgrade.
+
+---
+
+*Roadmap created: 2026-05-10*
+*Last updated: 2026-05-10 after initial creation*

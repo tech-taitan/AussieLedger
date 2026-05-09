@@ -169,87 +169,87 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Empty until roadmap creation. Each requirement maps to exactly one phase. Updated by the gsd-roadmapper.
+Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-05-10.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | TBD | Pending |
-| FND-02 | TBD | Pending |
-| FND-03 | TBD | Pending |
-| FND-04 | TBD | Pending |
-| FND-05 | TBD | Pending |
-| FND-06 | TBD | Pending |
-| FND-07 | TBD | Pending |
-| FND-08 | TBD | Pending |
-| FND-09 | TBD | Pending |
-| BOOK-01 | TBD | Pending |
-| BOOK-02 | TBD | Pending |
-| BOOK-03 | TBD | Pending |
-| BOOK-04 | TBD | Pending |
-| BOOK-05 | TBD | Pending |
-| BOOK-06 | TBD | Pending |
-| BOOK-07 | TBD | Pending |
-| BOOK-08 | TBD | Pending |
-| BOOK-09 | TBD | Pending |
-| BOOK-10 | TBD | Pending |
-| BOOK-11 | TBD | Pending |
-| BOOK-12 | TBD | Pending |
-| ENT-01 | TBD | Pending |
-| ENT-02 | TBD | Pending |
-| ENT-03 | TBD | Pending |
-| ENT-04 | TBD | Pending |
-| ENT-05 | TBD | Pending |
-| ENT-06 | TBD | Pending |
-| ENT-07 | TBD | Pending |
-| ENT-08 | TBD | Pending |
-| IMP-01 | TBD | Pending |
-| IMP-02 | TBD | Pending |
-| IMP-03 | TBD | Pending |
-| IMP-04 | TBD | Pending |
-| IMP-05 | TBD | Pending |
-| IMP-06 | TBD | Pending |
-| BAS-01 | TBD | Pending |
-| BAS-02 | TBD | Pending |
-| BAS-03 | TBD | Pending |
-| BAS-04 | TBD | Pending |
-| BAS-05 | TBD | Pending |
-| BAS-06 | TBD | Pending |
-| TAX-01 | TBD | Pending |
-| TAX-02 | TBD | Pending |
-| TAX-03 | TBD | Pending |
-| TAX-04 | TBD | Pending |
-| TAX-05 | TBD | Pending |
-| IND-01 | TBD | Pending |
-| IND-02 | TBD | Pending |
-| IND-03 | TBD | Pending |
-| COY-01 | TBD | Pending |
-| COY-02 | TBD | Pending |
-| COY-03 | TBD | Pending |
-| COY-04 | TBD | Pending |
-| TRT-01 | TBD | Pending |
-| TRT-02 | TBD | Pending |
-| TRT-03 | TBD | Pending |
-| PSP-01 | TBD | Pending |
-| PSP-02 | TBD | Pending |
-| UX-01 | TBD | Pending |
-| UX-02 | TBD | Pending |
-| UX-03 | TBD | Pending |
-| UX-04 | TBD | Pending |
-| UX-05 | TBD | Pending |
-| PERS-01 | TBD | Pending |
-| PERS-02 | TBD | Pending |
-| PERS-03 | TBD | Pending |
-| DEP-01 | TBD | Pending |
-| DEP-02 | TBD | Pending |
-| DEP-03 | TBD | Pending |
-| DEP-04 | TBD | Pending |
-| DEP-05 | TBD | Pending |
+| FND-01 | Phase 3 | Pending |
+| FND-02 | Phase 3 | Pending |
+| FND-03 | Phase 3 | Pending |
+| FND-04 | Phase 2 | Pending |
+| FND-05 | Phase 1 | Pending |
+| FND-06 | Phase 1 | Pending |
+| FND-07 | Phase 1 | Pending |
+| FND-08 | Phase 1 | Pending |
+| FND-09 | Phase 1 | Pending |
+| BOOK-01 | Phase 4 | Pending |
+| BOOK-02 | Phase 4 | Pending |
+| BOOK-03 | Phase 4 | Pending |
+| BOOK-04 | Phase 4 | Pending |
+| BOOK-05 | Phase 4 | Pending |
+| BOOK-06 | Phase 4 | Pending |
+| BOOK-07 | Phase 4 | Pending |
+| BOOK-08 | Phase 2 | Pending |
+| BOOK-09 | Phase 4 | Pending |
+| BOOK-10 | Phase 2 | Pending |
+| BOOK-11 | Phase 4 | Pending |
+| BOOK-12 | Phase 4 | Pending |
+| ENT-01 | Phase 4 | Pending |
+| ENT-02 | Phase 1 | Pending |
+| ENT-03 | Phase 4 | Pending |
+| ENT-04 | Phase 4 | Pending |
+| ENT-05 | Phase 4 | Pending |
+| ENT-06 | Phase 4 | Pending |
+| ENT-07 | Phase 4 | Pending |
+| ENT-08 | Phase 4 | Pending |
+| IMP-01 | Phase 4 | Pending |
+| IMP-02 | Phase 4 | Pending |
+| IMP-03 | Phase 4 | Pending |
+| IMP-04 | Phase 4 | Pending |
+| IMP-05 | Phase 4 | Pending |
+| IMP-06 | Phase 4 | Pending |
+| BAS-01 | Phase 5 | Pending |
+| BAS-02 | Phase 5 | Pending |
+| BAS-03 | Phase 5 | Pending |
+| BAS-04 | Phase 5 | Pending |
+| BAS-05 | Phase 5 | Pending |
+| BAS-06 | Phase 5 | Pending |
+| TAX-01 | Phase 2 | Pending |
+| TAX-02 | Phase 5 | Pending |
+| TAX-03 | Phase 2 | Pending |
+| TAX-04 | Phase 2 | Pending |
+| TAX-05 | Phase 2 | Pending |
+| IND-01 | Phase 5 | Pending |
+| IND-02 | Phase 5 | Pending |
+| IND-03 | Phase 5 | Pending |
+| COY-01 | Phase 5 | Pending |
+| COY-02 | Phase 5 | Pending |
+| COY-03 | Phase 5 | Pending |
+| COY-04 | Phase 5 | Pending |
+| TRT-01 | Phase 5 | Pending |
+| TRT-02 | Phase 5 | Pending |
+| TRT-03 | Phase 5 | Pending |
+| PSP-01 | Phase 5 | Pending |
+| PSP-02 | Phase 5 | Pending |
+| UX-01 | Phase 6 | Pending |
+| UX-02 | Phase 6 | Pending |
+| UX-03 | Phase 6 | Pending |
+| UX-04 | Phase 6 | Pending |
+| UX-05 | Phase 6 | Pending |
+| PERS-01 | Phase 6 | Pending |
+| PERS-02 | Phase 6 | Pending |
+| PERS-03 | Phase 6 | Pending |
+| DEP-01 | Phase 6 | Pending |
+| DEP-02 | Phase 3 | Pending |
+| DEP-03 | Phase 6 | Pending |
+| DEP-04 | Phase 6 | Pending |
+| DEP-05 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 70 total
-- Mapped to phases: 0
-- Unmapped: 70 ⚠️ (will be resolved by roadmap)
+- Mapped to phases: 70
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-10*
-*Last updated: 2026-05-10 after initial definition*
+*Last updated: 2026-05-10 — traceability completed by gsd-roadmapper (6 phases)*
