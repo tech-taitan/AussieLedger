@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 1 — Safety Net
-current_plan: None started
-status: unknown
-last_updated: "2026-05-10T07:55:40.333Z"
+current_phase: Phase 2 — Decompose and Tax Engine
+current_plan: 02-2
+status: in_progress
+last_updated: "2026-05-10T20:51:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 7
+  completed_plans: 4
 ---
 
 # Project State: AussieLedger
@@ -34,15 +34,15 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 1 — Safety Net
-**Current plan:** None started
-**Phase status:** Context gathered; ready for planning
-**Last session:** Phase 1 context gathered — see `.planning/phases/01-safety-net/01-CONTEXT.md`
-**Overall progress:** 0/6 phases complete
+**Current phase:** Phase 2 — Decompose and Tax Engine
+**Current plan:** 02-2 (next to execute)
+**Phase status:** Plan 02-1 complete — Wave 0 foundations landed; ready for Wave 1 (02-2, 02-3 parallel)
+**Last session:** Completed Plan 02-1 — wave-0 foundations: period/ai/match/tax-engine/migration/hook-stubs — see `.planning/phases/02-decompose-and-tax-engine/02-1-SUMMARY.md`
+**Overall progress:** Phase 1 complete; Phase 2 in progress (1/4 plans)
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[  ----  ] [  ----  ] [  ----  ] [  ----  ] [  ----  ] [  ----  ]
+[ DONE  ] [ 1/4   ] [  ----  ] [  ----  ] [  ----  ] [  ----  ]
 ```
 
 ---
@@ -51,8 +51,8 @@ progress:
 
 | Phase | Name | Key Outcome | Status |
 |-------|------|-------------|--------|
-| 1 | Safety Net | ATO theatre gone, Vitest + CI green, decimal.js, schema versioning | Not started |
-| 2 | Decompose and Tax Engine | App.tsx ≤250 lines, lib/tax/ pure functions, AI key off client, period model | Not started |
+| 1 | Safety Net | ATO theatre gone, Vitest + CI green, decimal.js, schema versioning | COMPLETE |
+| 2 | Decompose and Tax Engine | App.tsx ≤250 lines, lib/tax/ pure functions, AI key off client, period model | In Progress (1/4) |
 | 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | Not started |
 | 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | Not started |
 | 5 | Tax Outputs | All four return types + BAS/IAS, print-ready with ATO field codes | Not started |
@@ -62,10 +62,17 @@ progress:
 
 ## Performance Metrics
 
-- Plans completed: 0
-- Plans total: TBD (defined per phase when plan-phase runs)
-- Phases complete: 0/6
+- Plans completed: 4 (Phase 1: 3 plans; Phase 2: 1 plan)
+- Plans total: 7 (Phase 1: 3, Phase 2: 4)
+- Phases complete: 1/6 (Phase 1 done)
 - Requirements mapped: 70/70
+
+| Phase | Plan | Duration | Tasks | Files | Tests Green |
+|-------|------|----------|-------|-------|-------------|
+| 01 | 01-1 | ~40 min | 12 | +29 ~3 | 36 |
+| 01 | 01-2 | — | — | — | — |
+| 01 | 01-3 | — | — | — | — |
+| 02 | 02-1 | ~3 hr | 3 | +25 ~6 | 166 |
 
 ---
 
@@ -81,6 +88,11 @@ progress:
 | Print-CSS first, @react-pdf/renderer upgrade in Phase 6 | Browser print is sufficient for v1; PDF library pulls in a separate layout model; verify React 19 compat before committing | Roadmap |
 | TAX-03 (CoA pre-mapping) and TAX-05 (shared tax engine) assigned to Phase 2 | These are architectural prerequisites for Phase 5 tax output, but the engine must exist and be testable before the full CoA is built | Roadmap |
 | DEP-02 (Express server) assigned to Phase 3 | Server is the SQLite persistence vehicle; belongs with the StorageAdapter work, not deployment polish | Roadmap |
+| period.ts uses Date.UTC() for all boundary construction | Timezone-independent ISO dates: local midnight shows as prior day in UTC+ environments | 02-1 |
+| currentFy() calls _nowProvider() directly, not today() | vi.spyOn intercepts only the export; internal calls bypass it; _setNowProvider works for both | 02-1 |
+| normaliseName() collapses multi-spaces with /\s+/g | Stripping '&' leaves double spaces that break INFERENCE_TABLE lookups | 02-1 |
+| Tax compute* functions RELOCATE existing math, not return zeros | Phase 2 preserves visual output; Phase 5 rewrites internals with complete business rules | 02-1 |
+| Hook stubs throw at runtime, compile cleanly | Unblocks Plan 02-1 TypeScript without implementing Plan 02-2 work | 02-1 |
 
 ### Research Flags Pending
 

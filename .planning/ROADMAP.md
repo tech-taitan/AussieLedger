@@ -58,8 +58,8 @@
 5. `src/lib/period.ts` exists; every date-range default in the app derives from it; no `new Date(year, 0, 1)` or December 31 hardcodes remain; BAS quarter boundaries match ATO-prescribed periods
 6. A self-hosted instance started with no `GEMINI_API_KEY` configured runs fully — no broken pages, no console errors — because AI features are optional and gated
 
-**Plans:** 4 plans
-- [ ] 02-1-PLAN.md — Wave 0 foundations: types/constants widened, tax engine modules + fy2026 labels + period + ai + import/match + v1-to-v2 migration body, all test scaffolds (RED-by-design hooks/components/structural tests handed to plans 02-2/02-3/02-4)
+**Plans:** 4 plans (1/4 complete)
+- [x] 02-1-PLAN.md — Wave 0 foundations: types/constants widened, tax engine modules + fy2026 labels + period + ai + import/match + v1-to-v2 migration body, all test scaffolds (RED-by-design hooks/components/structural tests handed to plans 02-2/02-3/02-4) [COMPLETE 2026-05-10]
 - [ ] 02-2-PLAN.md — Hooks: useAuditLog, useAccounts, useJournals, useEntities (Wave 1, parallel with 02-3)
 - [ ] 02-3-PLAN.md — Tax-component migrations to compute*; ImportTB AI gating + deterministic fuzzyMatch; AccountManager partnership column + Review-needed banner (Wave 1, parallel with 02-2)
 - [ ] 02-4-PLAN.md — App.tsx demolition (≤ 250 lines); shell + EntityCard + MasterDashboard + ViewRouter extraction; migration 1→2 registered; structural lints enabled (Wave 2)

@@ -12,7 +12,7 @@ Quality-floor and credibility prerequisites — must clear these before any user
 - [ ] **FND-01**: User's bookkeeping data survives a browser cache clear (durable persistence; not `localStorage`-only)
 - [ ] **FND-02**: User can export their entire dataset (entities, journals, accounts, audit log) as JSON and CSV
 - [ ] **FND-03**: User can import a previously-exported JSON dataset to restore on the same or a different instance
-- [ ] **FND-04**: A self-hosted instance works without any third-party API keys configured (AI features must be optional)
+- [x] **FND-04**: A self-hosted instance works without any third-party API keys configured (AI features must be optional)
 - [x] **FND-05**: No user-facing surface displays misleading "ATO Connected", simulated agency status, or fabricated trend metrics
 - [x] **FND-06**: An always-visible disclaimer states the product produces working papers / draft returns, not tax advice; the user/agent retains responsibility for the lodged return
 - [x] **FND-07**: A test suite (Vitest) exists with at least one golden-output test per tax return type (Individual, Company, Trust, Partnership) and per-label tests for BAS arithmetic
@@ -28,9 +28,9 @@ Quality-floor and credibility prerequisites — must clear these before any user
 - [ ] **BOOK-05**: User can browse a default Australian SME chart of accounts containing 80–150 accounts grouped by account type (Asset, Liability, Equity, Revenue, Expense)
 - [ ] **BOOK-06**: User can create, edit, and delete chart-of-accounts entries with code, name, type, GST code, and tax-label mapping per entity type
 - [ ] **BOOK-07**: User can group accounts into a parent / child hierarchy (e.g. "Operating Expenses" → "Rent", "Utilities", "Wages")
-- [ ] **BOOK-08**: Each account carries a GST code from the AU set: GST, FRE (GST-free), INP (input-taxed), N-T (not reportable), CAP (capital)
+- [x] **BOOK-08**: Each account carries a GST code from the AU set: GST, FRE (GST-free), INP (input-taxed), N-T (not reportable), CAP (capital)
 - [ ] **BOOK-09**: User can view a trial balance for a selected period showing per-account debit, credit, and net balance, with a balanced/out-of-balance footer
-- [ ] **BOOK-10**: User can filter and report on any period: a financial year (1 Jul – 30 Jun), a BAS quarter, or a custom date range — the same period model applies to TB, BAS, and tax returns
+- [x] **BOOK-10**: User can filter and report on any period: a financial year (1 Jul – 30 Jun), a BAS quarter, or a custom date range — the same period model applies to TB, BAS, and tax returns
 - [ ] **BOOK-11**: User can view an immutable audit trail of every create / edit / reverse / void action with timestamp, actor, before/after values, and entity-id scoping
 - [ ] **BOOK-12**: User can search journal entries by reference, description, account, date range, and amount range
 
@@ -65,11 +65,11 @@ Quality-floor and credibility prerequisites — must clear these before any user
 
 ### Income tax returns — shared (TAX)
 
-- [ ] **TAX-01**: Tax-rate and threshold constants are centralised in a single FY-versioned module (no magic numbers in components)
+- [x] **TAX-01**: Tax-rate and threshold constants are centralised in a single FY-versioned module (no magic numbers in components)
 - [ ] **TAX-02**: User can produce a print-ready tax return PDF (or print-CSS browser print) for any entity type
-- [ ] **TAX-03**: Each account in the default CoA is pre-mapped to the correct ATO labels for every relevant entity type (individual, company, trust, partnership) on first install
+- [x] **TAX-03**: Each account in the default CoA is pre-mapped to the correct ATO labels for every relevant entity type (individual, company, trust, partnership) on first install
 - [ ] **TAX-04**: User can override the auto-mapping for any account in the CoA editor
-- [ ] **TAX-05**: All tax-output components consume a single shared "tax engine" library of pure functions (no duplicated rollup logic across components)
+- [x] **TAX-05**: All tax-output components consume a single shared "tax engine" library of pure functions (no duplicated rollup logic across components)
 
 ### Individual tax return (IND)
 
@@ -176,7 +176,7 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | FND-01 | Phase 3 | Pending |
 | FND-02 | Phase 3 | Pending |
 | FND-03 | Phase 3 | Pending |
-| FND-04 | Phase 2 | Pending |
+| FND-04 | Phase 2 | Complete |
 | FND-05 | Phase 1 | Complete |
 | FND-06 | Phase 1 | Complete |
 | FND-07 | Phase 1 | Complete |
@@ -189,9 +189,9 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | BOOK-05 | Phase 4 | Pending |
 | BOOK-06 | Phase 4 | Pending |
 | BOOK-07 | Phase 4 | Pending |
-| BOOK-08 | Phase 2 | Pending |
+| BOOK-08 | Phase 2 | Complete |
 | BOOK-09 | Phase 4 | Pending |
-| BOOK-10 | Phase 2 | Pending |
+| BOOK-10 | Phase 2 | Complete |
 | BOOK-11 | Phase 4 | Pending |
 | BOOK-12 | Phase 4 | Pending |
 | ENT-01 | Phase 4 | Pending |
@@ -214,11 +214,11 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | BAS-04 | Phase 5 | Pending |
 | BAS-05 | Phase 5 | Pending |
 | BAS-06 | Phase 5 | Pending |
-| TAX-01 | Phase 2 | Pending |
+| TAX-01 | Phase 2 | Complete |
 | TAX-02 | Phase 5 | Pending |
-| TAX-03 | Phase 2 | Pending |
+| TAX-03 | Phase 2 | Complete |
 | TAX-04 | Phase 2 | Pending |
-| TAX-05 | Phase 2 | Pending |
+| TAX-05 | Phase 2 | Complete |
 | IND-01 | Phase 5 | Pending |
 | IND-02 | Phase 5 | Pending |
 | IND-03 | Phase 5 | Pending |
