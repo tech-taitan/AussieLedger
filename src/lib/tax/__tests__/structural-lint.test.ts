@@ -17,7 +17,6 @@ function findTsFiles(dir: string): string[] {
   const entries = readdirSync(dir, { withFileTypes: true, recursive: true });
   return entries
     .filter((f) => f.isFile() && f.name.endsWith('.ts') && !f.name.endsWith('.test.ts'))
-    // @ts-expect-error - .path is present on Dirent in Node 20+ recursive readdir
     .map((f) => join((f as unknown as { path: string }).path, f.name));
 }
 
