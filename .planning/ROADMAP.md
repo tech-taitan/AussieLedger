@@ -35,7 +35,7 @@
 5. Every persisted type in `src/types.ts` carries a `_v: number` schema-version field; a migration runner stub exists ready to be wired to real migrations in Phase 3
 6. The Entity form validates ABN (11-digit modulus-89 checksum) and TFN (format-only check) with inline feedback before save
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 - [ ] 01-1-PLAN.md — Wave 0 foundations (deps install, vitest config, money/validation/migrations libs, DisclaimerFooter/PdfGate/MigrationError components, fixtures, CI workflow, schema-version field, all test scaffolds)
 - [ ] 01-2-PLAN.md — App.tsx demolition: remove ATO theatre, slide generator, demo seeds; replace audit-log user; mount disclaimer footer; wire migration runner + MigrationError gate (Wave 1)
 - [ ] 01-3-PLAN.md — EntityForm: wire ABN modulus-89 inline warning (warn-but-allow); AU-only entity-type select; verify zero TFN/EIN references (Wave 1, parallel with 01-2)
@@ -142,7 +142,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Safety Net | 0/? | Not started | - |
+| 1. Safety Net | 1/3 | In Progress|  |
 | 2. Decompose and Tax Engine | 0/? | Not started | - |
 | 3. Durable Persistence | 0/? | Not started | - |
 | 4. Bookkeeping Core | 0/? | Not started | - |
