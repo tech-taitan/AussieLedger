@@ -1,17 +1,50 @@
 /**
- * useAuditLog hook — stub for Plan 02-1 type resolution.
- *
- * TODO Plan 02-2: implement this hook with full persistence and addLog wiring.
- * This stub exists only so TypeScript can resolve imports in test files.
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
  */
-import type { AuditLog } from '../types';
+import { useState, useEffect, useCallback } from 'react';
+import { AuditLog } from '../types';
+import { today } from '../lib/period';
+
+const STORAGE_KEY = 'ledger_audit_logs';
 
 export interface AuditLogHook {
   auditLogs: AuditLog[];
   addLog: (action: AuditLog['action'], details: string, entityId?: string) => void;
 }
 
-/** @throws Not yet implemented — Plan 02-2 implements this hook. */
 export function useAuditLog(): AuditLogHook {
-  throw new Error('useAuditLog not yet implemented — landing in Plan 02-2');
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as AuditLog[];
+      if (Array.isArray(parsed)) setAuditLogs(parsed);
+    } catch (err) {
+      console.error('Failed to parse ledger_audit_logs', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(auditLogs));
+  }, [auditLogs]);
+
+  const addLog = useCallback(
+    (action: AuditLog['action'], details: string, entityId?: string) => {
+      const newLog: AuditLog = {
+        id: crypto.randomUUID(),
+        timestamp: today().toISOString(),
+        user: 'Local user',
+        action,
+        entityId,
+        details,
+      };
+      setAuditLogs(prev => [newLog, ...prev]);
+    },
+    []
+  );
+
+  return { auditLogs, addLog };
 }
