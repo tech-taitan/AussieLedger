@@ -13,11 +13,11 @@ Quality-floor and credibility prerequisites — must clear these before any user
 - [ ] **FND-02**: User can export their entire dataset (entities, journals, accounts, audit log) as JSON and CSV
 - [ ] **FND-03**: User can import a previously-exported JSON dataset to restore on the same or a different instance
 - [ ] **FND-04**: A self-hosted instance works without any third-party API keys configured (AI features must be optional)
-- [ ] **FND-05**: No user-facing surface displays misleading "ATO Connected", simulated agency status, or fabricated trend metrics
-- [ ] **FND-06**: An always-visible disclaimer states the product produces working papers / draft returns, not tax advice; the user/agent retains responsibility for the lodged return
-- [ ] **FND-07**: A test suite (Vitest) exists with at least one golden-output test per tax return type (Individual, Company, Trust, Partnership) and per-label tests for BAS arithmetic
-- [ ] **FND-08**: All monetary calculations use a decimal arithmetic library (not native JS floats) to avoid GST rounding errors
-- [ ] **FND-09**: Application data has a schema version stored alongside it; on load, a migration runner upgrades older schemas in place
+- [x] **FND-05**: No user-facing surface displays misleading "ATO Connected", simulated agency status, or fabricated trend metrics
+- [x] **FND-06**: An always-visible disclaimer states the product produces working papers / draft returns, not tax advice; the user/agent retains responsibility for the lodged return
+- [x] **FND-07**: A test suite (Vitest) exists with at least one golden-output test per tax return type (Individual, Company, Trust, Partnership) and per-label tests for BAS arithmetic
+- [x] **FND-08**: All monetary calculations use a decimal arithmetic library (not native JS floats) to avoid GST rounding errors
+- [x] **FND-09**: Application data has a schema version stored alongside it; on load, a migration runner upgrades older schemas in place
 
 ### Bookkeeping core (BOOK)
 
@@ -37,7 +37,7 @@ Quality-floor and credibility prerequisites — must clear these before any user
 ### Entity management (ENT)
 
 - [ ] **ENT-01**: User can create entities of all four AU types: Company (Pty Ltd), Trust, Sole Trader / Individual, Partnership
-- [ ] **ENT-02**: User can record ABN (with format validation: 11-digit modulus-89 check) and TFN (with format-only check; never validated network-side)
+- [x] **ENT-02**: User can record ABN (with format validation: 11-digit modulus-89 check) and TFN (with format-only check; never validated network-side)
 - [ ] **ENT-03**: User can flag an entity as GST-registered, with effect on whether BAS is required and on default GST codes for new accounts
 - [ ] **ENT-04**: User can declare the accounting method (cash or accruals) per entity, applied to BAS reporting and income recognition
 - [ ] **ENT-05**: User can set the financial-year-end per entity (defaults to 30 June)
@@ -115,7 +115,7 @@ Quality-floor and credibility prerequisites — must clear these before any user
 - [ ] **DEP-02**: An optional Express + better-sqlite3 server can be started for shared/firm instances, with documented deployment steps
 - [ ] **DEP-03**: README documents both deployment shapes (single-user local, small-firm VPS), with step-by-step instructions
 - [ ] **DEP-04**: Repository has a permissive open-source licence (e.g. Apache 2.0, matching existing per-file SPDX headers) and a CONTRIBUTING.md with a hard rule about schema migrations
-- [ ] **DEP-05**: CI (e.g. GitHub Actions) runs `npm run build`, `npm run lint`, and the test suite on every push
+- [x] **DEP-05**: CI (e.g. GitHub Actions) runs `npm run build`, `npm run lint`, and the test suite on every push
 
 ## v2 Requirements
 
@@ -177,11 +177,11 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | FND-02 | Phase 3 | Pending |
 | FND-03 | Phase 3 | Pending |
 | FND-04 | Phase 2 | Pending |
-| FND-05 | Phase 1 | Pending |
-| FND-06 | Phase 1 | Pending |
-| FND-07 | Phase 1 | Pending |
-| FND-08 | Phase 1 | Pending |
-| FND-09 | Phase 1 | Pending |
+| FND-05 | Phase 1 | Complete |
+| FND-06 | Phase 1 | Complete |
+| FND-07 | Phase 1 | Complete |
+| FND-08 | Phase 1 | Complete |
+| FND-09 | Phase 1 | Complete |
 | BOOK-01 | Phase 4 | Pending |
 | BOOK-02 | Phase 4 | Pending |
 | BOOK-03 | Phase 4 | Pending |
@@ -195,7 +195,7 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | BOOK-11 | Phase 4 | Pending |
 | BOOK-12 | Phase 4 | Pending |
 | ENT-01 | Phase 4 | Pending |
-| ENT-02 | Phase 1 | Pending |
+| ENT-02 | Phase 1 | Complete |
 | ENT-03 | Phase 4 | Pending |
 | ENT-04 | Phase 4 | Pending |
 | ENT-05 | Phase 4 | Pending |
@@ -243,7 +243,7 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | DEP-02 | Phase 3 | Pending |
 | DEP-03 | Phase 6 | Pending |
 | DEP-04 | Phase 6 | Pending |
-| DEP-05 | Phase 1 | Pending |
+| DEP-05 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 70 total

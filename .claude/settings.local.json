@@ -21,7 +21,9 @@
       "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"feat\\(01-3\\): wire ABN validation, replace US Big Law Firm with Partnership\")",
       "Bash(git rm *)",
       "Bash(npm run *)",
-      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"feat\\(01-2\\): App.tsx demolition - strip ATO theatre, slide generator, demo seeds, fake trends; mount migration runner + DisclaimerFooter\")"
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"feat\\(01-2\\): App.tsx demolition - strip ATO theatre, slide generator, demo seeds, fake trends; mount migration runner + DisclaimerFooter\")",
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"docs\\(phase-1\\): plan 2 + 3 summaries; mark phase plans complete\")",
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"fix\\(01\\): remove dead 'US Big Law Firm' branch and unused Scale import; add phase verification\")"
     ]
   }
 }

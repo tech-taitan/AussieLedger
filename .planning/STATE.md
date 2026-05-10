@@ -1,3 +1,18 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+current_phase: Phase 1 — Safety Net
+current_plan: None started
+status: unknown
+last_updated: "2026-05-10T07:55:40.333Z"
+progress:
+  total_phases: 6
+  completed_phases: 1
+  total_plans: 3
+  completed_plans: 3
+---
+
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
