@@ -229,7 +229,7 @@ Each component becomes a thin presentation layer reading the engine's typed outp
 - **FY label format:** `'FY2026'` exactly (capital F, capital Y, 4-digit year, no spaces).
 - **Period 'custom' type fields:** `{ type: 'custom'; from: Date; to: Date }` — `from` is the inclusive start date at 00:00 local; `to` is the inclusive end date (boundaries are at end-of-day local).
 - **Migration `1 → 2` is non-destructive:** never deletes any field; only adds. Old fields like `taxLabel` keep their values.
-- **`compute*` Phase-2 stubs return `value: new Decimal(0)` and `source: []` for every label.** This compiles, type-checks, and lets components be migrated. Phase 5 fills in the math without changing the API.
+- **`compute*` Phase-2 stubs RELOCATE the existing inline math** from the 4 tax components into the corresponding lib/tax module, converting any monetary arithmetic to `Decimal` via `src/lib/money.ts`. Visual output of the existing tax components stays the same after migration to consume `compute*()`. Only `partnership.ts` stubs to zeros (no existing component to relocate from). Phase 5 rewrites all internals with ATO-correct logic without changing the API.
 
 </specifics>
 
