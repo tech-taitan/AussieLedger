@@ -21,7 +21,8 @@
 
 **Current phase:** Phase 1 — Safety Net
 **Current plan:** None started
-**Phase status:** Not started
+**Phase status:** Context gathered; ready for planning
+**Last session:** Phase 1 context gathered — see `.planning/phases/01-safety-net/01-CONTEXT.md`
 **Overall progress:** 0/6 phases complete
 
 ```
