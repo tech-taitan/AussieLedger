@@ -15,10 +15,10 @@ describe('migrate()', () => {
 
   it('passes through already-current data unchanged', () => {
     const state = { _v: CURRENT_VERSION, entities: [{ id: 'y' }], foo: 'bar' };
-    const result = migrate(state as Record<string, unknown>);
+    const result = migrate(state as unknown as Record<string, unknown>);
     expect(result._v).toBe(CURRENT_VERSION);
     expect(result.entities).toEqual([{ id: 'y' }]);
-    expect((result as Record<string, unknown>).foo).toBe('bar');
+    expect((result as unknown as Record<string, unknown>).foo).toBe('bar');
   });
 
   it('throws for unknown future version (v999)', () => {

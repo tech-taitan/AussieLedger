@@ -6,6 +6,7 @@
 export type AccountType = 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
 
 export interface Entity {
+  _v?: number;
   id: string;
   name: string;
   type: string;
@@ -20,6 +21,7 @@ export interface Entity {
 }
 
 export interface Account {
+  _v?: number;
   id: string;
   code: string;
   name: string;
@@ -31,6 +33,7 @@ export interface Account {
 }
 
 export interface JournalLine {
+  _v?: number;
   accountId: string;
   description: string;
   debit: number;
@@ -40,6 +43,7 @@ export interface JournalLine {
 }
 
 export interface JournalEntry {
+  _v?: number;
   id: string;
   date: string;
   reference: string;
@@ -66,6 +70,7 @@ export interface ImportedAccount {
 }
 
 export interface AuditLog {
+  _v?: number;
   id: string;
   timestamp: string;
   user: string;
