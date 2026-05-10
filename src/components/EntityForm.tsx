@@ -5,7 +5,8 @@
 
 import React, { useState } from 'react';
 import { Entity } from '../types';
-import { Save, X, Building2, UserCheck } from 'lucide-react';
+import { Save, X, Building2, UserCheck, AlertTriangle } from 'lucide-react';
+import { validateAbn } from '../lib/validation';
 import { cn } from '../lib/utils';
 
 interface EntityFormProps {
@@ -32,6 +33,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [warnings, setWarnings] = useState<Record<string, string>>({});
 
   const validate = (data: Entity) => {
     const newErrors: Record<string, string> = {};
@@ -43,10 +45,6 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
 
     if (!data.type) {
       newErrors.type = 'Select an entity type';
-    }
-
-    if (data.registrationNumber && data.registrationNumber.trim().length < 5) {
-      newErrors.registrationNumber = 'Registration format invalid';
     }
 
     if (data.contactPerson && data.contactPerson.trim().length < 2) {
@@ -77,8 +75,25 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
       else delete newErrors.name;
     }
     if (field === 'registrationNumber') {
-      if (value && value.trim().length < 5) newErrors.registrationNumber = 'Invalid format';
-      else delete newErrors.registrationNumber;
+      const newWarnings = { ...warnings };
+      delete newErrors.registrationNumber; // never block on registrationNumber
+      if (value && value.trim().length > 0) {
+        const digits = value.replace(/[^0-9]/g, '');
+        if (digits.length === 11) {
+          const result = validateAbn(value);
+          if (!result.valid) {
+            newWarnings.registrationNumber = result.reason ?? 'ABN checksum invalid — please check the number';
+          } else {
+            delete newWarnings.registrationNumber;
+          }
+        } else {
+          // Not yet 11 digits — clear any prior warning silently while user types
+          delete newWarnings.registrationNumber;
+        }
+      } else {
+        delete newWarnings.registrationNumber;
+      }
+      setWarnings(newWarnings);
     }
     if (field === 'contactPerson') {
       if (value && value.trim().length < 2) newErrors.contactPerson = 'Name too short';
@@ -157,7 +172,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
               <option value="Company">Company</option>
               <option value="Trust">Trust</option>
               <option value="Individual">Individual</option>
-              <option value="US Big Law Firm">US Big Law Firm</option>
+              <option value="Partnership">Partnership</option>
             </select>
           </div>
 
@@ -175,18 +190,25 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-gray-500 tracking-wider flex justify-between">
-              Registration Number (ABN/EIN)
-              {touched.registrationNumber && errors.registrationNumber && <span className="text-red-500 lowercase font-medium">{errors.registrationNumber}</span>}
+            <label htmlFor="entity-abn" className="text-xs font-bold uppercase text-gray-500 tracking-wider flex justify-between">
+              <span>ABN</span>
+              {warnings.registrationNumber && (
+                <span className="text-amber-600 lowercase font-medium flex items-center gap-1">
+                  <AlertTriangle size={12} aria-hidden="true" />
+                  {warnings.registrationNumber}
+                </span>
+              )}
             </label>
             <input
+              id="entity-abn"
               type="text"
-              placeholder="e.g. ABN 12 345 678 901"
+              aria-label="ABN"
+              placeholder="e.g. 51 824 753 556"
               value={formData.registrationNumber || ''}
               onChange={(e) => handleChange('registrationNumber', e.target.value)}
               className={cn(
                 "w-full p-2 border border-[var(--line)] focus:ring-1 focus:ring-[var(--ink)] outline-none font-mono transition-colors",
-                touched.registrationNumber && errors.registrationNumber ? "border-red-500 bg-red-50" : "focus:border-[var(--ink)]"
+                warnings.registrationNumber ? "border-amber-400 bg-amber-50" : "focus:border-[var(--ink)]"
               )}
             />
           </div>
