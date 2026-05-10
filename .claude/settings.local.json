@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git fetch *)",
+      "Bash(git checkout *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(node *)",
+      "Bash(git add *)",
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"docs: map existing codebase\")",
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"docs: initialize project\")",
+      "Bash(python3 *)",
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"docs: add domain research\")",
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"docs: define v1 requirements\")",
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"docs: create roadmap \\(6 phases\\)\")",
+      "WebSearch",
+      "Bash(npx vitest *)",
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"docs\\(01-1\\): plan summary and roadmap progress\")",
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"feat\\(01-3\\): wire ABN validation, replace US Big Law Firm with Partnership\")",
+      "Bash(git rm *)",
+      "Bash(npm run *)",
+      "Bash(git -c user.email=tristan.betaai@gmail.com -c user.name=Tristan commit -m \"feat\\(01-2\\): App.tsx demolition - strip ATO theatre, slide generator, demo seeds, fake trends; mount migration runner + DisclaimerFooter\")"
+    ]
+  }
+}

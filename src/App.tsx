@@ -24,7 +24,6 @@ import {
   Briefcase,
   Globe,
   Scale,
-  Presentation,
   Search,
   Filter,
   Archive,
@@ -41,22 +40,22 @@ import { CompanyTaxReturn } from './components/CompanyTaxReturn';
 import { TrustTaxReturn } from './components/TrustTaxReturn';
 import { BasIasAssistant } from './components/BasIasAssistant';
 import { ImportTB } from './components/ImportTB';
-import { SlideGenerator } from './components/SlideGenerator';
 import { EntityForm } from './components/EntityForm';
 import { FinancialTrendChart } from './components/FinancialTrendChart';
 import { AuditTrail } from './components/AuditTrail';
 import { AccountManager } from './components/AccountManager';
+import { DisclaimerFooter } from './components/DisclaimerFooter';
+import { MigrationError } from './components/MigrationError';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
+import { migrate, CURRENT_VERSION } from './lib/migrations';
 import { CHART_OF_ACCOUNTS } from './constants';
 
-type View = 'master-dashboard' | 'dashboard' | 'journals' | 'trial-balance' | 'tax-return' | 'company-tax' | 'trust-tax' | 'bas-ias' | 'import' | 'slide-generator' | 'edit-entity' | 'audit-trail' | 'coa-manager';
+type View = 'master-dashboard' | 'dashboard' | 'journals' | 'trial-balance' | 'tax-return' | 'company-tax' | 'trust-tax' | 'bas-ias' | 'import' | 'edit-entity' | 'audit-trail' | 'coa-manager';
 
 const DEFAULT_ENTITIES: Entity[] = [
-  { id: 'ent-1', name: 'Acme Corp Pty Ltd', type: 'Company', registrationNumber: 'ABN 12 345 678 901', businessAddress: '123 Business St, Sydney NSW 2000', contactPerson: 'John Smith', status: 'Active', taxAgentName: 'Sarah Jenkins', taxAgentPhone: '02 9999 8888', taxAgentEmail: 'sarah@taxpro.com.au' },
-  { id: 'ent-2', name: 'Smith Family Trust', type: 'Trust', registrationNumber: 'ABN 98 765 432 109', businessAddress: '45 Family Ln, Melbourne VIC 3000', contactPerson: 'Jane Smith', status: 'Active', taxAgentName: 'Sarah Jenkins', taxAgentPhone: '02 9999 8888', taxAgentEmail: 'sarah@taxpro.com.au' },
-  { id: 'ent-3', name: 'Tech Innovations', type: 'Company', registrationNumber: 'ABN 45 678 901 234', businessAddress: '101 Innovation Blvd, Brisbane QLD 4000', contactPerson: 'Mike Tech', status: 'Active' },
-  { id: 'ent-4', name: 'Pearson Specter Litt', type: 'US Big Law Firm', registrationNumber: 'EIN 12-3456789', businessAddress: '601 Lexington Ave, New York, NY 10022', contactPerson: 'Harvey Specter', status: 'Active' },
+  { _v: 1, id: 'ent-1', name: 'Sample Pty Ltd', type: 'Company', registrationNumber: 'ABN 11 111 111 111', businessAddress: '1 Sample Street, Sydney NSW 2000', contactPerson: 'Demo Contact', status: 'Active' },
+  { _v: 1, id: 'ent-2', name: 'Sample Family Trust', type: 'Trust', registrationNumber: 'ABN 22 222 222 222', businessAddress: '2 Sample Lane, Melbourne VIC 3000', contactPerson: 'Demo Contact', status: 'Active' },
 ];
 
 interface EntityCardProps {
@@ -215,6 +214,7 @@ export default function App() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [showNewJournal, setShowNewJournal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
 
   // Filtering State
   const [searchQuery, setSearchQuery] = useState('');
@@ -226,51 +226,58 @@ export default function App() {
     setIsSidebarOpen(false);
   }, [view]);
 
-  // Load data from localStorage
+  // Load data from localStorage (with schema migration)
   useEffect(() => {
-    const savedEntities = localStorage.getItem('ledger_entities_list');
-    if (savedEntities) {
-      try {
-        setEntities(JSON.parse(savedEntities));
-      } catch (e) {
-        console.error('Failed to parse saved entities', e);
-      }
-    }
+    try {
+      const syntheticRoot: Record<string, unknown> = {};
 
-    const savedAll = localStorage.getItem('ledger_all_entries');
-    if (savedAll) {
-      try {
-        setAllEntries(JSON.parse(savedAll));
-      } catch (e) {
-        console.error('Failed to parse saved all entries', e);
-      }
-    } else {
-      const saved = localStorage.getItem('ledger_entries');
-      if (saved) {
+      const tryParse = <T,>(key: string): T | undefined => {
+        const raw = localStorage.getItem(key);
+        if (!raw) return undefined;
         try {
-          setAllEntries({ 'ent-1': JSON.parse(saved) });
+          return JSON.parse(raw) as T;
         } catch (e) {
-          console.error('Failed to parse saved entries', e);
+          // Bad JSON in this slice — skip it (do not throw the whole load)
+          console.error(`Failed to parse localStorage key "${key}"`, e);
+          return undefined;
         }
-      }
-    }
+      };
 
-    const savedLogs = localStorage.getItem('ledger_audit_logs');
-    if (savedLogs) {
-      try {
-        setAuditLogs(JSON.parse(savedLogs));
-      } catch (e) {
-        console.error('Failed to parse saved audit logs', e);
-      }
-    }
+      const parsedEntities = tryParse<Entity[]>('ledger_entities_list');
+      if (parsedEntities) syntheticRoot.entities = parsedEntities;
 
-    const savedAccounts = localStorage.getItem('ledger_chart_of_accounts');
-    if (savedAccounts) {
-      try {
-        setAccounts(JSON.parse(savedAccounts));
-      } catch (e) {
-        console.error('Failed to parse saved accounts', e);
+      const parsedAll = tryParse<Record<string, JournalEntry[]>>('ledger_all_entries');
+      if (parsedAll) {
+        syntheticRoot.allEntries = parsedAll;
+      } else {
+        // Legacy single-entity key — preserve existing fallback behavior
+        const legacy = tryParse<JournalEntry[]>('ledger_entries');
+        if (legacy) syntheticRoot.allEntries = { 'ent-1': legacy };
       }
+
+      const parsedLogs = tryParse<AuditLog[]>('ledger_audit_logs');
+      if (parsedLogs) syntheticRoot.auditLogs = parsedLogs;
+
+      const parsedAccounts = tryParse<Account[]>('ledger_chart_of_accounts');
+      if (parsedAccounts) syntheticRoot.accounts = parsedAccounts;
+
+      // Stamp the persisted version (read from a separate key for Phase 1 — Phase 3 unifies storage)
+      const storedVersion = localStorage.getItem('ledger_schema_version');
+      if (storedVersion) {
+        syntheticRoot._v = Number(storedVersion);
+      }
+
+      const migrated = migrate(syntheticRoot);
+
+      if (migrated.entities) setEntities(migrated.entities as Entity[]);
+      if (migrated.allEntries) setAllEntries(migrated.allEntries as Record<string, JournalEntry[]>);
+      if (migrated.auditLogs) setAuditLogs(migrated.auditLogs as AuditLog[]);
+      if (migrated.accounts) setAccounts(migrated.accounts as Account[]);
+
+      // Persist the current schema version after a successful migration
+      localStorage.setItem('ledger_schema_version', String(CURRENT_VERSION));
+    } catch (err) {
+      setMigrationError(err instanceof Error ? err.message : 'Unknown migration error');
     }
   }, []);
 
@@ -348,7 +355,7 @@ export default function App() {
     const newLog: AuditLog = {
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
-      user: 'Tristan (Admin)',
+      user: 'Local user',
       action,
       entityId,
       details
@@ -409,6 +416,10 @@ export default function App() {
   }, 0);
 
   const netProfit = totalRevenue - totalExpenses;
+
+  if (migrationError) {
+    return <MigrationError message={migrationError} />;
+  }
 
   return (
     <div className="min-h-screen flex bg-[var(--bg)] relative">
@@ -503,14 +514,8 @@ export default function App() {
                 icon={<FileSpreadsheet size={18} />} 
                 label="BAS & IAS" 
               />
-              <NavButton 
-                active={view === 'slide-generator'} 
-                onClick={() => setView('slide-generator')} 
-                icon={<Presentation size={18} />} 
-                label="Slide Generator" 
-              />
-              <NavButton 
-                active={view === 'import'} 
+              <NavButton
+                active={view === 'import'}
                 onClick={() => setView('import')} 
                 icon={<UploadCloud size={18} />} 
                 label="Import TB" 
@@ -519,13 +524,6 @@ export default function App() {
           )}
         </nav>
 
-        <div className="p-4 border-t border-[var(--line)]">
-          <div className="text-[10px] text-gray-400 uppercase font-bold mb-2">Accountant Mode</div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            Connected to ATO (Simulated)
-          </div>
-        </div>
       </aside>
 
       {/* Main Content */}
@@ -768,7 +766,7 @@ export default function App() {
                           }, 0);
                         }, 0)} 
                         icon={<TrendingUp className="text-green-600" />} 
-                        trend="+12% vs last month"
+                        trend="—"
                       />
                       <StatCard 
                         label="Total Expenses" 
@@ -780,7 +778,7 @@ export default function App() {
                           }, 0);
                         }, 0)} 
                         icon={<ArrowDownRight className="text-red-600" />} 
-                        trend="-5% vs last month"
+                        trend="—"
                       />
                       <StatCard 
                         label="Net Profit" 
@@ -793,7 +791,7 @@ export default function App() {
                           }, 0);
                         }, 0)} 
                         icon={<ArrowUpRight className="text-blue-600" />} 
-                        trend="Healthy margin"
+                        trend="—"
                         highlight
                       />
                     </div>
@@ -1002,13 +1000,6 @@ export default function App() {
                 {view === 'company-tax' && <CompanyTaxReturn accounts={accounts} entries={filteredEntries} onUpdateAccount={handleUpdateAccount} />}
                 {view === 'trust-tax' && <TrustTaxReturn accounts={accounts} entries={filteredEntries} onUpdateAccount={handleUpdateAccount} />}
                 {view === 'bas-ias' && <BasIasAssistant accounts={accounts} entries={filteredEntries} />}
-                {view === 'slide-generator' && activeEntityId && (
-                  <SlideGenerator 
-                    accounts={accounts}
-                    entries={filteredEntries} 
-                    entity={entities.find(e => e.id === activeEntityId)!} 
-                  />
-                )}
                 {view === 'edit-entity' && (
                   <EntityForm 
                     entity={activeEntityId ? entities.find(e => e.id === activeEntityId) : undefined}
@@ -1029,6 +1020,7 @@ export default function App() {
             )}
           </AnimatePresence>
         </div>
+        <DisclaimerFooter />
       </main>
 
       {/* Mobile Bottom Nav */}
