@@ -23,7 +23,7 @@ describe('App.tsx ≤ 250 lines', () => {
   // App.tsx is currently ~1,116 lines. Plan 02-4 extracts hooks and shell components,
   // reducing it to ≤ 250 lines. This test turns GREEN after 02-4 completes.
   // Enabled at end of Plan 02-4 (remove .skip) once App.tsx is decomposed.
-  it.skip('src/App.tsx has ≤ 250 non-blank lines [RED until Plan 02-4 decomposes App.tsx]', () => {
+  it('src/App.tsx has ≤ 250 non-blank lines [RED until Plan 02-4 decomposes App.tsx]', () => {
     const appPath = join(process.cwd(), 'src', 'App.tsx');
     const source = readFileSync(appPath, 'utf-8');
     const nonBlankLines = source.split('\n').filter(line => !/^\s*$/.test(line));
@@ -64,7 +64,7 @@ describe('No raw new Date() outside src/lib/period.ts', () => {
       .map((f) => join((f as unknown as { path: string }).path, String(f.name)));
   }
 
-  it.skip('no file outside src/lib/period.ts uses new Date() or Date.now() [RED until Plan 02-4]', () => {
+  it('no file outside src/lib/period.ts uses parameterless new Date() or Date.now() — use today() instead', () => {
     const srcDir = join(process.cwd(), 'src');
     const periodPath = join(srcDir, 'lib', 'period.ts');
     const allFiles = findSourceFiles(srcDir).filter(f => f !== periodPath);
@@ -74,7 +74,9 @@ describe('No raw new Date() outside src/lib/period.ts', () => {
       const lines = readFileSync(file, 'utf-8').split('\n');
       lines.forEach((raw, i) => {
         const line = stripCommentsAndStrings(raw);
-        if (/\bnew Date\s*\(/.test(line) || /\bDate\.now\s*\(/.test(line)) {
+        // Only flag "now" producers: parameterless `new Date()` and `Date.now()`.
+        // `new Date(someString)` is date PARSING (not now-generation) and is allowed.
+        if (/\bnew Date\s*\(\s*\)/.test(line) || /\bDate\.now\s*\(/.test(line)) {
           violations.push(`${file}:${i + 1}: ${raw.trim()}`);
         }
       });

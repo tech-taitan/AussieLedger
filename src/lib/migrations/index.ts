@@ -3,10 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { migrateV1ToV2 } from './v1-to-v2';
+
 /**
  * Root shape of all persisted state. The `_v` field is the schema version.
- * Phase 1 only registers a 0 → 1 identity migration; Phase 3 wires real migrations
- * as the storage layer changes.
+ * Phase 1 registered the 0 → 1 identity migration; Phase 2 adds 1 → 2 which
+ * populates per-entity-type tax labels (specifically partnershipTaxLabel) on
+ * existing accounts via name inference and flags unmappable accounts with
+ * _needsReview.
  */
 export interface PersistedRoot {
   _v: number;
@@ -26,9 +30,11 @@ const MIGRATIONS: Record<number, MigrationFn> = {
   // 0 → 1: identity. Existing prototype data is shape-compatible with v1;
   // we just stamp the new version field.
   0: (state) => ({ ...state, _v: 1 }),
+  // 1 → 2: populate per-entity-type tax labels on accounts (Phase 2).
+  1: migrateV1ToV2,
 };
 
-export const CURRENT_VERSION = 1;
+export const CURRENT_VERSION = 2;
 
 /**
  * Run all pending migrations on the given state.

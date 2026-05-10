@@ -11,6 +11,7 @@ import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { IS_AI_ENABLED } from '../lib/ai';
 import { fuzzyMatch, HIGH_CONFIDENCE_THRESHOLD } from '../lib/import/match';
+import { today } from '../lib/period';
 
 interface ColumnMapping {
   code: number;
@@ -171,7 +172,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
     // Create a single journal entry for the opening balances
     const entry: JournalEntry = {
       id: crypto.randomUUID(),
-      date: new Date().toISOString().split('T')[0],
+      date: today().toISOString().split('T')[0],
       reference: 'IMPORT-TB',
       description: 'Opening balances from imported Trial Balance',
       isPosted: true,

@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, X } from 'lucide-react';
 import { Account, JournalEntry, JournalLine } from '../types';
 import { cn } from '../lib/utils';
+import { today } from '../lib/period';
 
 interface JournalFormProps {
   accounts: Account[];
@@ -15,7 +16,7 @@ interface JournalFormProps {
 }
 
 export const JournalForm: React.FC<JournalFormProps> = ({ accounts, onSave, onCancel }) => {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(today().toISOString().split('T')[0]);
   const [reference, setReference] = useState('');
   const [description, setDescription] = useState('');
   const [lines, setLines] = useState<JournalLine[]>([

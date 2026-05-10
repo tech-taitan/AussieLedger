@@ -42,10 +42,11 @@ describe('App.tsx — Phase 1 cleanup acceptance', () => {
 
     // Positive assertion at the source level: StatCard trend props on the entity dashboard
     // use the locked em-dash placeholder. Source-level check is durable against view-routing
-    // (the entity dashboard isn't the default initial view).
+    // (the entity dashboard isn't the default initial view). Phase 2 moved StatCards from
+    // App.tsx into ViewRouter.tsx — assert against that file now.
     const { readFileSync } = await import('fs');
     const { join } = await import('path');
-    const source = readFileSync(join(process.cwd(), 'src', 'App.tsx'), 'utf-8');
+    const source = readFileSync(join(process.cwd(), 'src', 'components', 'ViewRouter.tsx'), 'utf-8');
     const emDashTrendCount = (source.match(/trend="—"/g) ?? []).length;
     expect(emDashTrendCount).toBeGreaterThanOrEqual(3);
   });

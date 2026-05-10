@@ -25,7 +25,7 @@ describe('migrate()', () => {
     expect(() => migrate({ _v: 999 })).toThrow();
   });
 
-  it('CURRENT_VERSION is 1 in Phase 1', () => {
-    expect(CURRENT_VERSION).toBe(1);
+  it('CURRENT_VERSION is 2 after Phase 2', () => {
+    expect(CURRENT_VERSION).toBe(2);
   });
 });
