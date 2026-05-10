@@ -1,12 +1,13 @@
 /**
- * useJournals hook — stub for Plan 02-1 type resolution.
- *
- * TODO Plan 02-2: implement this hook with full persistence and addLog wiring.
- * This stub exists only so TypeScript can resolve imports in test files.
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
  */
-import type { JournalEntry, AuditLog } from '../types';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { JournalEntry } from '../types';
+import { AddLog } from './useAccounts';
 
-type AddLogFn = (action: AuditLog['action'], details: string, entityId?: string) => void;
+const STORAGE_KEY = 'ledger_all_entries';
+const LEGACY_KEY = 'ledger_entries';
 
 export interface JournalsHook {
   allEntries: Record<string, JournalEntry[]>;
@@ -22,7 +23,82 @@ export interface JournalsHook {
   setDateTo: (d: string) => void;
 }
 
-/** @throws Not yet implemented — Plan 02-2 implements this hook. */
-export function useJournals(_addLog: AddLogFn, _activeEntityId: string | null): JournalsHook {
-  throw new Error('useJournals not yet implemented — landing in Plan 02-2');
+export function useJournals(addLog: AddLog, activeEntityId: string | null): JournalsHook {
+  const [allEntries, setAllEntries] = useState<Record<string, JournalEntry[]>>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as Record<string, JournalEntry[]>;
+        if (parsed && typeof parsed === 'object') {
+          setAllEntries(parsed);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to parse ledger_all_entries', err);
+      }
+    }
+    // Legacy fallback: single-entity key (matches existing App.tsx:251-254 behaviour)
+    const legacyRaw = localStorage.getItem(LEGACY_KEY);
+    if (legacyRaw) {
+      try {
+        const legacy = JSON.parse(legacyRaw) as JournalEntry[];
+        if (Array.isArray(legacy)) setAllEntries({ 'ent-1': legacy });
+      } catch (err) {
+        console.error('Failed to parse legacy ledger_entries', err);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (Object.keys(allEntries).length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(allEntries));
+    }
+  }, [allEntries]);
+
+  const entries = useMemo(
+    () => (activeEntityId ? (allEntries[activeEntityId] ?? []) : []),
+    [allEntries, activeEntityId]
+  );
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter(entry => {
+      const matchesSearch = !searchQuery ||
+        entry.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDateFrom = !dateFrom || entry.date >= dateFrom;
+      const matchesDateTo = !dateTo || entry.date <= dateTo;
+      return matchesSearch && matchesDateFrom && matchesDateTo;
+    });
+  }, [entries, searchQuery, dateFrom, dateTo]);
+
+  const addEntry = useCallback((entry: JournalEntry) => {
+    if (!activeEntityId) return;
+    setAllEntries(prev => ({
+      ...prev,
+      [activeEntityId]: [entry, ...(prev[activeEntityId] ?? [])],
+    }));
+    addLog('POST_JOURNAL', `Posted journal entry ${entry.reference}: ${entry.description}`, activeEntityId);
+  }, [activeEntityId, addLog]);
+
+  const importEntries = useCallback((newEntries: JournalEntry[]) => {
+    if (!activeEntityId) return;
+    setAllEntries(prev => ({
+      ...prev,
+      [activeEntityId]: [...newEntries, ...(prev[activeEntityId] ?? [])],
+    }));
+    addLog('IMPORT_DATA', `Imported ${newEntries.length} journal entries via Trial Balance import`, activeEntityId);
+  }, [activeEntityId, addLog]);
+
+  return {
+    allEntries, entries, filteredEntries,
+    addEntry, importEntries,
+    searchQuery, setSearchQuery,
+    dateFrom, setDateFrom,
+    dateTo, setDateTo,
+  };
 }
