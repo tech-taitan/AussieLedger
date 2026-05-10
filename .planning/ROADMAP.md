@@ -9,7 +9,7 @@
 ## Phases
 
 - [x] **Phase 1: Safety Net** — Remove regulatory theatre, install test infrastructure, lock in decimal arithmetic and schema versioning before any user data accumulates (completed 2026-05-10)
-- [ ] **Phase 2: Decompose and Tax Engine** — Break up the monolithic App.tsx, extract pure tax functions into a shared lib, remove AI key from client bundle, introduce period model
+- [x] **Phase 2: Decompose and Tax Engine** — Break up the monolithic App.tsx, extract pure tax functions into a shared lib, remove AI key from client bundle, introduce period model (completed 2026-05-10)
 - [ ] **Phase 3: Durable Persistence** — Replace localStorage with a StorageAdapter backed by IndexedDB (no-server) and SQLite (server); add export/import
 - [ ] **Phase 4: Bookkeeping Core** — Full 80–150 account CoA with GST codes and tax-label pre-mapping, complete journal CRUD, TB import, entity management with AU-specific fields
 - [ ] **Phase 5: Tax Outputs** — All four AU return types (Individual, Company, Trust, Partnership), BAS/IAS, and print-ready working-paper output
@@ -58,7 +58,7 @@
 5. `src/lib/period.ts` exists; every date-range default in the app derives from it; no `new Date(year, 0, 1)` or December 31 hardcodes remain; BAS quarter boundaries match ATO-prescribed periods
 6. A self-hosted instance started with no `GEMINI_API_KEY` configured runs fully — no broken pages, no console errors — because AI features are optional and gated
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 - [x] 02-1-PLAN.md — Wave 0 foundations: types/constants widened, tax engine modules + fy2026 labels + period + ai + import/match + v1-to-v2 migration body, all test scaffolds (RED-by-design hooks/components/structural tests handed to plans 02-2/02-3/02-4) [COMPLETE 2026-05-10]
 - [x] 02-2-PLAN.md — Hooks: useAuditLog, useAccounts, useJournals, useEntities (Wave 1) [COMPLETE 2026-05-10]
 - [ ] 02-3-PLAN.md — Tax-component migrations to compute*; ImportTB AI gating + deterministic fuzzyMatch; AccountManager partnership column + Review-needed banner (Wave 1, parallel with 02-2)
@@ -147,7 +147,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Safety Net | 3/3 | Complete    | 2026-05-10 |
-| 2. Decompose and Tax Engine | 3/4 | In Progress|  |
+| 2. Decompose and Tax Engine | 4/4 | Complete   | 2026-05-10 |
 | 3. Durable Persistence | 0/? | Not started | - |
 | 4. Bookkeeping Core | 0/? | Not started | - |
 | 5. Tax Outputs | 0/? | Not started | - |
