@@ -23,7 +23,6 @@ import {
   ListTree,
   Briefcase,
   Globe,
-  Scale,
   Search,
   Filter,
   Archive,
@@ -111,8 +110,7 @@ function EntityCard({ entity, isSelected, toggleSelection, onClick, rev, exp, pr
           </div>
         </div>
         <div className="p-2 bg-gray-50 rounded-sm">
-          {entity.type === 'US Big Law Firm' ? <Scale size={18} className="text-blue-600" /> : 
-           entity.type === 'Trust' ? <Briefcase size={18} className="text-emerald-600" /> : 
+          {entity.type === 'Trust' ? <Briefcase size={18} className="text-emerald-600" /> :
            <Building2 size={18} className="text-gray-400" />}
         </div>
       </div>
