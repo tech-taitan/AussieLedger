@@ -26,10 +26,12 @@ export interface Account {
   code: string;
   name: string;
   type: AccountType;
-  taxLabel?: string; // ATO Income Tax Return Label (e.g., '6S', '6K')
-  companyTaxLabel?: string; // ATO Company Tax Return Label (e.g., '6S', '6F')
-  trustTaxLabel?: string; // ATO Trust Tax Return Label (e.g., '5B', '11J')
-  gstCode: 'GST' | 'FRE' | 'N-T';
+  taxLabel?: string;            // Individual ATO label (NAT 0660)
+  companyTaxLabel?: string;     // Company ATO label (NAT 0656)
+  trustTaxLabel?: string;       // Trust ATO label (NAT 0659)
+  partnershipTaxLabel?: string; // NEW _v: 2 — Partnership ATO label (NAT 0976)
+  gstCode: 'GST' | 'FRE' | 'INP' | 'N-T' | 'CAP'; // WIDENED _v: 2 — added INP and CAP
+  _needsReview?: boolean;       // NEW _v: 2 — set by migration when label inference fails for Revenue/Expense
 }
 
 export interface JournalLine {

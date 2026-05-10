@@ -22,15 +22,15 @@ export const CHART_OF_ACCOUNTS: Account[] = [
   { id: '3-3200', code: '3200', name: 'Owner Contribution', type: 'Equity', gstCode: 'N-T' },
 
   // Revenue
-  { id: '4-4100', code: '4100', name: 'Sales', type: 'Revenue', taxLabel: '6S', companyTaxLabel: '6A', trustTaxLabel: '5B', gstCode: 'GST' },
-  { id: '4-4200', code: '4200', name: 'Interest Income', type: 'Revenue', taxLabel: '6K', companyTaxLabel: '6F', trustTaxLabel: '11J', gstCode: 'FRE' },
+  { id: '4-4100', code: '4100', name: 'Sales', type: 'Revenue', taxLabel: '6S', companyTaxLabel: '6A', trustTaxLabel: '5B', partnershipTaxLabel: 'P1', gstCode: 'GST' },
+  { id: '4-4200', code: '4200', name: 'Interest Income', type: 'Revenue', taxLabel: '6K', companyTaxLabel: '6F', trustTaxLabel: '11J', partnershipTaxLabel: 'P1', gstCode: 'FRE' },
 
   // Expenses
-  { id: '6-6100', code: '6100', name: 'Advertising', type: 'Expense', taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', gstCode: 'GST' },
-  { id: '6-6200', code: '6200', name: 'Bank Charges', type: 'Expense', taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', gstCode: 'N-T' },
-  { id: '6-6300', code: '6300', name: 'Rent', type: 'Expense', taxLabel: '6N', companyTaxLabel: '6G', trustTaxLabel: '5F', gstCode: 'GST' },
-  { id: '6-6400', code: '6400', name: 'Wages & Salaries', type: 'Expense', taxLabel: '6L', companyTaxLabel: '6X', trustTaxLabel: '5M', gstCode: 'N-T' },
-  { id: '6-6500', code: '6500', name: 'Superannuation', type: 'Expense', taxLabel: '6L', companyTaxLabel: '6C', trustTaxLabel: '5L', gstCode: 'N-T' },
+  { id: '6-6100', code: '6100', name: 'Advertising', type: 'Expense', taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2', gstCode: 'GST' },
+  { id: '6-6200', code: '6200', name: 'Bank Charges', type: 'Expense', taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2', gstCode: 'N-T' },
+  { id: '6-6300', code: '6300', name: 'Rent', type: 'Expense', taxLabel: '6N', companyTaxLabel: '6G', trustTaxLabel: '5F', partnershipTaxLabel: 'P2', gstCode: 'GST' },
+  { id: '6-6400', code: '6400', name: 'Wages & Salaries', type: 'Expense', taxLabel: '6L', companyTaxLabel: '6X', trustTaxLabel: '5M', partnershipTaxLabel: 'P2', gstCode: 'N-T' },
+  { id: '6-6500', code: '6500', name: 'Superannuation', type: 'Expense', taxLabel: '6L', companyTaxLabel: '6C', trustTaxLabel: '5L', partnershipTaxLabel: 'P2', gstCode: 'N-T' },
 ];
 
 export const TAX_LABELS = {
