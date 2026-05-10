@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import { Account, JournalEntry } from '../types';
+import { computeBas } from '../lib/tax/bas';
+import { currentFy } from '../lib/period';
 import { FileSignature, Info } from 'lucide-react';
 
 interface BasIasAssistantProps {
@@ -8,84 +10,12 @@ interface BasIasAssistantProps {
 }
 
 export const BasIasAssistant: React.FC<BasIasAssistantProps> = ({ accounts, entries }) => {
-  const basData = useMemo(() => {
-    let g1 = 0; // Total sales
-    let g2 = 0; // Export sales (assuming 0 for simplicity)
-    let g3 = 0; // Other GST-free sales
-    let g10 = 0; // Capital purchases
-    let g11 = 0; // Non-capital purchases
-    let gstOnSales1A = 0;
-    let gstOnPurchases1B = 0;
-    let w1 = 0; // Total salary, wages
-    let w2 = 0; // Amounts withheld from W1
+  const basReturn = useMemo(() => {
+    const fy = currentFy();
+    return computeBas({ fy, entries, accounts, period: { type: 'fy', fy } });
+  }, [entries, accounts]);
 
-    entries.forEach(entry => {
-      entry.lines.forEach(line => {
-        const account = accounts.find(a => a.id === line.accountId);
-        if (!account) return;
-
-        const creditAmount = Number(line.credit) || 0;
-        const debitAmount = Number(line.debit) || 0;
-        const taxAmount = Number(line.taxAmount) || 0;
-
-        // Revenue (Sales)
-        if (account.type === 'Revenue') {
-          const amount = creditAmount - debitAmount;
-          g1 += amount; // Total sales
-          if (account.gstCode === 'FRE') {
-            g3 += amount; // GST-free sales
-          }
-          if (account.gstCode === 'GST') {
-            gstOnSales1A += taxAmount;
-          }
-        }
-
-        // Expenses / Purchases
-        if (account.type === 'Expense') {
-          const expenseAmount = debitAmount - creditAmount;
-          if (account.name.includes('Wages')) {
-            w1 += expenseAmount;
-          } else {
-            g11 += expenseAmount; // Non-capital purchases
-            if (account.gstCode === 'GST') {
-              gstOnPurchases1B += taxAmount;
-            }
-          }
-        }
-
-        // Assets (Capital purchases)
-        if (account.type === 'Asset' && account.gstCode === 'GST') {
-          const assetAmount = debitAmount - creditAmount;
-          if (assetAmount > 0) {
-             g10 += assetAmount;
-             gstOnPurchases1B += taxAmount;
-          }
-        }
-
-        // PAYG Withholding
-        if (account.name.includes('PAYG Withholding')) {
-          // PAYG withheld is usually a credit to the liability account
-          w2 += creditAmount - debitAmount;
-        }
-      });
-    });
-
-    return {
-      g1: Math.max(0, g1),
-      g2: Math.max(0, g2),
-      g3: Math.max(0, g3),
-      g10: Math.max(0, g10),
-      g11: Math.max(0, g11),
-      gstOnSales1A: Math.max(0, gstOnSales1A),
-      gstOnPurchases1B: Math.max(0, gstOnPurchases1B),
-      w1: Math.max(0, w1),
-      w2: Math.max(0, w2),
-      netGst: Math.max(0, gstOnSales1A) - Math.max(0, gstOnPurchases1B),
-      totalPayg: Math.max(0, w2),
-    };
-  }, [entries]);
-
-  const netPayment = basData.netGst + basData.totalPayg;
+  const netPayment = Number(basReturn.netGst.value.toFixed(2)) + Number(basReturn.W2.value.toFixed(2));
 
   const renderRow = (label: string, description: string, value: number, isHighlight = false) => (
     <div key={label} className={`flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 border ${isHighlight ? 'border-[var(--ink)] bg-gray-50' : 'border-[var(--line)]'} hover:border-[var(--ink)] transition-colors gap-2 sm:gap-4`}>
@@ -119,23 +49,23 @@ export const BasIasAssistant: React.FC<BasIasAssistantProps> = ({ accounts, entr
         <div>
           <h3 className="col-header mb-4 border-b border-[var(--line-strong)] pb-2">GST Calculation</h3>
           <div className="space-y-2">
-            {renderRow('G1', 'Total sales (including any GST)', basData.g1)}
-            {renderRow('G2', 'Export sales', basData.g2)}
-            {renderRow('G3', 'Other GST-free sales', basData.g3)}
-            {renderRow('G10', 'Capital purchases', basData.g10)}
-            {renderRow('G11', 'Non-capital purchases', basData.g11)}
+            {renderRow('G1', 'Total sales (including any GST)', Number(basReturn.G1.value.toFixed(2)))}
+            {renderRow('G2', 'Export sales', Number(basReturn.G2.value.toFixed(2)))}
+            {renderRow('G3', 'Other GST-free sales', Number(basReturn.G3.value.toFixed(2)))}
+            {renderRow('G10', 'Capital purchases', Number(basReturn.G10.value.toFixed(2)))}
+            {renderRow('G11', 'Non-capital purchases', Number(basReturn.G11.value.toFixed(2)))}
             <div className="my-4 border-t border-[var(--line-strong)]"></div>
-            {renderRow('1A', 'GST on sales or GST instalment', basData.gstOnSales1A, true)}
-            {renderRow('1B', 'GST on purchases', basData.gstOnPurchases1B, true)}
-            {renderRow('9', 'Net GST amount', basData.netGst, true)}
+            {renderRow('1A', 'GST on sales or GST instalment', Number(basReturn['1A'].value.toFixed(2)), true)}
+            {renderRow('1B', 'GST on purchases', Number(basReturn['1B'].value.toFixed(2)), true)}
+            {renderRow('9', 'Net GST amount', Number(basReturn.netGst.value.toFixed(2)), true)}
           </div>
         </div>
 
         <div>
           <h3 className="col-header mb-4 border-b border-[var(--line-strong)] pb-2">PAYG Tax Withheld</h3>
           <div className="space-y-2">
-            {renderRow('W1', 'Total salary, wages and other payments', basData.w1)}
-            {renderRow('W2', 'Amounts withheld from payments shown at W1', basData.w2, true)}
+            {renderRow('W1', 'Total salary, wages and other payments', Number(basReturn.W1.value.toFixed(2)))}
+            {renderRow('W2', 'Amounts withheld from payments shown at W1', Number(basReturn.W2.value.toFixed(2)), true)}
           </div>
         </div>
 

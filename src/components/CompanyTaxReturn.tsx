@@ -5,7 +5,9 @@
 
 import React, { useMemo, useState } from 'react';
 import { Account, JournalEntry } from '../types';
-import { COMPANY_TAX_LABELS } from '../constants';
+import { COMPANY_LABELS } from '../lib/tax/labels/fy2026';
+import { computeCompany } from '../lib/tax/company';
+import { currentFy } from '../lib/period';
 import { Building2, Info, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -21,54 +23,35 @@ export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({ accounts, en
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
 
   const toggleLabel = (label: string) => {
-    setExpandedLabels(prev => 
+    setExpandedLabels(prev =>
       prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
     );
   };
 
-  const taxData = useMemo(() => {
-    const labelBalances: Record<string, number> = {};
-
-    // Aggregate by company tax label
-    entries.forEach(entry => {
-      entry.lines.forEach(line => {
-        const account = accounts.find(a => a.id === line.accountId);
-        if (account?.companyTaxLabel) {
-          const amount = (Number(line.credit) || 0) - (Number(line.debit) || 0);
-          // For expenses, we usually want positive values for the return
-          const multiplier = account.type === 'Expense' ? -1 : 1;
-          
-          labelBalances[account.companyTaxLabel] = (labelBalances[account.companyTaxLabel] || 0) + (amount * multiplier);
-        }
-      });
-    });
-
-    // Calculate Totals
-    const totalIncome = Object.entries(COMPANY_TAX_LABELS.INCOME)
-      .filter(([key]) => key !== '6T')
-      .reduce((sum, [key]) => sum + (labelBalances[key] || 0), 0);
-      
-    const totalExpenses = Object.entries(COMPANY_TAX_LABELS.EXPENSES)
-      .filter(([key]) => key !== '6S')
-      .reduce((sum, [key]) => sum + (labelBalances[key] || 0), 0);
-
-    labelBalances['6T'] = totalIncome;
-    labelBalances['6S'] = totalExpenses;
-    labelBalances['7T'] = totalIncome - totalExpenses;
-
-    return labelBalances;
+  const taxReturn = useMemo(() => {
+    const fy = currentFy();
+    return computeCompany({ fy, entries, accounts, period: { type: 'fy', fy } });
   }, [entries, accounts]);
 
   const getAccountsForLabel = (label: string) => {
     return accounts.filter(a => a.companyTaxLabel === label);
   };
 
-  const renderSection = (title: string, labels: Record<string, any>, data: Record<string, number>, highlightKeys: string[] = []) => (
+  // Build section-specific label subsets from COMPANY_LABELS
+  const INCOME_KEYS = ['6A', '6F', '6T'] as const;
+  const EXPENSE_KEYS = ['6C', '6G', '6X', '6S'] as const;
+  const RECON_KEYS = ['7T'] as const;
+
+  const incomeLabels = Object.fromEntries(INCOME_KEYS.map(k => [k, COMPANY_LABELS[k]]));
+  const expenseLabels = Object.fromEntries(EXPENSE_KEYS.map(k => [k, COMPANY_LABELS[k]]));
+  const reconLabels = Object.fromEntries(RECON_KEYS.map(k => [k, COMPANY_LABELS[k]]));
+
+  const renderSection = (title: string, labels: Record<string, { title: string; description: string }>, highlightKeys: string[] = []) => (
     <div className="mb-8">
       <h3 className="col-header mb-4 border-b border-[var(--line-strong)] pb-2">{title}</h3>
       <div className="space-y-3">
         {Object.entries(labels).map(([label, info]) => {
-          const value = data[label] || 0;
+          const value = Number(taxReturn[label as keyof typeof taxReturn]?.value.toFixed(2)) || 0;
           const isHighlight = highlightKeys.includes(label);
           const isExpanded = expandedLabels.includes(label);
           const labelAccounts = getAccountsForLabel(label);
@@ -80,7 +63,7 @@ export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({ accounts, en
               isHighlight ? "border-[var(--ink)] ring-1 ring-[var(--ink)]" : "border-[var(--line)]",
               isExpanded && "shadow-md"
             )}>
-              <div 
+              <div
                 className={cn(
                   "flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 cursor-pointer transition-colors",
                   isHighlight ? "bg-gray-50" : "bg-white",
@@ -137,7 +120,7 @@ export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({ accounts, en
                               </div>
                               <div className="flex items-center gap-3">
                                 {editingAccountId === account.id ? (
-                                  <select 
+                                  <select
                                     className="text-xs border border-[var(--line)] p-1 bg-white"
                                     value={account.companyTaxLabel || ''}
                                     onChange={(e) => {
@@ -148,8 +131,12 @@ export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({ accounts, en
                                     autoFocus
                                   >
                                     <option value="">Unmapped</option>
-                                    {Object.entries(COMPANY_TAX_LABELS.INCOME).map(([l, i]) => <option key={l} value={l}>Income: {i.title}</option>)}
-                                    {Object.entries(COMPANY_TAX_LABELS.EXPENSES).map(([l, i]) => <option key={l} value={l}>Expense: {i.title}</option>)}
+                                    {INCOME_KEYS.filter(k => k !== '6T').map(k => (
+                                      <option key={k} value={k}>Income: {COMPANY_LABELS[k].title}</option>
+                                    ))}
+                                    {EXPENSE_KEYS.filter(k => k !== '6S').map(k => (
+                                      <option key={k} value={k}>Expense: {COMPANY_LABELS[k].title}</option>
+                                    ))}
                                   </select>
                                 ) : (
                                   <button onClick={() => setEditingAccountId(account.id)} className="opacity-0 group-hover:opacity-100 p-1 text-blue-600">
@@ -161,7 +148,7 @@ export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({ accounts, en
                           ))
                         )}
                         <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
-                          <select 
+                          <select
                             className="w-full text-xs p-2 bg-white border border-[var(--line)]"
                             value=""
                             onChange={(e) => {
@@ -198,15 +185,15 @@ export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({ accounts, en
       <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 mb-8 flex gap-3">
         <Info className="text-indigo-500 shrink-0" size={20} />
         <p className="text-sm text-indigo-800">
-          This assistant maps your Chart of Accounts to standard ATO Company Tax Return labels (Item 6 and Item 7). 
+          This assistant maps your Chart of Accounts to standard ATO Company Tax Return labels (Item 6 and Item 7).
           Values are calculated based on your posted journal entries. Click a label to view contributing accounts and edit mappings.
         </p>
       </div>
 
       <div className="space-y-4">
-        {renderSection('Item 6: Calculation of total profit or loss - Income', COMPANY_TAX_LABELS.INCOME, taxData, ['6T'])}
-        {renderSection('Item 6: Calculation of total profit or loss - Expenses', COMPANY_TAX_LABELS.EXPENSES, taxData, ['6S'])}
-        {renderSection('Item 7: Reconciliation to taxable income or loss', COMPANY_TAX_LABELS.RECONCILIATION, taxData, ['7T'])}
+        {renderSection('Item 6: Calculation of total profit or loss - Income', incomeLabels, ['6T'])}
+        {renderSection('Item 6: Calculation of total profit or loss - Expenses', expenseLabels, ['6S'])}
+        {renderSection('Item 7: Reconciliation to taxable income or loss', reconLabels, ['7T'])}
       </div>
 
       <div className="mt-8 pt-6 border-t border-[var(--line)]">

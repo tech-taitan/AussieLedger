@@ -5,7 +5,9 @@
 
 import React, { useMemo, useState } from 'react';
 import { Account, JournalEntry } from '../types';
-import { TRUST_TAX_LABELS } from '../constants';
+import { TRUST_LABELS } from '../lib/tax/labels/fy2026';
+import { computeTrust } from '../lib/tax/trust';
+import { currentFy } from '../lib/period';
 import { Landmark, Info, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -21,54 +23,35 @@ export const TrustTaxReturn: React.FC<TrustTaxReturnProps> = ({ accounts, entrie
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
 
   const toggleLabel = (label: string) => {
-    setExpandedLabels(prev => 
+    setExpandedLabels(prev =>
       prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
     );
   };
 
-  const taxData = useMemo(() => {
-    const labelBalances: Record<string, number> = {};
-
-    // Aggregate by trust tax label
-    entries.forEach(entry => {
-      entry.lines.forEach(line => {
-        const account = accounts.find(a => a.id === line.accountId);
-        if (account?.trustTaxLabel) {
-          const amount = (Number(line.credit) || 0) - (Number(line.debit) || 0);
-          // For expenses, we usually want positive values for the return
-          const multiplier = account.type === 'Expense' ? -1 : 1;
-          
-          labelBalances[account.trustTaxLabel] = (labelBalances[account.trustTaxLabel] || 0) + (amount * multiplier);
-        }
-      });
-    });
-
-    // Calculate Totals
-    const totalIncome = Object.entries(TRUST_TAX_LABELS.INCOME)
-      .filter(([key]) => key !== '5T')
-      .reduce((sum, [key]) => sum + (labelBalances[key] || 0), 0);
-      
-    const totalExpenses = Object.entries(TRUST_TAX_LABELS.EXPENSES)
-      .filter(([key]) => key !== '5S')
-      .reduce((sum, [key]) => sum + (labelBalances[key] || 0), 0);
-
-    labelBalances['5T'] = totalIncome;
-    labelBalances['5S'] = totalExpenses;
-    labelBalances['26'] = totalIncome - totalExpenses;
-
-    return labelBalances;
+  const taxReturn = useMemo(() => {
+    const fy = currentFy();
+    return computeTrust({ fy, entries, accounts, period: { type: 'fy', fy } });
   }, [entries, accounts]);
 
   const getAccountsForLabel = (label: string) => {
     return accounts.filter(a => a.trustTaxLabel === label);
   };
 
-  const renderSection = (title: string, labels: Record<string, any>, data: Record<string, number>, highlightKeys: string[] = []) => (
+  // Build section-specific label subsets from TRUST_LABELS
+  const INCOME_KEYS = ['5B', '11J', '5T'] as const;
+  const EXPENSE_KEYS = ['5E', '5F', '5L', '5M', '5N', '5S'] as const;
+  const RECON_KEYS = ['26'] as const;
+
+  const incomeLabels = Object.fromEntries(INCOME_KEYS.map(k => [k, TRUST_LABELS[k]]));
+  const expenseLabels = Object.fromEntries(EXPENSE_KEYS.map(k => [k, TRUST_LABELS[k]]));
+  const reconLabels = Object.fromEntries(RECON_KEYS.map(k => [k, TRUST_LABELS[k]]));
+
+  const renderSection = (title: string, labels: Record<string, { title: string; description: string }>, highlightKeys: string[] = []) => (
     <div className="mb-8">
       <h3 className="col-header mb-4 border-b border-[var(--line-strong)] pb-2">{title}</h3>
       <div className="space-y-3">
         {Object.entries(labels).map(([label, info]) => {
-          const value = data[label] || 0;
+          const value = Number(taxReturn[label as keyof typeof taxReturn]?.value.toFixed(2)) || 0;
           const isHighlight = highlightKeys.includes(label);
           const isExpanded = expandedLabels.includes(label);
           const labelAccounts = getAccountsForLabel(label);
@@ -80,7 +63,7 @@ export const TrustTaxReturn: React.FC<TrustTaxReturnProps> = ({ accounts, entrie
               isHighlight ? "border-[var(--ink)] ring-1 ring-[var(--ink)]" : "border-[var(--line)]",
               isExpanded && "shadow-md"
             )}>
-              <div 
+              <div
                 className={cn(
                   "flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 cursor-pointer transition-colors",
                   isHighlight ? "bg-gray-50" : "bg-white",
@@ -137,7 +120,7 @@ export const TrustTaxReturn: React.FC<TrustTaxReturnProps> = ({ accounts, entrie
                               </div>
                               <div className="flex items-center gap-3">
                                 {editingAccountId === account.id ? (
-                                  <select 
+                                  <select
                                     className="text-xs border border-[var(--line)] p-1 bg-white"
                                     value={account.trustTaxLabel || ''}
                                     onChange={(e) => {
@@ -148,8 +131,12 @@ export const TrustTaxReturn: React.FC<TrustTaxReturnProps> = ({ accounts, entrie
                                     autoFocus
                                   >
                                     <option value="">Unmapped</option>
-                                    {Object.entries(TRUST_TAX_LABELS.INCOME).map(([l, i]) => <option key={l} value={l}>Income: {i.title}</option>)}
-                                    {Object.entries(TRUST_TAX_LABELS.EXPENSES).map(([l, i]) => <option key={l} value={l}>Expense: {i.title}</option>)}
+                                    {INCOME_KEYS.filter(k => k !== '5T').map(k => (
+                                      <option key={k} value={k}>Income: {TRUST_LABELS[k].title}</option>
+                                    ))}
+                                    {EXPENSE_KEYS.filter(k => k !== '5S').map(k => (
+                                      <option key={k} value={k}>Expense: {TRUST_LABELS[k].title}</option>
+                                    ))}
                                   </select>
                                 ) : (
                                   <button onClick={() => setEditingAccountId(account.id)} className="opacity-0 group-hover:opacity-100 p-1 text-blue-600">
@@ -161,7 +148,7 @@ export const TrustTaxReturn: React.FC<TrustTaxReturnProps> = ({ accounts, entrie
                           ))
                         )}
                         <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
-                          <select 
+                          <select
                             className="w-full text-xs p-2 bg-white border border-[var(--line)]"
                             value=""
                             onChange={(e) => {
@@ -198,15 +185,15 @@ export const TrustTaxReturn: React.FC<TrustTaxReturnProps> = ({ accounts, entrie
       <div className="bg-emerald-50 border-l-4 border-emerald-400 p-4 mb-8 flex gap-3">
         <Info className="text-emerald-600 shrink-0" size={20} />
         <p className="text-sm text-emerald-800">
-          This assistant maps your Chart of Accounts to standard ATO Trust Tax Return labels (Items 5, 11, and 26). 
+          This assistant maps your Chart of Accounts to standard ATO Trust Tax Return labels (Items 5, 11, and 26).
           Values are calculated based on your posted journal entries. Click a label to view contributing accounts and edit mappings.
         </p>
       </div>
 
       <div className="space-y-4">
-        {renderSection('Item 5 & 11: Business Income and Interest', TRUST_TAX_LABELS.INCOME, taxData, ['5T'])}
-        {renderSection('Item 5: Business Expenses', TRUST_TAX_LABELS.EXPENSES, taxData, ['5S'])}
-        {renderSection('Item 26: Total net income or loss', TRUST_TAX_LABELS.RECONCILIATION, taxData, ['26'])}
+        {renderSection('Item 5 & 11: Business Income and Interest', incomeLabels, ['5T'])}
+        {renderSection('Item 5: Business Expenses', expenseLabels, ['5S'])}
+        {renderSection('Item 26: Total net income or loss', reconLabels, ['26'])}
       </div>
 
       <div className="mt-8 pt-6 border-t border-[var(--line)]">

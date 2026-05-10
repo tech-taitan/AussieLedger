@@ -5,7 +5,9 @@
 
 import React, { useMemo, useState } from 'react';
 import { Account, JournalEntry } from '../types';
-import { TAX_LABELS } from '../constants';
+import { INDIVIDUAL_LABELS } from '../lib/tax/labels/fy2026';
+import { computeIndividual } from '../lib/tax/individual';
+import { currentFy } from '../lib/period';
 import { FileText, Info, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -21,40 +23,14 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({ accounts
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
 
   const toggleLabel = (label: string) => {
-    setExpandedLabels(prev => 
+    setExpandedLabels(prev =>
       prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
     );
   };
 
-  const taxData = useMemo(() => {
-    const labelBalances: Record<string, number> = {};
-    let totalIncome = 0;
-    let totalExpenses = 0;
-
-    // Aggregate by tax label
-    entries.forEach(entry => {
-      entry.lines.forEach(line => {
-        const account = accounts.find(a => a.id === line.accountId);
-        if (account?.taxLabel) {
-          const amount = (Number(line.credit) || 0) - (Number(line.debit) || 0);
-          const isExpense = ['6L', '6N', '6Q'].includes(account.taxLabel);
-          const multiplier = isExpense ? -1 : 1;
-          
-          const adjustedAmount = amount * multiplier;
-          labelBalances[account.taxLabel] = (labelBalances[account.taxLabel] || 0) + adjustedAmount;
-          
-          if (isExpense) {
-            totalExpenses += adjustedAmount;
-          } else {
-            totalIncome += adjustedAmount;
-          }
-        }
-      });
-    });
-
-    labelBalances['7T'] = totalIncome - totalExpenses;
-
-    return labelBalances;
+  const taxReturn = useMemo(() => {
+    const fy = currentFy();
+    return computeIndividual({ fy, entries, accounts, period: { type: 'fy', fy } });
   }, [entries, accounts]);
 
   const getAccountsForLabel = (label: string) => {
@@ -71,20 +47,20 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({ accounts
       <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 flex gap-3">
         <Info className="text-blue-500 shrink-0" size={20} />
         <p className="text-sm text-blue-800">
-          This assistant maps your Chart of Accounts to standard ATO Income Tax Return labels. 
+          This assistant maps your Chart of Accounts to standard ATO Income Tax Return labels.
           Values are calculated based on your posted journal entries. You can directly edit mappings by expanding a label.
         </p>
       </div>
 
       <div className="space-y-4">
-        {Object.entries(TAX_LABELS).map(([label, info]: [string, any]) => {
-          const value = taxData[label] || 0;
+        {Object.entries(INDIVIDUAL_LABELS).map(([label, info]) => {
+          const value = Number(taxReturn[label as keyof typeof taxReturn]?.value.toFixed(2)) || 0;
           const isExpanded = expandedLabels.includes(label);
           const labelAccounts = getAccountsForLabel(label);
 
           return (
             <div key={label} className="border border-[var(--line)] overflow-hidden">
-              <div 
+              <div
                 className={cn(
                   "flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 transition-colors",
                   isExpanded && "bg-gray-50 border-b border-[var(--line)]"
@@ -121,7 +97,7 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({ accounts
                         Mapped Accounts
                         <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">{labelAccounts.length} accounts</span>
                       </div>
-                      
+
                       <div className="space-y-2">
                         {labelAccounts.length === 0 ? (
                           <div className="text-sm text-gray-400 italic py-2">No accounts mapped to this label.</div>
@@ -134,7 +110,7 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({ accounts
                               </div>
                               <div className="flex items-center gap-3">
                                 {editingAccountId === account.id ? (
-                                  <select 
+                                  <select
                                     className="text-xs border border-[var(--line)] p-1 bg-white outline-none focus:border-[var(--ink)]"
                                     value={account.taxLabel || ''}
                                     onChange={(e) => {
@@ -145,12 +121,12 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({ accounts
                                     autoFocus
                                   >
                                     <option value="">Unmapped</option>
-                                    {Object.keys(TAX_LABELS).map(l => (
+                                    {Object.keys(INDIVIDUAL_LABELS).map(l => (
                                       <option key={l} value={l}>Label {l}</option>
                                     ))}
                                   </select>
                                 ) : (
-                                  <button 
+                                  <button
                                     onClick={() => setEditingAccountId(account.id)}
                                     className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded text-blue-600"
                                     title="Edit mapping"
@@ -162,10 +138,10 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({ accounts
                             </div>
                           ))
                         )}
-                        
+
                         <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
                           <label className="text-[10px] font-bold uppercase text-gray-400 block mb-2">Add mapping from Chart of Accounts</label>
-                          <select 
+                          <select
                             className="w-full text-xs border border-[var(--line)] p-2 bg-white outline-none focus:border-[var(--ink)]"
                             value=""
                             onChange={(e) => {
@@ -207,7 +183,7 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({ accounts
               </div>
             </div>
             <div className="text-xl font-bold font-mono">
-              ${(taxData['7T'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              ${Number(taxReturn['7T'].value.toFixed(2)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </div>
           </div>
         </div>
