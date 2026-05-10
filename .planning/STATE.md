@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 2 — Decompose and Tax Engine
-current_plan: 02-2
+current_plan: 02-3
 status: in_progress
-last_updated: "2026-05-10T20:51:00.000Z"
+last_updated: "2026-05-10T21:05:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State: AussieLedger
@@ -35,14 +35,14 @@ progress:
 ## Current Position
 
 **Current phase:** Phase 2 — Decompose and Tax Engine
-**Current plan:** 02-2 (next to execute)
-**Phase status:** Plan 02-1 complete — Wave 0 foundations landed; ready for Wave 1 (02-2, 02-3 parallel)
-**Last session:** Completed Plan 02-1 — wave-0 foundations: period/ai/match/tax-engine/migration/hook-stubs — see `.planning/phases/02-decompose-and-tax-engine/02-1-SUMMARY.md`
-**Overall progress:** Phase 1 complete; Phase 2 in progress (1/4 plans)
+**Current plan:** 02-3 (next to execute)
+**Phase status:** Plans 02-1 and 02-2 complete — Wave 0 + hooks landed; ready for Wave 1 remaining work (02-3 in parallel)
+**Last session:** Completed Plan 02-2 — 4 custom hooks (useAuditLog, useAccounts, useJournals, useEntities) — see `.planning/phases/02-decompose-and-tax-engine/02-2-SUMMARY.md`
+**Overall progress:** Phase 1 complete; Phase 2 in progress (2/4 plans)
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[ DONE  ] [ 1/4   ] [  ----  ] [  ----  ] [  ----  ] [  ----  ]
+[ DONE  ] [ 2/4   ] [  ----  ] [  ----  ] [  ----  ] [  ----  ]
 ```
 
 ---
@@ -73,6 +73,7 @@ progress:
 | 01 | 01-2 | — | — | — | — |
 | 01 | 01-3 | — | — | — | — |
 | 02 | 02-1 | ~3 hr | 3 | +25 ~6 | 166 |
+| 02 | 02-2 | ~30 min | 2 | ~4 | 189 |
 
 ---
 
@@ -93,6 +94,8 @@ progress:
 | normaliseName() collapses multi-spaces with /\s+/g | Stripping '&' leaves double spaces that break INFERENCE_TABLE lookups | 02-1 |
 | Tax compute* functions RELOCATE existing math, not return zeros | Phase 2 preserves visual output; Phase 5 rewrites internals with complete business rules | 02-1 |
 | Hook stubs throw at runtime, compile cleanly | Unblocks Plan 02-1 TypeScript without implementing Plan 02-2 work | 02-1 |
+| AddLog type exported from useAccounts.ts as canonical location | Single re-export avoids duplicate declarations across useJournals and useEntities | 02-2 |
+| useEntities exposes activeEntityId + setEntities + clearSelection beyond test contract | Plan 02-4 App.tsx wiring requires these; forward-compatible interface design | 02-2 |
 
 ### Research Flags Pending
 
