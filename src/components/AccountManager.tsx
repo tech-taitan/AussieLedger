@@ -5,9 +5,10 @@
 
 import React, { useState } from 'react';
 import { Account, AccountType } from '../types';
-import { Save, X, Plus, Trash2, Edit2, ListTree, Hash, Tag } from 'lucide-react';
+import { Save, X, Plus, Trash2, Edit2, ListTree } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { COMPANY_TAX_LABELS, TRUST_TAX_LABELS, TAX_LABELS } from '../constants';
+import { PARTNERSHIP_LABELS } from '../lib/tax/labels/fy2026';
 
 interface AccountManagerProps {
   accounts: Account[];
@@ -35,9 +36,11 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
 
   const handleSaveEdit = () => {
     if (!editFormData.code || !editFormData.name) return;
-    
-    setLocalAccounts(prev => prev.map(a => 
-      a.id === editingId ? { ...a, ...editFormData } as Account : a
+
+    setLocalAccounts(prev => prev.map(a =>
+      a.id === editingId
+        ? { ...a, ...editFormData, _needsReview: undefined } as Account
+        : a
     ));
     setEditingId(null);
     setEditFormData({});
@@ -75,6 +78,9 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
     ...Object.keys(TRUST_TAX_LABELS.EXPENSES)
   ].filter((v, i, a) => a.indexOf(v) === i); // Deduplicate
 
+  // Accounts requiring review after migration
+  const needsReviewAccounts = localAccounts.filter(a => a._needsReview);
+
   return (
     <div className="bg-white border border-[var(--line-strong)] shadow-sm">
       <div className="p-4 border-b border-[var(--line)] bg-gray-50 flex justify-between items-center">
@@ -99,6 +105,19 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
       </div>
 
       <div className="p-6">
+        {/* Review-needed banner */}
+        {needsReviewAccounts.length > 0 && (
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4">
+            <h4 className="font-bold text-amber-900">Review needed</h4>
+            <p className="text-sm text-amber-800">The following accounts have incomplete tax-label mappings (added by schema migration):</p>
+            <ul className="mt-2 text-sm text-amber-800 list-disc list-inside">
+              {needsReviewAccounts.map(a => (
+                <li key={a.id}>{a.code} – {a.name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -108,6 +127,7 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
                 <th className="p-2 text-[10px] font-bold uppercase text-gray-500">Type</th>
                 <th className="p-2 text-[10px] font-bold uppercase text-gray-500">GST</th>
                 <th className="p-2 text-[10px] font-bold uppercase text-gray-500">Tax Mapping</th>
+                <th className="p-2 text-[10px] font-bold uppercase text-gray-500">Partnership Label</th>
                 <th className="p-2 text-[10px] font-bold uppercase text-gray-500 text-right">Actions</th>
               </tr>
             </thead>
@@ -115,7 +135,8 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
               {localAccounts.sort((a, b) => a.code.localeCompare(b.code)).map((account) => (
                 <tr key={account.id} className={cn(
                   "hover:bg-gray-50/50 transition-colors",
-                  editingId === account.id ? "bg-indigo-50/50" : ""
+                  editingId === account.id ? "bg-indigo-50/50" : "",
+                  account._needsReview ? "border-l-2 border-amber-400" : ""
                 )}>
                   <td className="p-2 text-xs font-mono">
                     {editingId === account.id ? (
@@ -138,7 +159,12 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
                         className="w-full p-1 border border-[var(--line-strong)] focus:outline-none"
                       />
                     ) : (
-                      account.name
+                      <span className="flex items-center gap-1">
+                        {account.name}
+                        {account._needsReview && (
+                          <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1 rounded">review</span>
+                        )}
+                      </span>
                     )}
                   </td>
                   <td className="p-2 text-xs">
@@ -180,7 +206,7 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
                             className="flex-1 p-1 border border-[var(--line-strong)] focus:outline-none text-[10px] bg-white"
                           >
                             <option value="">None</option>
-                            {Object.entries(TAX_LABELS).map(([k, v]) => <option key={k} value={k}>{k}: {v}</option>)}
+                            {Object.entries(TAX_LABELS).map(([k, v]) => <option key={k} value={k}>{k}: {(v as { title: string }).title}</option>)}
                           </select>
                         </div>
                         <div className="flex items-center gap-1">
@@ -192,7 +218,7 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
                           >
                             <option value="">None</option>
                             {[...Object.entries(COMPANY_TAX_LABELS.INCOME), ...Object.entries(COMPANY_TAX_LABELS.EXPENSES)].map(([k, v]) => (
-                              <option key={k} value={k}>{k}: {v}</option>
+                              <option key={k} value={k}>{k}: {(v as { title: string }).title}</option>
                             ))}
                           </select>
                         </div>
@@ -205,7 +231,7 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
                           >
                             <option value="">None</option>
                             {[...Object.entries(TRUST_TAX_LABELS.INCOME), ...Object.entries(TRUST_TAX_LABELS.EXPENSES)].map(([k, v]) => (
-                              <option key={k} value={k}>{k}: {v}</option>
+                              <option key={k} value={k}>{k}: {(v as { title: string }).title}</option>
                             ))}
                           </select>
                         </div>
@@ -218,22 +244,52 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
                       </div>
                     )}
                   </td>
+                  {/* Partnership Label column */}
+                  <td className="p-2 text-[10px] text-gray-500">
+                    {(account.type === 'Revenue' || account.type === 'Expense') ? (
+                      editingId === account.id ? (
+                        <select
+                          value={editFormData.partnershipTaxLabel || ''}
+                          onChange={e => setEditFormData({ ...editFormData, partnershipTaxLabel: e.target.value || undefined })}
+                          className="flex-1 p-1 border border-[var(--line-strong)] focus:outline-none text-[10px] bg-white w-full"
+                          aria-label={`Partnership label for ${account.name}`}
+                        >
+                          <option value="">None</option>
+                          {Object.entries(PARTNERSHIP_LABELS).map(([k, v]) => (
+                            <option key={k} value={k}>{k}: {v.title}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={account.partnershipTaxLabel ?? ''}
+                          readOnly
+                          aria-label={`Partnership label for ${account.name}`}
+                          className="w-full p-1 border border-[var(--line)] bg-gray-50 text-[10px] text-gray-500 cursor-default focus:outline-none"
+                          onClick={() => handleStartEdit(account)}
+                          title="Click Edit to change"
+                        />
+                      )
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </td>
                   <td className="p-2 text-right">
                     {editingId === account.id ? (
                       <div className="flex justify-end gap-2">
-                        <button onClick={handleSaveEdit} className="text-emerald-600 hover:text-emerald-700">
+                        <button onClick={handleSaveEdit} aria-label={`Save ${account.name}`} className="text-emerald-600 hover:text-emerald-700">
                           <Save size={16} />
                         </button>
-                        <button onClick={handleCancelEdit} className="text-rose-600 hover:text-rose-700">
+                        <button onClick={handleCancelEdit} aria-label={`Cancel editing ${account.name}`} className="text-rose-600 hover:text-rose-700">
                           <X size={16} />
                         </button>
                       </div>
                     ) : (
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => handleStartEdit(account)} className="text-gray-400 hover:text-indigo-600">
+                        <button onClick={() => handleStartEdit(account)} aria-label={`Edit ${account.name}`} className="text-gray-400 hover:text-indigo-600">
                           <Edit2 size={16} />
                         </button>
-                        <button onClick={() => handleDeleteAccount(account.id)} className="text-gray-400 hover:text-rose-600">
+                        <button onClick={() => handleDeleteAccount(account.id)} aria-label={`Delete ${account.name}`} className="text-gray-400 hover:text-rose-600">
                           <Trash2 size={16} />
                         </button>
                       </div>

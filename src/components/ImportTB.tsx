@@ -9,6 +9,8 @@ import { ImportedAccount, JournalEntry, Account } from '../types';
 import { GoogleGenAI, Type } from "@google/genai";
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { IS_AI_ENABLED } from '../lib/ai';
+import { fuzzyMatch, HIGH_CONFIDENCE_THRESHOLD } from '../lib/import/match';
 
 interface ColumnMapping {
   code: number;
@@ -50,7 +52,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
         // Simple CSV split handling some quoted values
         return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
       });
-      
+
       setRawRows(rows);
       setIsColumnMapping(true);
     };
@@ -73,21 +75,48 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
     setIsMapping(true);
   };
 
+  /**
+   * Deterministic account mapping using fuzzyMatch from src/lib/import/match.ts.
+   * This is the primary (always-visible) matching path.
+   * Rows with confidence >= HIGH_CONFIDENCE_THRESHOLD are auto-matched.
+   * Rows below threshold show top candidates for manual selection.
+   */
+  const runDeterministicMapping = () => {
+    setIsProcessing(true);
+    const mapped: ImportedAccount[] = fileData.map(imported => {
+      const result = fuzzyMatch(imported, accounts);
+      return {
+        ...imported,
+        mappedAccountId: result.mappedAccountId,
+        confidence: result.confidence,
+        reasoning: result.confidence >= HIGH_CONFIDENCE_THRESHOLD
+          ? 'Auto-matched (deterministic)'
+          : 'Manual review recommended',
+      };
+    });
+    setFileData(mapped);
+    setMappingComplete(true);
+    setIsProcessing(false);
+  };
+
   const runAIMapping = async () => {
+    // Defence-in-depth: guard even if called programmatically when AI is disabled
+    if (!IS_AI_ENABLED) return;
+
     setIsProcessing(true);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
+
       const prompt = `
-        You are an expert Australian accountant. 
+        You are an expert Australian accountant.
         I have a list of accounts from an external system and I need to map them to my internal Chart of Accounts.
-        
+
         Internal Chart of Accounts:
         ${accounts.map(a => `${a.id}: ${a.code} - ${a.name} (${a.type})`).join('\n')}
-        
+
         External Accounts to map:
         ${fileData.map(a => `${a.externalCode} ${a.externalName}`).join('\n')}
-        
+
         Return a JSON array of objects with:
         - externalCode: string
         - mappedAccountId: string (must be one of the internal IDs provided)
@@ -117,7 +146,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
       });
 
       const mappings = JSON.parse(response.text);
-      
+
       const updatedData = fileData.map(item => {
         const mapping = mappings.find((m: any) => m.externalCode === item.externalCode);
         return {
@@ -173,8 +202,8 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
           </div>
           <h2 className="text-xl font-medium mb-2">Upload Trial Balance</h2>
           <p className="text-gray-500 text-sm max-w-md mb-6 px-4">
-            Upload your existing Trial Balance in CSV format. 
-            You can configure column mappings and our AI will assist with account matching.
+            Upload your existing Trial Balance in CSV format.
+            You can configure column mappings and use account matching to map your accounts.
           </p>
           <input
             type="file"
@@ -202,12 +231,12 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
               <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Step 1 of 2: Define your data structure</p>
             </div>
           </div>
-          
+
           <div className="p-6">
             <div className="mb-6 bg-blue-50 border border-blue-100 p-4 rounded flex items-start gap-3">
               <AlertCircle className="text-blue-500 shrink-0 mt-0.5" size={16} />
               <div className="text-xs text-blue-700 leading-relaxed">
-                Matches the columns from your uploaded CSV to the required ledger fields. 
+                Matches the columns from your uploaded CSV to the required ledger fields.
                 Common formats vary between software providers.
               </div>
             </div>
@@ -294,14 +323,26 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
             </div>
             <div className="flex w-full sm:w-auto gap-3">
               {!mappingComplete && (
-                <button
-                  onClick={runAIMapping}
-                  disabled={isProcessing}
-                  className="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {isProcessing ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
-                  Run AI Mapping
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={runDeterministicMapping}
+                    disabled={isProcessing}
+                    className="bg-[var(--ink)] text-white px-4 py-2 text-sm font-medium flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {isProcessing ? <Loader2 className="animate-spin" size={16} /> : <ArrowRight size={16} />}
+                    Auto-match Accounts
+                  </button>
+                  {IS_AI_ENABLED && (
+                    <button
+                      onClick={runAIMapping}
+                      disabled={isProcessing}
+                      className="border border-[var(--line-strong)] bg-white px-4 py-2 text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                      <Sparkles size={16} className="text-amber-500" />
+                      Enhance with AI
+                    </button>
+                  )}
+                </div>
               )}
               <button
                 onClick={() => setIsMapping(false)}
@@ -468,14 +509,14 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
       <AnimatePresence>
         {showPreview && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowPreview(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             />
-            
+
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -490,7 +531,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
                   </h3>
                   <p className="text-xs text-gray-500 mt-1">Please confirm the totals and mappings before finalizing.</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowPreview(false)}
                   className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400"
                 >
