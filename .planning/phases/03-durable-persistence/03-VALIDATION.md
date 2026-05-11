@@ -2,7 +2,7 @@
 phase: 3
 slug: durable-persistence
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-05-11
 ---
@@ -114,11 +114,11 @@ All Phase 3 test files are new — neither `src/storage/` nor `server/` exists. 
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references (21+ test files identified above)
-- [ ] No watch-mode flags in any command
-- [ ] Feedback latency < 10s combined
-- [ ] `nyquist_compliant: true` set in frontmatter once planner has bound tests to tasks
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (21+ test files identified above)
+- [x] No watch-mode flags in any command
+- [x] Feedback latency < 10s combined
+- [x] `nyquist_compliant: true` set in frontmatter once planner has bound tests to tasks
 
-**Approval:** pending
+**Approval:** planner-bound (revision 1 — 2026-05-11)
