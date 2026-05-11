@@ -2,12 +2,31 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { describe, it } from 'vitest';
-// Phase 3 Plan 03-2 will implement exportAll() on LocalAdapter.
+import { describe, it, expect, beforeEach } from 'vitest';
+import { LocalAdapter } from '../local';
+import { CURRENT_VERSION } from '../../lib/migrations';
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 describe('Export shape (FND-02 JSON)', () => {
-  it.todo('returns { _v: 2, entities, accounts, allEntries, auditLogs }');
-  it.todo('_v matches CURRENT_VERSION from src/lib/migrations');
-  it.todo('allEntries is keyed by entity id');
-  it.todo('empty collections serialise as empty arrays / empty object');
+  it('returns { _v, entities, accounts, allEntries, auditLogs }', async () => {
+    const a = new LocalAdapter();
+    await a.ready();
+    const exp = await a.exportAll();
+    expect(Object.keys(exp).sort()).toEqual([
+      '_v',
+      'accounts',
+      'allEntries',
+      'auditLogs',
+      'entities',
+    ]);
+  });
+
+  it('_v matches CURRENT_VERSION', async () => {
+    const a = new LocalAdapter();
+    await a.ready();
+    expect((await a.exportAll())._v).toBe(CURRENT_VERSION);
+  });
 });

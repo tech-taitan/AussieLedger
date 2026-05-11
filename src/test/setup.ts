@@ -1,7 +1,19 @@
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
+import {
+  IDBCursor,
+  IDBCursorWithValue,
+  IDBDatabase,
+  IDBFactory,
+  IDBIndex,
+  IDBKeyRange,
+  IDBObjectStore,
+  IDBOpenDBRequest,
+  IDBRequest,
+  IDBTransaction,
+  IDBVersionChangeEvent,
+} from 'fake-indexeddb';
 
 afterEach(() => {
   cleanup();
@@ -10,9 +22,23 @@ afterEach(() => {
 // Fresh IndexedDB factory per test — full isolation, no cross-test state leak.
 // Manual assignment (NOT 'fake-indexeddb/auto') because Vitest setup-file load order
 // can leave 'auto' incomplete. See research §8.
+//
+// We also expose the IDB-* constructor classes globally because the `idb`
+// wrapper performs `value instanceof IDBRequest` checks at runtime; if those
+// globals are undefined under jsdom the wrapper throws ReferenceError.
 beforeEach(() => {
-  (globalThis as unknown as { indexedDB: IDBFactory }).indexedDB = new IDBFactory();
-  (globalThis as unknown as { IDBKeyRange: typeof IDBKeyRange }).IDBKeyRange = IDBKeyRange;
+  const g = globalThis as unknown as Record<string, unknown>;
+  g.indexedDB = new IDBFactory();
+  g.IDBKeyRange = IDBKeyRange;
+  g.IDBRequest = IDBRequest;
+  g.IDBOpenDBRequest = IDBOpenDBRequest;
+  g.IDBTransaction = IDBTransaction;
+  g.IDBDatabase = IDBDatabase;
+  g.IDBObjectStore = IDBObjectStore;
+  g.IDBIndex = IDBIndex;
+  g.IDBCursor = IDBCursor;
+  g.IDBCursorWithValue = IDBCursorWithValue;
+  g.IDBVersionChangeEvent = IDBVersionChangeEvent;
 });
 
 // ResizeObserver polyfill — Recharts (FinancialTrendChart) requires it; jsdom does not provide it.
