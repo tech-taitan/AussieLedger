@@ -27,3 +27,9 @@ describe('IS_AI_ENABLED', () => {
     expect(IS_AI_ENABLED).toBe(true);
   });
 });
+
+describe('IS_AI_ENABLED widened (Phase 3)', () => {
+  it.todo('local-mode flag derives from import.meta.env.VITE_GEMINI_API_KEY (unchanged from Phase 2)');
+  it.todo('server-mode flag derives from /api/health.aiEnabled');
+  it.todo('returns false when key is the placeholder MY_GEMINI_API_KEY');
+});
