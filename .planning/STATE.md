@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 2 — Decompose and Tax Engine
-current_plan: 02-3 (next to execute)
-status: unknown
-last_updated: "2026-05-11T01:54:25.738Z"
+current_phase: Phase 3 — Durable Persistence
+current_plan: 03-2 (next to execute)
+status: in-progress
+last_updated: "2026-05-11T03:14:30.000Z"
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 11
+  completed_plans: 8
 ---
 
 # Project State: AussieLedger
@@ -34,15 +34,15 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 2 — Decompose and Tax Engine
-**Current plan:** 02-3 (next to execute)
-**Phase status:** Plans 02-1 and 02-2 complete — Wave 0 + hooks landed; ready for Wave 1 remaining work (02-3 in parallel)
-**Last session:** 2026-05-11T01:54:25.733Z
-**Overall progress:** Phase 1 complete; Phase 2 in progress (2/4 plans)
+**Current phase:** Phase 3 — Durable Persistence
+**Current plan:** 03-2 (next to execute)
+**Phase status:** Plan 03-1 (Wave 0 foundations) complete — StorageAdapter interface, shared Zod schemas, fake-indexeddb test setup, 17 test scaffolds landed. Plans 03-2 (LocalAdapter) and 03-3 (ServerAdapter) ready for parallel execution.
+**Last session:** 2026-05-11T03:14:30.000Z (executed 03-1)
+**Overall progress:** Phases 1 + 2 complete; Phase 3 in progress (1/4 plans)
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[ DONE  ] [ 2/4   ] [  ----  ] [  ----  ] [  ----  ] [  ----  ]
+[ DONE  ] [ DONE  ] [ 1/4   ] [  ----  ] [  ----  ] [  ----  ]
 ```
 
 ---
@@ -52,8 +52,8 @@ progress:
 | Phase | Name | Key Outcome | Status |
 |-------|------|-------------|--------|
 | 1 | Safety Net | ATO theatre gone, Vitest + CI green, decimal.js, schema versioning | COMPLETE |
-| 2 | Decompose and Tax Engine | App.tsx ≤250 lines, lib/tax/ pure functions, AI key off client, period model | In Progress (1/4) |
-| 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | Not started |
+| 2 | Decompose and Tax Engine | App.tsx ≤250 lines, lib/tax/ pure functions, AI key off client, period model | COMPLETE |
+| 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | In Progress (1/4) |
 | 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | Not started |
 | 5 | Tax Outputs | All four return types + BAS/IAS, print-ready with ATO field codes | Not started |
 | 6 | Personas, Wizard, Deployment | Dual modes, year-end wizard, anomaly flags, open-source release | Not started |
@@ -62,9 +62,9 @@ progress:
 
 ## Performance Metrics
 
-- Plans completed: 4 (Phase 1: 3 plans; Phase 2: 1 plan)
-- Plans total: 7 (Phase 1: 3, Phase 2: 4)
-- Phases complete: 1/6 (Phase 1 done)
+- Plans completed: 8 (Phase 1: 3 plans; Phase 2: 4 plans; Phase 3: 1 plan)
+- Plans total: 11 (Phase 1: 3, Phase 2: 4, Phase 3: 4)
+- Phases complete: 2/6 (Phase 1 + Phase 2 done)
 - Requirements mapped: 70/70
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
@@ -74,6 +74,9 @@ progress:
 | 01 | 01-3 | — | — | — | — |
 | 02 | 02-1 | ~3 hr | 3 | +25 ~6 | 166 |
 | 02 | 02-2 | ~30 min | 2 | ~4 | 189 |
+| 02 | 02-3 | — | — | — | — |
+| 02 | 02-4 | — | — | — | 200 |
+| 03 | 03-1 | ~5 min | 3 | +19 ~5 | 201 |
 
 ---
 
@@ -96,6 +99,10 @@ progress:
 | Hook stubs throw at runtime, compile cleanly | Unblocks Plan 02-1 TypeScript without implementing Plan 02-2 work | 02-1 |
 | AddLog type exported from useAccounts.ts as canonical location | Single re-export avoids duplicate declarations across useJournals and useEntities | 02-2 |
 | useEntities exposes activeEntityId + setEntities + clearSelection beyond test contract | Plan 02-4 App.tsx wiring requires these; forward-compatible interface design | 02-2 |
+| StorageAdapter interface FINAL at Wave 0 (12 methods incl. saveAuditLogs) | Plans 03-2 (Local) and 03-3 (Server) implement against an immutable contract — neither widens it; saveAuditLogs included because useAuditLog saves whole collection on every state change | 03-1 |
+| Zod schemas live in src/lib/schemas.ts (single source of truth) | Same module imported by SPA importAll() validation AND server POST /api/import — defence-in-depth without duplication | 03-1 |
+| better-sqlite3 in optionalDependencies, not dependencies | Native build can fail on Windows without VS Build Tools; SPA-only `dev` script never touches it, so npm install must continue | 03-1 |
+| fake-indexeddb wired via beforeEach manual assignment (not /auto) | Vitest setup-file load order can leave /auto incomplete; explicit `new IDBFactory()` per test gives full isolation | 03-1 |
 
 ### Research Flags Pending
 

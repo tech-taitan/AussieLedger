@@ -82,7 +82,7 @@
 5. A schema migration round-trip test passes: data serialised in v0 format is correctly upgraded to the current schema by the migration runner without data loss
 
 **Plans:** 4 plans (Wave 0 + 2 + 2 + 3)
-- [ ] 03-1-PLAN.md — Wave 0: deps install, StorageAdapter interface, fake-indexeddb setup, all 21 Wave-0 test scaffolds, server vitest config
+- [x] 03-1-PLAN.md — Wave 0: deps install, StorageAdapter interface (FINAL 12 methods incl. saveAuditLogs), shared Zod schemas, fake-indexeddb setup, 17 Wave-0 test scaffolds, server vitest config [COMPLETE 2026-05-11]
 - [ ] 03-2-PLAN.md — LocalAdapter (IndexedDB via idb), legacy-localStorage migration, adapter selection probe, 4-hook refactor, main.tsx initAdapter wiring (Wave 2, parallel with 03-3)
 - [ ] 03-3-PLAN.md — Express + better-sqlite3 server (server/), REST routes per collection with transactional whole-collection replace, Zod validation, 001-initial.sql migration runner, ServerAdapter (HTTP) replacing 03-2 stub, Gemini AI proxy + IS_AI_ENABLED widening, ImportTB.tsx moves to /api/ai/match-accounts (Wave 2, parallel with 03-2)
 - [ ] 03-4-PLAN.md — DataPage UI (Export, Import with REPLACE confirmation, status line), Sidebar Data nav entry, ViewRouter routes data view, vite.config.ts /api proxy, README dual-shape docs + Windows VS Build Tools prereq, human-verify checkpoint (Wave 3)
@@ -152,7 +152,7 @@
 |-------|----------------|--------|-----------|
 | 1. Safety Net | 3/3 | Complete    | 2026-05-10 |
 | 2. Decompose and Tax Engine | 4/4 | Complete   | 2026-05-10 |
-| 3. Durable Persistence | 0/4 | In progress | - |
+| 3. Durable Persistence | 1/4 | In progress | - |
 | 4. Bookkeeping Core | 0/? | Not started | - |
 | 5. Tax Outputs | 0/? | Not started | - |
 | 6. Personas, Wizard, and Deployment | 0/? | Not started | - |
