@@ -5,8 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AuditLog } from '../types';
 import { today } from '../lib/period';
-
-const STORAGE_KEY = 'ledger_audit_logs';
+import { getAdapter } from '../storage';
 
 export interface AuditLogHook {
   auditLogs: AuditLog[];
@@ -15,21 +14,33 @@ export interface AuditLogHook {
 
 export function useAuditLog(): AuditLogHook {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    try {
-      const parsed = JSON.parse(raw) as AuditLog[];
-      if (Array.isArray(parsed)) setAuditLogs(parsed);
-    } catch (err) {
-      console.error('Failed to parse ledger_audit_logs', err);
-    }
+    let cancelled = false;
+    (async () => {
+      const adapter = await getAdapter();
+      const loaded = await adapter.getAuditLogs();
+      if (cancelled) return;
+      if (loaded.length > 0) setAuditLogs(loaded);
+      setReady(true);
+    })().catch((err) => {
+      console.error('useAuditLog load failed', err);
+      setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  // saveAuditLogs is on the FINAL StorageAdapter interface (Plan 03-1).
+  // Call it directly — no cast, no fallback, no exportAll/importAll dance.
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(auditLogs));
-  }, [auditLogs]);
+    if (!ready) return;
+    getAdapter()
+      .then((a) => a.saveAuditLogs(auditLogs))
+      .catch((err) => console.error('useAuditLog save failed', err));
+  }, [auditLogs, ready]);
 
   const addLog = useCallback(
     (action: AuditLog['action'], details: string, entityId?: string) => {
@@ -41,9 +52,9 @@ export function useAuditLog(): AuditLogHook {
         entityId,
         details,
       };
-      setAuditLogs(prev => [newLog, ...prev]);
+      setAuditLogs((prev) => [newLog, ...prev]);
     },
-    []
+    [],
   );
 
   return { auditLogs, addLog };

@@ -1,15 +1,19 @@
 /**
- * Hook test scaffold for useEntities.
+ * Hook test for useEntities.
  *
- * RED-by-design until Plan 02-2 creates src/hooks/useEntities.ts.
- * Once 02-2 lands, these tests must all pass (GREEN).
+ * Phase 2: hooks persisted via localStorage.
+ * Phase 3 (Plan 03-2): hooks persist via `StorageAdapter` (IndexedDB / SQLite).
+ *
+ * Tests preserve the hook public contract; persistence assertions now check
+ * the adapter's `getEntities()` rather than `localStorage.getItem(...)`.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useEntities } from '../useEntities';
 import type { Entity } from '../../types';
+import { getAdapter } from '../../storage';
 
-const DEFAULT_ENTITY_COUNT = 2; // Sample Pty Ltd + Sample Family Trust from constants
+const DEFAULT_ENTITY_COUNT = 2; // Sample Pty Ltd + Sample Family Trust seeded by hook
 
 function makeEntity(id: string, name: string = 'Test Entity'): Entity {
   return {
@@ -21,10 +25,6 @@ function makeEntity(id: string, name: string = 'Test Entity'): Entity {
 }
 
 describe('useEntities', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
   it('starts with DEFAULT_ENTITIES (2 entities)', () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
@@ -49,7 +49,7 @@ describe('useEntities', () => {
     act(() => {
       result.current.updateEntity({ ...firstEntity, name: 'Updated Name Pty Ltd' });
     });
-    const found = result.current.entities.find(e => e.id === firstEntity.id);
+    const found = result.current.entities.find((e) => e.id === firstEntity.id);
     expect(found?.name).toBe('Updated Name Pty Ltd');
     expect(addLog).toHaveBeenCalledOnce();
     expect(addLog.mock.calls[0][0]).toBe('UPDATE_ENTITY');
@@ -62,7 +62,7 @@ describe('useEntities', () => {
     act(() => {
       result.current.archiveEntity([firstId]);
     });
-    const found = result.current.entities.find(e => e.id === firstId);
+    const found = result.current.entities.find((e) => e.id === firstId);
     expect(found?.status).toBe('Archived');
     expect(addLog).toHaveBeenCalledOnce();
   });
@@ -74,7 +74,7 @@ describe('useEntities', () => {
     act(() => {
       result.current.deactivateEntity([firstId]);
     });
-    const found = result.current.entities.find(e => e.id === firstId);
+    const found = result.current.entities.find((e) => e.id === firstId);
     expect(found?.status).toBe('Deactivated');
   });
 
@@ -86,7 +86,7 @@ describe('useEntities', () => {
       result.current.deleteEntity([firstId]);
     });
     expect(result.current.entities).toHaveLength(DEFAULT_ENTITY_COUNT - 1);
-    expect(result.current.entities.find(e => e.id === firstId)).toBeUndefined();
+    expect(result.current.entities.find((e) => e.id === firstId)).toBeUndefined();
   });
 
   it('toggleSelection adds/removes id from selectedEntityIds', () => {
@@ -103,15 +103,22 @@ describe('useEntities', () => {
     expect(result.current.selectedEntityIds).not.toContain(firstId);
   });
 
-  it('persists to ledger_entities_list on change', () => {
+  it('persists to adapter on change', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
+    // Wait for the load useEffect to mark ready before mutating.
+    await waitFor(() => {
+      expect(result.current.entities).toHaveLength(DEFAULT_ENTITY_COUNT);
+    });
     act(() => {
       result.current.createEntity(makeEntity('ent-persist', 'Persist Co'));
     });
-    const stored = JSON.parse(localStorage.getItem('ledger_entities_list') ?? '[]');
-    const found = stored.find((e: Entity) => e.id === 'ent-persist');
-    expect(found).toBeDefined();
-    expect(found.name).toBe('Persist Co');
+    await waitFor(async () => {
+      const adapter = await getAdapter();
+      const stored = await adapter.getEntities();
+      const found = stored.find((e) => e.id === 'ent-persist');
+      expect(found).toBeDefined();
+      expect(found?.name).toBe('Persist Co');
+    });
   });
 });

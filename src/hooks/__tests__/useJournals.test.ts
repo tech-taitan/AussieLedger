@@ -1,13 +1,17 @@
 /**
- * Hook test scaffold for useJournals.
+ * Hook test for useJournals.
  *
- * RED-by-design until Plan 02-2 creates src/hooks/useJournals.ts.
- * Once 02-2 lands, these tests must all pass (GREEN).
+ * Phase 2: hooks persisted via localStorage.
+ * Phase 3 (Plan 03-2): hooks persist via `StorageAdapter` (IndexedDB / SQLite).
+ *
+ * Tests preserve the hook public contract; persistence assertions now check
+ * the adapter's `getEntries()` rather than `localStorage.getItem(...)`.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useJournals } from '../useJournals';
 import type { JournalEntry } from '../../types';
+import { getAdapter } from '../../storage';
 
 function makeEntry(id: string, description: string = 'Test entry'): JournalEntry {
   return {
@@ -21,10 +25,6 @@ function makeEntry(id: string, description: string = 'Test entry'): JournalEntry
 }
 
 describe('useJournals', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
   it('starts with empty allEntries', () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useJournals(addLog, null));
@@ -72,14 +72,21 @@ describe('useJournals', () => {
     expect(result.current.filteredEntries[0].id).toBe('je-3');
   });
 
-  it('persists to ledger_all_entries on change', () => {
+  it('persists to adapter on change', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useJournals(addLog, 'ent-1'));
+    await waitFor(() => {
+      // Hook starts with {} — wait until ready (post-load) before mutating.
+      expect(result.current.allEntries).toEqual({});
+    });
     act(() => {
       result.current.addEntry(makeEntry('je-5'));
     });
-    const stored = JSON.parse(localStorage.getItem('ledger_all_entries') ?? '{}');
-    expect(stored['ent-1']).toHaveLength(1);
-    expect(stored['ent-1'][0].id).toBe('je-5');
+    await waitFor(async () => {
+      const adapter = await getAdapter();
+      const stored = await adapter.getEntries();
+      expect(stored['ent-1']).toHaveLength(1);
+      expect(stored['ent-1'][0].id).toBe('je-5');
+    });
   });
 });

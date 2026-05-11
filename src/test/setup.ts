@@ -14,6 +14,7 @@ import {
   IDBTransaction,
   IDBVersionChangeEvent,
 } from 'fake-indexeddb';
+import { _resetAdapter, initAdapter } from '../storage';
 
 afterEach(() => {
   cleanup();
@@ -26,7 +27,7 @@ afterEach(() => {
 // We also expose the IDB-* constructor classes globally because the `idb`
 // wrapper performs `value instanceof IDBRequest` checks at runtime; if those
 // globals are undefined under jsdom the wrapper throws ReferenceError.
-beforeEach(() => {
+beforeEach(async () => {
   const g = globalThis as unknown as Record<string, unknown>;
   g.indexedDB = new IDBFactory();
   g.IDBKeyRange = IDBKeyRange;
@@ -39,6 +40,23 @@ beforeEach(() => {
   g.IDBCursor = IDBCursor;
   g.IDBCursorWithValue = IDBCursorWithValue;
   g.IDBVersionChangeEvent = IDBVersionChangeEvent;
+
+  // Reset and pre-initialise the storage adapter so hooks calling
+  // `getAdapter()` don't throw in tests that don't explicitly init.
+  //
+  // We set `storageMode = 'local'` BEFORE init so the probe is bypassed —
+  // otherwise every test would burn ~3s waiting for 6 retries × 500ms.
+  // Tests covering probe selection (`src/storage/__tests__/index.test.ts`)
+  // call `_resetAdapter()` + `localStorage.clear()` in their own beforeEach
+  // to override this.
+  _resetAdapter();
+  localStorage.setItem('storageMode', 'local');
+  try {
+    await initAdapter();
+  } catch {
+    // tests that need the adapter will fail loudly when they touch it
+  }
+  localStorage.removeItem('storageMode');
 });
 
 // ResizeObserver polyfill — Recharts (FinancialTrendChart) requires it; jsdom does not provide it.

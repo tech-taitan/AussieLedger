@@ -6,16 +6,33 @@ import { useState, useEffect, useCallback } from 'react';
 import React from 'react';
 import { Entity } from '../types';
 import { AddLog } from './useAccounts';
-
-const STORAGE_KEY = 'ledger_entities_list';
+import { getAdapter } from '../storage';
 
 /**
- * Default entities seeded on first run (when no ledger_entities_list in localStorage).
- * Duplicated from App.tsx to avoid hook→App import cycle.
+ * Default entities seeded on first run (when the adapter returns an empty entities array).
+ * Duplicated from App.tsx to avoid hook->App import cycle.
  */
 const DEFAULT_ENTITIES: Entity[] = [
-  { _v: 1, id: 'ent-1', name: 'Sample Pty Ltd', type: 'Company', registrationNumber: 'ABN 11 111 111 111', businessAddress: '1 Sample Street, Sydney NSW 2000', contactPerson: 'Demo Contact', status: 'Active' },
-  { _v: 1, id: 'ent-2', name: 'Sample Family Trust', type: 'Trust', registrationNumber: 'ABN 22 222 222 222', businessAddress: '2 Sample Lane, Melbourne VIC 3000', contactPerson: 'Demo Contact', status: 'Active' },
+  {
+    _v: 2,
+    id: 'ent-1',
+    name: 'Sample Pty Ltd',
+    type: 'Company',
+    registrationNumber: 'ABN 11 111 111 111',
+    businessAddress: '1 Sample Street, Sydney NSW 2000',
+    contactPerson: 'Demo Contact',
+    status: 'Active',
+  },
+  {
+    _v: 2,
+    id: 'ent-2',
+    name: 'Sample Family Trust',
+    type: 'Trust',
+    registrationNumber: 'ABN 22 222 222 222',
+    businessAddress: '2 Sample Lane, Melbourne VIC 3000',
+    contactPerson: 'Demo Contact',
+    status: 'Active',
+  },
 ];
 
 export interface EntitiesHook {
@@ -37,60 +54,106 @@ export function useEntities(addLog: AddLog): EntitiesHook {
   const [entities, setEntities] = useState<Entity[]>(DEFAULT_ENTITIES);
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [activeEntityId, setActiveEntityId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    try {
-      const parsed = JSON.parse(raw) as Entity[];
-      if (Array.isArray(parsed)) setEntities(parsed);
-    } catch (err) {
-      console.error('Failed to parse ledger_entities_list', err);
-    }
+    let cancelled = false;
+    (async () => {
+      const adapter = await getAdapter();
+      const loaded = await adapter.getEntities();
+      if (cancelled) return;
+      if (loaded.length > 0) setEntities(loaded);
+      setReady(true);
+    })().catch((err) => {
+      console.error('useEntities load failed', err);
+      setReady(true); // unblock UI even on error
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entities));
-  }, [entities]);
+    if (!ready) return;
+    getAdapter()
+      .then((a) => a.saveEntities(entities))
+      .catch((err) => console.error('useEntities save failed', err));
+  }, [entities, ready]);
 
-  const createEntity = useCallback((entity: Entity) => {
-    setEntities(prev => [...prev, entity]);
-    addLog('CREATE_ENTITY', `Created new entity: ${entity.name} (${entity.type})`, entity.id);
-  }, [addLog]);
+  const createEntity = useCallback(
+    (entity: Entity) => {
+      setEntities((prev) => [...prev, entity]);
+      addLog(
+        'CREATE_ENTITY',
+        `Created new entity: ${entity.name} (${entity.type})`,
+        entity.id,
+      );
+    },
+    [addLog],
+  );
 
-  const updateEntity = useCallback((entity: Entity) => {
-    setEntities(prev => prev.map(e => e.id === entity.id ? entity : e));
-    addLog('UPDATE_ENTITY', `Updated entity details for ${entity.name}`, entity.id);
-  }, [addLog]);
+  const updateEntity = useCallback(
+    (entity: Entity) => {
+      setEntities((prev) =>
+        prev.map((e) => (e.id === entity.id ? entity : e)),
+      );
+      addLog(
+        'UPDATE_ENTITY',
+        `Updated entity details for ${entity.name}`,
+        entity.id,
+      );
+    },
+    [addLog],
+  );
 
-  const archiveEntity = useCallback((ids: string[]) => {
-    setEntities(prev => prev.map(entity =>
-      ids.includes(entity.id) ? { ...entity, status: 'Archived' as const } : entity
-    ));
-    addLog('UPDATE_ENTITY', `Bulk archived ${ids.length} entities`);
-    setSelectedEntityIds([]);
-  }, [addLog]);
+  const archiveEntity = useCallback(
+    (ids: string[]) => {
+      setEntities((prev) =>
+        prev.map((entity) =>
+          ids.includes(entity.id)
+            ? { ...entity, status: 'Archived' as const }
+            : entity,
+        ),
+      );
+      addLog('UPDATE_ENTITY', `Bulk archived ${ids.length} entities`);
+      setSelectedEntityIds([]);
+    },
+    [addLog],
+  );
 
-  const deactivateEntity = useCallback((ids: string[]) => {
-    setEntities(prev => prev.map(entity =>
-      ids.includes(entity.id) ? { ...entity, status: 'Deactivated' as const } : entity
-    ));
-    addLog('UPDATE_ENTITY', `Bulk deactivated ${ids.length} entities`);
-    setSelectedEntityIds([]);
-  }, [addLog]);
+  const deactivateEntity = useCallback(
+    (ids: string[]) => {
+      setEntities((prev) =>
+        prev.map((entity) =>
+          ids.includes(entity.id)
+            ? { ...entity, status: 'Deactivated' as const }
+            : entity,
+        ),
+      );
+      addLog('UPDATE_ENTITY', `Bulk deactivated ${ids.length} entities`);
+      setSelectedEntityIds([]);
+    },
+    [addLog],
+  );
 
-  const deleteEntity = useCallback((ids: string[]) => {
-    setEntities(prev => prev.filter(entity => !ids.includes(entity.id)));
-    addLog('UPDATE_ENTITY', `Bulk deleted ${ids.length} entities`);
-    setSelectedEntityIds([]);
-  }, [addLog]);
+  const deleteEntity = useCallback(
+    (ids: string[]) => {
+      setEntities((prev) => prev.filter((entity) => !ids.includes(entity.id)));
+      addLog('UPDATE_ENTITY', `Bulk deleted ${ids.length} entities`);
+      setSelectedEntityIds([]);
+    },
+    [addLog],
+  );
 
-  const toggleSelection = useCallback((id: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setSelectedEntityIds(prev =>
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
-  }, []);
+  const toggleSelection = useCallback(
+    (id: string, e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+      setSelectedEntityIds((prev) =>
+        prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+      );
+    },
+    [],
+  );
 
   const clearSelection = useCallback(() => {
     setSelectedEntityIds([]);
