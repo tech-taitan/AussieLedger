@@ -15,8 +15,8 @@
  * (which also bumps CURRENT_VERSION to 2). Do not register it early.
  */
 
-import type { Account } from '../../types';
-import type { PersistedRoot } from './index';
+import type { Account } from '../../types.js';
+import type { PersistedRoot } from './index.js';
 
 /**
  * Name → label inference table for migration 1 → 2.

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { migrateV1ToV2 } from './v1-to-v2';
+import { migrateV1ToV2 } from './v1-to-v2.js';
 
 /**
  * Root shape of all persisted state. The `_v` field is the schema version.
