@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 3 — Durable Persistence
-current_plan: 03-2 (next to execute)
+current_plan: 03-4 (next to execute)
 status: in-progress
-last_updated: "2026-05-11T03:14:30.000Z"
+last_updated: "2026-05-11T13:30:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 11
-  completed_plans: 8
+  completed_plans: 10
 ---
 
 # Project State: AussieLedger
@@ -35,14 +35,14 @@ progress:
 ## Current Position
 
 **Current phase:** Phase 3 — Durable Persistence
-**Current plan:** 03-2 (next to execute)
-**Phase status:** Plan 03-1 (Wave 0 foundations) complete — StorageAdapter interface, shared Zod schemas, fake-indexeddb test setup, 17 test scaffolds landed. Plans 03-2 (LocalAdapter) and 03-3 (ServerAdapter) ready for parallel execution.
-**Last session:** 2026-05-11T03:14:30.000Z (executed 03-1)
-**Overall progress:** Phases 1 + 2 complete; Phase 3 in progress (1/4 plans)
+**Current plan:** 03-4 (next to execute)
+**Phase status:** Plans 03-1 (Wave 0), 03-2 (LocalAdapter + hook refactor), and 03-3 (ServerAdapter + Express + better-sqlite3) all complete. SPA boots with IndexedDB on `npm run dev`; Express server with SQLite available via `npm run dev:full`. 238 SPA tests + 18 server tests GREEN. Plan 03-4 (DataPage UI + sidebar wiring + dual-shape docs) is the final Wave-3 plan.
+**Last session:** 2026-05-11T13:30:00.000Z (executed 03-2)
+**Overall progress:** Phases 1 + 2 complete; Phase 3 in progress (3/4 plans)
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[ DONE  ] [ DONE  ] [ 1/4   ] [  ----  ] [  ----  ] [  ----  ]
+[ DONE  ] [ DONE  ] [ 3/4   ] [  ----  ] [  ----  ] [  ----  ]
 ```
 
 ---
@@ -62,7 +62,7 @@ progress:
 
 ## Performance Metrics
 
-- Plans completed: 8 (Phase 1: 3 plans; Phase 2: 4 plans; Phase 3: 1 plan)
+- Plans completed: 10 (Phase 1: 3 plans; Phase 2: 4 plans; Phase 3: 3 plans)
 - Plans total: 11 (Phase 1: 3, Phase 2: 4, Phase 3: 4)
 - Phases complete: 2/6 (Phase 1 + Phase 2 done)
 - Requirements mapped: 70/70
@@ -77,6 +77,8 @@ progress:
 | 02 | 02-3 | — | — | — | — |
 | 02 | 02-4 | — | — | — | 200 |
 | 03 | 03-1 | ~5 min | 3 | +19 ~5 | 201 |
+| 03 | 03-2 | ~6 min | 3 | +3 ~19 | 238 |
+| 03 | 03-3 | — | — | — | 238 (+18 server) |
 
 ---
 
@@ -103,6 +105,10 @@ progress:
 | Zod schemas live in src/lib/schemas.ts (single source of truth) | Same module imported by SPA importAll() validation AND server POST /api/import — defence-in-depth without duplication | 03-1 |
 | better-sqlite3 in optionalDependencies, not dependencies | Native build can fail on Windows without VS Build Tools; SPA-only `dev` script never touches it, so npm install must continue | 03-1 |
 | fake-indexeddb wired via beforeEach manual assignment (not /auto) | Vitest setup-file load order can leave /auto incomplete; explicit `new IDBFactory()` per test gives full isolation | 03-1 |
+| IDB-* constructor globals hoisted from fake-indexeddb in setup.ts | `idb` wrapper does `instanceof IDBRequest` at runtime; under jsdom only `indexedDB` is provided by default, so the eight other IDB-* classes must be explicitly assigned to globalThis | 03-2 |
+| Test setup pre-inits adapter with storageMode='local' override to bypass probe | Without override, every test's beforeEach would burn ~3s waiting for 6×500ms probe-timeout retries; probe-selection tests opt out by re-resetting in their own beforeEach | 03-2 |
+| Hook tests' persistence asserts rewritten from localStorage to adapter.getX() | Phase-2 hook tests had leaky-abstraction asserts on storage internals; preserving the public-contract asserts while swapping the persistence-side asserts is the minimal correct change after the I/O target swap | 03-2 |
+| useAuditLog calls saveAuditLogs directly — no fallback, no cast | Interface is FINAL from Plan 03-1 and includes saveAuditLogs; one canonical save body | 03-2 |
 
 ### Research Flags Pending
 
