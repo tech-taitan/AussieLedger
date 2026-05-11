@@ -15,6 +15,7 @@ import {
   Building2,
   Landmark,
   Layers,
+  HardDriveDownload,
   X,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -119,6 +120,12 @@ export function Sidebar({
             onClick={() => setView('audit-trail')}
             icon={<History size={18} />}
             label="System Audit"
+          />
+          <NavButton
+            active={view === 'data'}
+            onClick={() => setView('data')}
+            icon={<HardDriveDownload size={18} />}
+            label="Data"
           />
           {activeEntity && (
             <>

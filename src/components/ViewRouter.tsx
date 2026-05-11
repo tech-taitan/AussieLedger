@@ -27,6 +27,7 @@ import { AuditTrail } from './AuditTrail';
 import { AccountManager } from './AccountManager';
 import { FinancialTrendChart } from './FinancialTrendChart';
 import { MasterDashboard } from './MasterDashboard';
+import { DataPage } from './DataPage';
 import { cn } from '../lib/utils';
 import type { View, Entity, Account, AuditLog } from '../types';
 import type { JournalsHook } from '../hooks/useJournals';
@@ -608,6 +609,8 @@ export function ViewRouter({
           {view === 'import' && (
             <ImportTB accounts={accounts} onImport={journals.importEntries} />
           )}
+
+          {view === 'data' && <DataPage />}
         </motion.div>
       )}
     </AnimatePresence>

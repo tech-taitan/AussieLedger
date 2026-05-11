@@ -18,7 +18,8 @@ export type View =
   | 'import'
   | 'edit-entity'
   | 'audit-trail'
-  | 'coa-manager';
+  | 'coa-manager'
+  | 'data';
 
 export interface Entity {
   _v?: number;

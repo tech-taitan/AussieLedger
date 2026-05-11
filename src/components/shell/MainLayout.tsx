@@ -8,6 +8,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { BottomNav } from './BottomNav';
 import { DisclaimerFooter } from '../DisclaimerFooter';
+import { AdapterFallbackBanner } from '../AdapterFallbackBanner';
 import type { View, Entity } from '../../types';
 
 interface MainLayoutProps {
@@ -58,6 +59,8 @@ export function MainLayout({
           setIsSidebarOpen={setIsSidebarOpen}
           setShowNewJournal={setShowNewJournal}
         />
+
+        <AdapterFallbackBanner />
 
         <div className="flex-1 overflow-y-auto p-4 lg:p-8">{children}</div>
 
