@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Phase 3: SQLite + server build artefacts
+data/
+server/dist/
+*.db
+*.db-wal
+*.db-shm

@@ -1,9 +1,18 @@
 import '@testing-library/jest-dom/vitest';
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 
 afterEach(() => {
   cleanup();
+});
+
+// Fresh IndexedDB factory per test — full isolation, no cross-test state leak.
+// Manual assignment (NOT 'fake-indexeddb/auto') because Vitest setup-file load order
+// can leave 'auto' incomplete. See research §8.
+beforeEach(() => {
+  (globalThis as unknown as { indexedDB: IDBFactory }).indexedDB = new IDBFactory();
+  (globalThis as unknown as { IDBKeyRange: typeof IDBKeyRange }).IDBKeyRange = IDBKeyRange;
 });
 
 // ResizeObserver polyfill — Recharts (FinancialTrendChart) requires it; jsdom does not provide it.
