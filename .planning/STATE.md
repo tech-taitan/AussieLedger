@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 3 — Durable Persistence
-current_plan: 03-4 (next to execute)
-status: in-progress
-last_updated: "2026-05-11T13:30:00.000Z"
+current_plan: 03-4 (Tasks 1+2 complete; awaiting human-verify checkpoint)
+status: awaiting-human-verify
+last_updated: "2026-05-11T13:55:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 2
@@ -35,14 +35,14 @@ progress:
 ## Current Position
 
 **Current phase:** Phase 3 — Durable Persistence
-**Current plan:** 03-4 (next to execute)
-**Phase status:** Plans 03-1 (Wave 0), 03-2 (LocalAdapter + hook refactor), and 03-3 (ServerAdapter + Express + better-sqlite3) all complete. SPA boots with IndexedDB on `npm run dev`; Express server with SQLite available via `npm run dev:full`. 238 SPA tests + 18 server tests GREEN. Plan 03-4 (DataPage UI + sidebar wiring + dual-shape docs) is the final Wave-3 plan.
-**Last session:** 2026-05-11T13:30:00.000Z (executed 03-2)
-**Overall progress:** Phases 1 + 2 complete; Phase 3 in progress (3/4 plans)
+**Current plan:** 03-4 (Tasks 1+2 complete; awaiting human-verify checkpoint)
+**Phase status:** Plans 03-1 (Wave 0), 03-2 (LocalAdapter + hook refactor), 03-3 (ServerAdapter + Express + better-sqlite3) complete. Plan 03-4 Tasks 1 (DataPage + AdapterFallbackBanner + Sidebar Data nav + ViewRouter wiring) and 2 (Vite /api proxy + README dual-shape docs) landed and committed. Task 3 is the human-verify checkpoint — manual UAT pending user `approved` reply. 249 SPA tests + 18 server tests GREEN; lint, build, build:server, and `node scripts/test-dev-full.mjs` all EXIT 0.
+**Last session:** 2026-05-11T13:55:00.000Z (executed 03-4 Tasks 1+2)
+**Overall progress:** Phases 1 + 2 complete; Phase 3 awaiting human verification of Plan 03-4
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[ DONE  ] [ DONE  ] [ 3/4   ] [  ----  ] [  ----  ] [  ----  ]
+[ DONE  ] [ DONE  ] [ UAT   ] [  ----  ] [  ----  ] [  ----  ]
 ```
 
 ---
@@ -79,6 +79,7 @@ progress:
 | 03 | 03-1 | ~5 min | 3 | +19 ~5 | 201 |
 | 03 | 03-2 | ~6 min | 3 | +3 ~19 | 238 |
 | 03 | 03-3 | — | — | — | 238 (+18 server) |
+| 03 | 03-4 | ~8 min | 2/3 | +2 ~7 | 249 (+18 server) |
 
 ---
 
@@ -109,6 +110,11 @@ progress:
 | Test setup pre-inits adapter with storageMode='local' override to bypass probe | Without override, every test's beforeEach would burn ~3s waiting for 6×500ms probe-timeout retries; probe-selection tests opt out by re-resetting in their own beforeEach | 03-2 |
 | Hook tests' persistence asserts rewritten from localStorage to adapter.getX() | Phase-2 hook tests had leaky-abstraction asserts on storage internals; preserving the public-contract asserts while swapping the persistence-side asserts is the minimal correct change after the I/O target swap | 03-2 |
 | useAuditLog calls saveAuditLogs directly — no fallback, no cast | Interface is FINAL from Plan 03-1 and includes saveAuditLogs; one canonical save body | 03-2 |
+| DataPage uses FileReader, not File.text() | jsdom does not implement File.text(); ImportTB.tsx already uses FileReader for the same reason | 03-4 |
+| DataPage uses today() from src/lib/period.ts (not parameterless `new Date()`) | Phase-2 structural lint rule forbids `new Date()` outside period.ts; today() is the canonical test-seamable now-provider | 03-4 |
+| AdapterFallbackBanner reads getFellBackToLocal() once at mount + one useEffect retry | Flag only mutates via _resetAdapter() + initAdapter() (page reload); no polling needed | 03-4 |
+| Banner dismissal is React state, not localStorage | Next page reload re-evaluates fallback because next probe attempt resets the flag — correct semantic | 03-4 |
+| Vite proxy ws NOT enabled | Vite HMR uses its own websocket on the same dev server; proxying /api with ws=true would intercept it incorrectly | 03-4 |
 
 ### Research Flags Pending
 
