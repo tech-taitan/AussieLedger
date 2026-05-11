@@ -1,7 +1,10 @@
 /**
  * Component test for ImportTB.
  *
- * Tests IS_AI_ENABLED gating and fuzzyMatch wiring implemented in Plan 02-3.
+ * Phase 3 (Plan 03-3): Gemini SDK call replaced with fetch('/api/ai/match-accounts');
+ * IS_AI_ENABLED replaced with isAiEnabled() runtime check.
+ *
+ * Tests AI-button gating via isAiEnabled() and fuzzyMatch wiring.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -17,9 +20,13 @@ describe('ImportTB', () => {
     vi.resetModules();
   });
 
-  describe('IS_AI_ENABLED gating', () => {
-    it('does not render "Enhance with AI" button when IS_AI_ENABLED is false', async () => {
-      vi.doMock('../../lib/ai', () => ({ IS_AI_ENABLED: false }));
+  describe('isAiEnabled() gating', () => {
+    it('does not render "Enhance with AI" button when isAiEnabled() returns false', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
       vi.doMock('../../lib/import/match', () => ({
         fuzzyMatch: vi.fn().mockReturnValue({ confidence: 0, candidates: [] }),
         HIGH_CONFIDENCE_THRESHOLD: 0.85,
@@ -32,18 +39,36 @@ describe('ImportTB', () => {
           onImport={vi.fn()}
         />
       );
-      // "Enhance with AI" should never appear when IS_AI_ENABLED is false
+      // "Enhance with AI" should never appear when isAiEnabled() is false
       expect(screen.queryByText(/Enhance with AI/i)).toBeNull();
       // Upload step renders the file selection UI
       expect(screen.queryByText(/Upload Trial Balance/i)).not.toBeNull();
     });
 
-    it('component renders correctly when IS_AI_ENABLED is true', async () => {
-      vi.doMock('../../lib/ai', () => ({ IS_AI_ENABLED: true }));
+    it('component renders correctly when isAiEnabled() returns true', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => true,
+        IS_AI_ENABLED: true,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
       vi.doMock('../../lib/import/match', () => ({
         fuzzyMatch: vi.fn().mockReturnValue({ confidence: 0, candidates: [] }),
         HIGH_CONFIDENCE_THRESHOLD: 0.85,
         TOP_N_CANDIDATES: 3,
+      }));
+      // Stub fetch in case any rendered effect tries to hit /api/ai/match-accounts
+      vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo) => {
+        const url = typeof input === 'string' ? input : (input as Request).url;
+        if (url.includes('/api/ai/match-accounts')) {
+          return new Response(JSON.stringify({
+            candidates: [{
+              content: { parts: [{ text: JSON.stringify([
+                { externalCode: 'X1', mappedAccountId: 'acc-1', confidence: 0.9, reasoning: 'match' },
+              ]) }] },
+            }],
+          }), { status: 200 });
+        }
+        return new Response('not found', { status: 404 });
       }));
       const { ImportTB } = await import('../ImportTB');
       render(
@@ -69,7 +94,11 @@ describe('ImportTB', () => {
         HIGH_CONFIDENCE_THRESHOLD: 0.85,
         TOP_N_CANDIDATES: 3,
       }));
-      vi.doMock('../../lib/ai', () => ({ IS_AI_ENABLED: false }));
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
       const { ImportTB } = await import('../ImportTB');
       render(
         <ImportTB

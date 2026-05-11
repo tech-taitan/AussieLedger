@@ -6,10 +6,9 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, ArrowRight, X, Settings2 } from 'lucide-react';
 import { ImportedAccount, JournalEntry, Account } from '../types';
-import { GoogleGenAI, Type } from "@google/genai";
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { IS_AI_ENABLED } from '../lib/ai';
+import { isAiEnabled, GEMINI_MODEL } from '../lib/ai';
 import { fuzzyMatch, HIGH_CONFIDENCE_THRESHOLD } from '../lib/import/match';
 import { today } from '../lib/period';
 
@@ -102,12 +101,10 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
 
   const runAIMapping = async () => {
     // Defence-in-depth: guard even if called programmatically when AI is disabled
-    if (!IS_AI_ENABLED) return;
+    if (!isAiEnabled()) return;
 
     setIsProcessing(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
       const prompt = `
         You are an expert Australian accountant.
         I have a list of accounts from an external system and I need to map them to my internal Chart of Accounts.
@@ -125,36 +122,42 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
         - reasoning: string (briefly why)
       `;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                externalCode: { type: Type.STRING },
-                mappedAccountId: { type: Type.STRING },
-                confidence: { type: Type.NUMBER },
-                reasoning: { type: Type.STRING },
-              },
-              required: ["externalCode", "mappedAccountId", "confidence"]
-            }
-          }
-        }
-      });
+      const responseSchema = {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            externalCode: { type: 'STRING' },
+            mappedAccountId: { type: 'STRING' },
+            confidence: { type: 'NUMBER' },
+            reasoning: { type: 'STRING' },
+          },
+          required: ['externalCode', 'mappedAccountId', 'confidence'],
+        },
+      };
 
-      const mappings = JSON.parse(response.text);
+      const res = await fetch('/api/ai/match-accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, model: GEMINI_MODEL, responseSchema }),
+      });
+      if (!res.ok) {
+        console.error('AI Mapping failed', res.status, await res.text());
+        alert('AI Mapping failed. Please map manually.');
+        return;
+      }
+      const geminiBody = await res.json();
+      const textPart = geminiBody?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const mappings: Array<{ externalCode: string; mappedAccountId: string; confidence: number; reasoning?: string }> =
+        typeof textPart === 'string' ? JSON.parse(textPart) : [];
 
       const updatedData = fileData.map(item => {
-        const mapping = mappings.find((m: any) => m.externalCode === item.externalCode);
+        const mapping = mappings.find(m => m.externalCode === item.externalCode);
         return {
           ...item,
           mappedAccountId: mapping?.mappedAccountId,
           confidence: mapping?.confidence,
-          reasoning: mapping?.reasoning
+          reasoning: mapping?.reasoning,
         };
       });
 
@@ -333,7 +336,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
                     {isProcessing ? <Loader2 className="animate-spin" size={16} /> : <ArrowRight size={16} />}
                     Auto-match Accounts
                   </button>
-                  {IS_AI_ENABLED && (
+                  {isAiEnabled() && (
                     <button
                       onClick={runAIMapping}
                       disabled={isProcessing}
