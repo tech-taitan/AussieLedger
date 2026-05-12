@@ -10,7 +10,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAccounts } from '../useAccounts';
-import type { Account } from '../../types';
+import type { Account, JournalEntry } from '../../types';
 import { getAdapter } from '../../storage';
 
 const CHART_SIZE = 16;
@@ -92,5 +92,88 @@ describe('useAccounts', () => {
     expect(result.current.accounts).toHaveLength(2);
     expect(result.current.accounts[0].id).toBe('new-1');
     expect(addLog).toHaveBeenCalledOnce();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 4 — Plan 04-3: archiveAccount / setIsDefault / isAccountInUse
+// (Wave 0 did NOT pre-scaffold .todo cases for this file; tests appended fresh.)
+// ─────────────────────────────────────────────────────────────────────────────
+describe('useAccounts — Phase 4 widening (BOOK-06, BOOK-07)', () => {
+  it('archiveAccount sets isArchived flag and writes audit', async () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useAccounts(addLog));
+    await waitFor(() => {
+      expect(result.current.accounts.length).toBeGreaterThan(0);
+    });
+    const target = result.current.accounts[0];
+    act(() => {
+      result.current.archiveAccount(target.id);
+    });
+    const after = result.current.accounts.find((a) => a.id === target.id);
+    expect(after?.isArchived).toBe(true);
+    const archiveCall = addLog.mock.calls.find((c) => c[0] === 'ARCHIVE_ACCOUNT');
+    expect(archiveCall).toBeDefined();
+    expect(archiveCall?.[1]).toContain(target.id);
+  });
+
+  it('setIsDefault toggles flag', async () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useAccounts(addLog));
+    await waitFor(() => {
+      expect(result.current.accounts.length).toBeGreaterThan(0);
+    });
+    const target = result.current.accounts[0];
+    act(() => {
+      result.current.setIsDefault(target.id, true);
+    });
+    expect(result.current.accounts.find((a) => a.id === target.id)?.isDefault).toBe(true);
+    act(() => {
+      result.current.setIsDefault(target.id, false);
+    });
+    expect(result.current.accounts.find((a) => a.id === target.id)?.isDefault).toBe(false);
+  });
+
+  it('isAccountInUse returns true when journal references', () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useAccounts(addLog));
+    const allEntries: Record<string, JournalEntry[]> = {
+      'ent-1': [
+        {
+          id: 'je-1',
+          date: '2025-07-01',
+          reference: 'OPEN',
+          description: 'Test',
+          isPosted: true,
+          lines: [
+            { accountId: 'acc-foo', description: '', debit: 100, credit: 0, taxAmount: 0 },
+            { accountId: 'acc-bar', description: '', debit: 0, credit: 100, taxAmount: 0 },
+          ],
+        },
+      ],
+    };
+    expect(result.current.isAccountInUse('acc-foo', allEntries)).toBe(true);
+  });
+
+  it('isAccountInUse returns false when no reference', () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useAccounts(addLog));
+    expect(result.current.isAccountInUse('acc-foo', {})).toBe(false);
+    const noMatch: Record<string, JournalEntry[]> = {
+      'ent-1': [
+        {
+          id: 'je-1',
+          date: '2025-07-01',
+          reference: 'OPEN',
+          description: 'Test',
+          isPosted: true,
+          lines: [
+            { accountId: 'acc-baz', description: '', debit: 50, credit: 0, taxAmount: 0 },
+            { accountId: 'acc-qux', description: '', debit: 0, credit: 50, taxAmount: 0 },
+          ],
+        },
+      ],
+    };
+    expect(result.current.isAccountInUse('acc-foo', noMatch)).toBe(false);
   });
 });

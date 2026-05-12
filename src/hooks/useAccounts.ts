@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { useState, useEffect, useCallback } from 'react';
-import { Account, AuditLog } from '../types';
+import { Account, AuditLog, JournalEntry } from '../types';
 import { CHART_OF_ACCOUNTS } from '../constants';
 import { getAdapter } from '../storage';
 
@@ -17,6 +17,12 @@ export interface AccountsHook {
   accounts: Account[];
   updateAccount: (updated: Account) => void;
   saveAll: (accounts: Account[]) => void;
+  /** Phase 4 — soft-delete: sets isArchived: true on the account. */
+  archiveAccount: (id: string) => void;
+  /** Phase 4 — toggle isDefault flag (admin / power-user surface). */
+  setIsDefault: (id: string, isDefault: boolean) => void;
+  /** Phase 4 — true if any JournalEntry across any entity references this account. */
+  isAccountInUse: (id: string, allEntries: Record<string, JournalEntry[]>) => boolean;
 }
 
 export function useAccounts(addLog: AddLog): AccountsHook {
@@ -69,5 +75,44 @@ export function useAccounts(addLog: AddLog): AccountsHook {
     [addLog],
   );
 
-  return { accounts, updateAccount, saveAll };
+  const archiveAccount = useCallback(
+    (id: string) => {
+      setAccounts((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, _v: 3, isArchived: true } : a)),
+      );
+      addLog('ARCHIVE_ACCOUNT', `Archived account ${id}`, '');
+    },
+    [addLog],
+  );
+
+  const setIsDefault = useCallback(
+    (id: string, isDefault: boolean) => {
+      setAccounts((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, _v: 3, isDefault } : a)),
+      );
+      addLog('UPDATE_ACCOUNT', `Set isDefault=${isDefault} on account ${id}`, '');
+    },
+    [addLog],
+  );
+
+  const isAccountInUse = useCallback(
+    (id: string, allEntries: Record<string, JournalEntry[]>): boolean => {
+      for (const entries of Object.values(allEntries)) {
+        for (const entry of entries) {
+          if (entry.lines.some((l) => l.accountId === id)) return true;
+        }
+      }
+      return false;
+    },
+    [],
+  );
+
+  return {
+    accounts,
+    updateAccount,
+    saveAll,
+    archiveAccount,
+    setIsDefault,
+    isAccountInUse,
+  };
 }

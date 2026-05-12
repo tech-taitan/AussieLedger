@@ -10,7 +10,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useEntities } from '../useEntities';
-import type { Entity } from '../../types';
+import type { Entity, Account } from '../../types';
 import { getAdapter } from '../../storage';
 
 const DEFAULT_ENTITY_COUNT = 2; // Sample Pty Ltd + Sample Family Trust seeded by hook
@@ -124,9 +124,122 @@ describe('useEntities', () => {
 });
 
 describe('Phase 4 — default-CoA seeding on entity creation (BOOK-05)', () => {
-  it.todo('creates default CoA per type');
-  it.todo('Trust entity gets BeneficiaryRow placeholder ready');
-  it.todo('Partnership entity gets PartnerRow placeholder ready');
-  it.todo('archiveEntity sets status Archived');
-  it.todo('deleteEntity refuses if journals reference entity, suggests Archive');
+  it('creates default CoA per type', async () => {
+    const addLog = vi.fn();
+    const adapter = await getAdapter();
+    const saveSpy = vi.spyOn(adapter, 'saveAccounts');
+    const { result } = renderHook(() => useEntities(addLog));
+    // Wait for the hook to settle (default entities loaded).
+    await waitFor(() => {
+      expect(result.current.entities.length).toBeGreaterThan(0);
+    });
+    act(() => {
+      result.current.createEntity({
+        id: 'ent-coa-co',
+        name: 'Default CoA Co Pty Ltd',
+        type: 'Company',
+        status: 'Active',
+      });
+    });
+    // Async fire-and-forget CoA seeding — wait for adapter.saveAccounts to be invoked
+    // with the seed payload (>= 80 accounts) before asserting.
+    await waitFor(
+      () => {
+        const big = saveSpy.mock.calls.find((c) => (c[0] as Account[]).length >= 80);
+        expect(big).toBeDefined();
+      },
+      { timeout: 3000 },
+    );
+    const seedCall = saveSpy.mock.calls.find((c) => (c[0] as Account[]).length >= 80);
+    const seeded = seedCall![0] as Account[];
+    expect(seeded.every((a) => a.isDefault === true)).toBe(true);
+    saveSpy.mockRestore();
+  });
+
+  it('Trust entity gets BeneficiaryRow placeholder ready', async () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => {
+      expect(result.current.entities.length).toBeGreaterThan(0);
+    });
+    // ent-2 is the seeded Sample Family Trust.
+    act(() => {
+      result.current.setBeneficiaries('ent-2', [
+        { id: 'b1', name: 'Alice', sharePercent: 100 },
+      ]);
+    });
+    const updated = result.current.entities.find((e) => e.id === 'ent-2');
+    expect(updated?.beneficiaries).toHaveLength(1);
+    expect(updated?.beneficiaries?.[0].name).toBe('Alice');
+  });
+
+  it('Partnership entity gets PartnerRow placeholder ready', async () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => {
+      expect(result.current.entities.length).toBeGreaterThan(0);
+    });
+    act(() => {
+      result.current.createEntity({
+        id: 'ent-pship',
+        name: 'Sample Partnership',
+        type: 'Partnership',
+        status: 'Active',
+      });
+    });
+    act(() => {
+      result.current.setPartners('ent-pship', [
+        { id: 'p1', name: 'Bob', sharePercent: 50 },
+        { id: 'p2', name: 'Carol', sharePercent: 50 },
+      ]);
+    });
+    const updated = result.current.entities.find((e) => e.id === 'ent-pship');
+    expect(updated?.partners).toHaveLength(2);
+  });
+
+  it('archiveEntity sets status Archived', () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useEntities(addLog));
+    const firstId = result.current.entities[0].id;
+    act(() => {
+      result.current.archiveEntity([firstId]);
+    });
+    expect(result.current.entities.find((e) => e.id === firstId)?.status).toBe('Archived');
+  });
+
+  it('deleteEntity refuses if journals reference entity, suggests Archive', () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useEntities(addLog));
+    const firstId = result.current.entities[0].id;
+    const allEntries: Record<string, Array<{
+      id: string;
+      date: string;
+      reference: string;
+      description: string;
+      lines: Array<{ accountId: string; description: string; debit: number; credit: number; taxAmount: number }>;
+      isPosted: boolean;
+    }>> = {
+      [firstId]: [
+        {
+          id: 'je-block-1',
+          date: '2025-07-01',
+          reference: 'OPEN',
+          description: 'Test',
+          isPosted: true,
+          lines: [
+            { accountId: 'a', description: '', debit: 10, credit: 0, taxAmount: 0 },
+            { accountId: 'b', description: '', debit: 0, credit: 10, taxAmount: 0 },
+          ],
+        },
+      ],
+    };
+    let outcome: { deleted: string[]; blocked: string[] } = { deleted: [], blocked: [] };
+    act(() => {
+      outcome = result.current.tryDeleteEntity([firstId], allEntries);
+    });
+    expect(outcome.blocked).toContain(firstId);
+    expect(outcome.deleted).not.toContain(firstId);
+    // Entity remains in the list.
+    expect(result.current.entities.find((e) => e.id === firstId)).toBeDefined();
+  });
 });
