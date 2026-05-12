@@ -8,24 +8,53 @@ import { Plus, Trash2, Save, X } from 'lucide-react';
 import { Account, JournalEntry, JournalLine } from '../types';
 import { cn } from '../lib/utils';
 import { today } from '../lib/period';
+import { EditJournalDiff } from './EditJournalDiff';
 
 interface JournalFormProps {
   accounts: Account[];
   onSave: (entry: JournalEntry) => void;
   onCancel: () => void;
+  /** Phase 4 (BOOK-02): when set, the form is in edit-supersedes mode. */
+  editingOriginal?: JournalEntry;
+  /** Phase 4: called when the user confirms a supersession edit. */
+  onEdit?: (
+    original: JournalEntry,
+    edits: Partial<Pick<JournalEntry, 'date' | 'reference' | 'description' | 'lines'>>,
+  ) => void;
+  /** Phase 4 (BOOK-03): create a mirrored reversal entry. */
+  onReverse?: (original: JournalEntry) => void;
+  /** Phase 4 (BOOK-04): void a draft (no-ops on posted entries — hook throws). */
+  onVoidDraft?: (entry: JournalEntry) => void;
 }
 
-export const JournalForm: React.FC<JournalFormProps> = ({ accounts, onSave, onCancel }) => {
-  const [date, setDate] = useState(today().toISOString().split('T')[0]);
-  const [reference, setReference] = useState('');
-  const [description, setDescription] = useState('');
-  const [lines, setLines] = useState<JournalLine[]>([
-    { accountId: '', description: '', debit: 0, credit: 0, taxAmount: 0 },
-    { accountId: '', description: '', debit: 0, credit: 0, taxAmount: 0 },
-  ]);
+export const JournalForm: React.FC<JournalFormProps> = ({
+  accounts,
+  onSave,
+  onCancel,
+  editingOriginal,
+  onEdit,
+  onReverse,
+  onVoidDraft,
+}) => {
+  const isEditMode = !!editingOriginal;
+  const [date, setDate] = useState(
+    editingOriginal?.date ?? today().toISOString().split('T')[0],
+  );
+  const [reference, setReference] = useState(editingOriginal?.reference ?? '');
+  const [description, setDescription] = useState(editingOriginal?.description ?? '');
+  const [lines, setLines] = useState<JournalLine[]>(
+    editingOriginal?.lines && editingOriginal.lines.length > 0
+      ? editingOriginal.lines.map((l) => ({ ...l }))
+      : [
+          { accountId: '', description: '', debit: 0, credit: 0, taxAmount: 0 },
+          { accountId: '', description: '', debit: 0, credit: 0, taxAmount: 0 },
+        ],
+  );
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [lineErrors, setLineErrors] = useState<Record<number, Record<string, string>>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  /** Edit-mode: true once the user clicks "Save Edit" and is reviewing the diff. */
+  const [showDiff, setShowDiff] = useState(false);
 
   const totalDebits = lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0);
   const totalCredits = lines.reduce((sum, l) => sum + (Number(l.credit) || 0), 0);
@@ -103,7 +132,7 @@ export const JournalForm: React.FC<JournalFormProps> = ({ accounts, onSave, onCa
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Mark everything as touched
     const allTouched: Record<string, boolean> = { all: true, date: true, reference: true };
     setTouched(allTouched);
@@ -122,6 +151,12 @@ export const JournalForm: React.FC<JournalFormProps> = ({ accounts, onSave, onCa
       return;
     }
 
+    // BOOK-02: in edit-supersedes mode, show diff preview before committing.
+    if (isEditMode && editingOriginal) {
+      setShowDiff(true);
+      return;
+    }
+
     onSave({
       id: crypto.randomUUID(),
       date,
@@ -132,14 +167,72 @@ export const JournalForm: React.FC<JournalFormProps> = ({ accounts, onSave, onCa
     });
   };
 
+  const handleConfirmEdit = () => {
+    if (!editingOriginal || !onEdit) return;
+    onEdit(editingOriginal, { date, reference, description, lines });
+    setShowDiff(false);
+  };
+
+  /** Build the proposed JournalEntry shape for the diff preview. */
+  const proposedEntry: JournalEntry | null = isEditMode && editingOriginal
+    ? {
+        ...editingOriginal,
+        _v: 3,
+        id: 'proposed-preview',
+        date,
+        reference,
+        description,
+        lines,
+      }
+    : null;
+
   return (
     <div className="bg-white p-4 lg:p-6 shadow-sm border border-[var(--line-strong)]">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-medium">New Journal Entry</h2>
+        <h2 className="text-xl font-medium">
+          {isEditMode ? 'Edit Journal Entry (supersedes)' : 'New Journal Entry'}
+        </h2>
         <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-full">
           <X size={20} />
         </button>
       </div>
+
+      {isEditMode && (
+        <div
+          className="bg-amber-50 border border-amber-300 p-3 rounded mb-4 text-sm"
+          data-testid="edit-banner"
+        >
+          <strong>This will replace the original.</strong> The original stays in the audit trail.
+        </div>
+      )}
+
+      {showDiff && editingOriginal && proposedEntry && (
+        <div data-testid="edit-confirm-step" className="mb-6">
+          <EditJournalDiff
+            original={editingOriginal}
+            proposed={proposedEntry}
+            accounts={accounts}
+          />
+          <div className="flex gap-2 mt-3">
+            <button
+              type="button"
+              onClick={handleConfirmEdit}
+              className="bg-[var(--ink)] text-white px-4 py-2 rounded text-sm font-medium"
+              data-testid="confirm-edit"
+            >
+              Confirm replace
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDiff(false)}
+              className="px-4 py-2 text-sm"
+              data-testid="back-to-edit"
+            >
+              Back to edit
+            </button>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -443,14 +536,35 @@ export const JournalForm: React.FC<JournalFormProps> = ({ accounts, onSave, onCa
           >
             Cancel
           </button>
+          {isEditMode && onReverse && editingOriginal && (
+            <button
+              type="button"
+              onClick={() => onReverse(editingOriginal)}
+              data-testid="reverse-button"
+              className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-[var(--ink)] text-sm font-medium hover:bg-gray-50"
+            >
+              Reverse original
+            </button>
+          )}
+          {!isEditMode && editingOriginal && onVoidDraft && (
+            <button
+              type="button"
+              onClick={() => onVoidDraft(editingOriginal)}
+              data-testid="void-button"
+              className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-red-400 text-red-600 text-sm font-medium hover:bg-red-50"
+            >
+              Void draft
+            </button>
+          )}
           <button
             type="submit"
+            data-testid={isEditMode ? 'save-edit-button' : 'post-journal-button'}
             className={cn(
               "w-full sm:w-auto px-6 py-3 sm:py-2 bg-[var(--ink)] text-white flex justify-center items-center gap-2 text-sm font-medium transition-opacity",
               (!isBalanced || lines.some(l => !l.accountId) || Object.values(lineErrors).some(e => Object.keys(e).length > 0)) ? "opacity-50" : "hover:opacity-90"
             )}
           >
-            <Save size={18} /> Post Journal
+            <Save size={18} /> {isEditMode ? 'Save Edit' : 'Post Journal'}
           </button>
         </div>
       </form>
