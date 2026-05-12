@@ -20,11 +20,36 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ logs }) => {
     switch (action) {
       case 'CREATE_ENTITY': return 'bg-emerald-100 text-emerald-700';
       case 'UPDATE_ENTITY': return 'bg-blue-100 text-blue-700';
+      case 'DELETE_ENTITY': return 'bg-rose-100 text-rose-700';
       case 'POST_JOURNAL': return 'bg-indigo-100 text-indigo-700';
+      case 'EDIT_JOURNAL': return 'bg-amber-100 text-amber-700';
+      case 'REVERSE_JOURNAL': return 'bg-orange-100 text-orange-700';
+      case 'VOID_JOURNAL': return 'bg-zinc-100 text-zinc-700';
       case 'DELETE_JOURNAL': return 'bg-rose-100 text-rose-700';
+      case 'CREATE_ACCOUNT': return 'bg-emerald-100 text-emerald-700';
+      case 'UPDATE_ACCOUNT': return 'bg-blue-100 text-blue-700';
+      case 'ARCHIVE_ACCOUNT': return 'bg-amber-100 text-amber-700';
+      case 'DELETE_ACCOUNT': return 'bg-rose-100 text-rose-700';
+      case 'IMPORT_TB': return 'bg-amber-100 text-amber-700';
       case 'IMPORT_DATA': return 'bg-amber-100 text-amber-700';
+      case 'EXPORT_DATA': return 'bg-cyan-100 text-cyan-700';
+      case 'LOCK_FY': return 'bg-purple-100 text-purple-700';
+      case 'UNLOCK_FY': return 'bg-purple-100 text-purple-700';
       default: return 'bg-gray-100 text-gray-700';
     }
+  };
+
+  /** Surface JSON-encoded details with a `summary` field (BOOK-11) — fallback to raw. */
+  const renderDetails = (details: string): string => {
+    if (typeof details === 'string' && details.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(details);
+        if (parsed && typeof parsed.summary === 'string') return parsed.summary;
+      } catch {
+        // fall through
+      }
+    }
+    return details;
   };
 
   return (
@@ -84,7 +109,7 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ logs }) => {
                   <td className="p-3 text-xs text-gray-600 max-w-md">
                     <div className="flex items-start gap-2">
                       <Info size={12} className="mt-0.5 text-gray-400 flex-shrink-0" />
-                      <span className="line-clamp-2">{log.details}</span>
+                      <span className="line-clamp-2">{renderDetails(log.details)}</span>
                     </div>
                   </td>
                 </tr>
