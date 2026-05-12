@@ -96,8 +96,9 @@ metrics:
   duration: ~12 min  # Tasks 1+2 only; Task 3 UAT is the user's; total wall-clock pending
   completed: 2026-05-12  # for Tasks 1+2; Task 3 awaits user
   tasks_total: 3
-  tasks_completed: 2   # Task 3 = human-verify checkpoint, awaits user UAT
-  human_verify: pending
+  tasks_completed: 3   # Task 3 = human-verify checkpoint, APPROVED 2026-05-13
+  human_verify: approved
+  human_verify_date: 2026-05-13
   files_created: 2     # XlsxSheetPicker + ImportReviewPane components
   files_modified: 6    # ImportTB, ImportTB.test, Xlsx+Review tests, ViewRouter, useJournals
   tests_green_total_spa: 371
@@ -263,27 +264,24 @@ None blocking. Future-of-import notes (out of scope for Phase 4):
 
 None — Plan 04-4 is pure SPA refactor + hook extension + tests. No external services, no auth flows.
 
-## Pending — Task 3 (human-verify checkpoint)
+## Task 3 — Human-Verify Checkpoint Outcome (2026-05-13)
 
-Task 3 is the user's manual UAT. The user runs `npm run dev`, walks through the 28-step UAT in 04-4-PLAN.md `<how-to-verify>` (covers all 5 Phase 4 success criteria + 23 requirements end-to-end), and replies `approved` or describes issues by step number.
+**Result:** APPROVED. User replied `all pass` after running the 28-step manual UAT defined in `04-4-PLAN.md` Task 3 `<how-to-verify>`.
 
-**What the user verifies (28 steps, grouped by success criterion):**
-1. Steps 1–4 — CoA browsable + parent subtotals on TB (BOOK-05/07)
-2. Steps 5–10 — Journal CRUD + audit (BOOK-01/02/03/04/11/12)
-3. Steps 11–15 — CSV/XLSX import + column-mapping + fuzzy-match + AI-optional (IMP-01..04)
-4. Steps 16–18 — Idempotent re-import (IMP-05) including the critical Replace-doesn't-double-count regression check on step 18
-5. Steps 19–20 — Trust beneficiary + Partnership partner registers (ENT-07/08)
-6. Steps 21–22 — additional ENT requirements (ENT-01/03/04/05/06)
-7. Steps 23–24 — AccountManager archive flow (BOOK-06)
-8. Steps 25–28 — final cross-check (test suites, lint, StorageAdapter diff)
+| Steps | Success Criterion | Requirements | Outcome |
+|-------|-------------------|--------------|---------|
+| 1–4   | CoA browsable + parent subtotals on TB | BOOK-05, BOOK-07 | PASS |
+| 5–10  | Journal CRUD + edit (supersession) + reverse + immutable audit with before/after | BOOK-01, BOOK-02, BOOK-03, BOOK-04, BOOK-11, BOOK-12 | PASS |
+| 11–15 | CSV/XLSX import + column-mapping + fuzzy-match + AI-optional (key UNSET) | IMP-01, IMP-02, IMP-03, IMP-04 | PASS |
+| 16–18 | Idempotent re-import — Skip/Replace/Add-additional dialog; **step 18 Replace-doesn't-double-count regression** | IMP-05 | PASS (TB matched single replacement; supersedeImport wiring confirmed correct) |
+| 19–20 | Trust beneficiary + Partnership partner registers | ENT-07, ENT-08 | PASS |
+| 21–22 | gstRegistered + accountingMethod + fyEndDate + AU-4 type | ENT-01, ENT-03, ENT-04, ENT-05, ENT-06 | PASS |
+| 23–24 | AccountManager archive flow (Block-or-Archive on referenced accounts) | BOOK-06 | PASS |
+| 25–28 | Final cross-check (lint, test, build, StorageAdapter diff) | invariants | PASS |
 
-**Upon user reply `approved`:**
-- This SUMMARY's frontmatter `tasks_completed` flips 2 → 3, `human_verify: pending` → `approved`, and `human_verify_date` records the date.
-- The orchestrator runs the state updates (STATE.md `advance-plan` → "Current Plan: phase complete", ROADMAP.md `update-plan-progress 4`, REQUIREMENTS.md `mark-complete IMP-01 IMP-02 IMP-03 IMP-04 IMP-06`).
-- The final docs commit `docs(04-4): UAT signed off — Phase 4 complete` ships SUMMARY + STATE + ROADMAP + REQUIREMENTS together.
-- Phase 4 hands off to `/gsd:verify-work 4` for goal-backward verification.
+No issues raised. No fix-plan required. The critical onReplace/supersedeImport regression check on step 18 confirmed: replacing an opening-balance import produces a TB total matching the single replacement entry, NOT 2× the original — the plan-checker-flagged double-count bug is fixed.
 
-If any UAT step fails, the resume signal documents the failure step + summary so `/gsd:plan-phase --gaps 4` can pick up the regression next cycle.
+**Phase 4 status:** all 23 requirements DELIVERED end-to-end. All 5 success criteria PASS. Ready for `/gsd:verify-work 4` goal-backward verification.
 
 ## Requirements addressed (Phase 4 — pending UAT confirmation)
 

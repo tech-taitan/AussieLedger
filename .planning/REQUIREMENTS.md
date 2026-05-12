@@ -21,38 +21,38 @@ Quality-floor and credibility prerequisites — must clear these before any user
 
 ### Bookkeeping core (BOOK)
 
-- [ ] **BOOK-01**: User can create a journal entry with two or more lines that must balance (debits = credits) before posting; balance is enforced at the data layer, not only at the UI
-- [ ] **BOOK-02**: User can edit a posted journal entry; the original version is preserved in the audit log
-- [ ] **BOOK-03**: User can reverse a posted journal entry (creating a balancing reversal entry referencing the original)
-- [ ] **BOOK-04**: User can void / delete a draft (unposted) journal entry
-- [ ] **BOOK-05**: User can browse a default Australian SME chart of accounts containing 80–150 accounts grouped by account type (Asset, Liability, Equity, Revenue, Expense)
-- [ ] **BOOK-06**: User can create, edit, and delete chart-of-accounts entries with code, name, type, GST code, and tax-label mapping per entity type
-- [ ] **BOOK-07**: User can group accounts into a parent / child hierarchy (e.g. "Operating Expenses" → "Rent", "Utilities", "Wages")
+- [x] **BOOK-01**: User can create a journal entry with two or more lines that must balance (debits = credits) before posting; balance is enforced at the data layer, not only at the UI
+- [x] **BOOK-02**: User can edit a posted journal entry; the original version is preserved in the audit log
+- [x] **BOOK-03**: User can reverse a posted journal entry (creating a balancing reversal entry referencing the original)
+- [x] **BOOK-04**: User can void / delete a draft (unposted) journal entry
+- [x] **BOOK-05**: User can browse a default Australian SME chart of accounts containing 80–150 accounts grouped by account type (Asset, Liability, Equity, Revenue, Expense)
+- [x] **BOOK-06**: User can create, edit, and delete chart-of-accounts entries with code, name, type, GST code, and tax-label mapping per entity type
+- [x] **BOOK-07**: User can group accounts into a parent / child hierarchy (e.g. "Operating Expenses" → "Rent", "Utilities", "Wages")
 - [x] **BOOK-08**: Each account carries a GST code from the AU set: GST, FRE (GST-free), INP (input-taxed), N-T (not reportable), CAP (capital)
-- [ ] **BOOK-09**: User can view a trial balance for a selected period showing per-account debit, credit, and net balance, with a balanced/out-of-balance footer
+- [x] **BOOK-09**: User can view a trial balance for a selected period showing per-account debit, credit, and net balance, with a balanced/out-of-balance footer
 - [x] **BOOK-10**: User can filter and report on any period: a financial year (1 Jul – 30 Jun), a BAS quarter, or a custom date range — the same period model applies to TB, BAS, and tax returns
-- [ ] **BOOK-11**: User can view an immutable audit trail of every create / edit / reverse / void action with timestamp, actor, before/after values, and entity-id scoping
-- [ ] **BOOK-12**: User can search journal entries by reference, description, account, date range, and amount range
+- [x] **BOOK-11**: User can view an immutable audit trail of every create / edit / reverse / void action with timestamp, actor, before/after values, and entity-id scoping
+- [x] **BOOK-12**: User can search journal entries by reference, description, account, date range, and amount range
 
 ### Entity management (ENT)
 
-- [ ] **ENT-01**: User can create entities of all four AU types: Company (Pty Ltd), Trust, Sole Trader / Individual, Partnership
+- [x] **ENT-01**: User can create entities of all four AU types: Company (Pty Ltd), Trust, Sole Trader / Individual, Partnership
 - [x] **ENT-02**: User can record ABN (with format validation: 11-digit modulus-89 check) and TFN (with format-only check; never validated network-side)
-- [ ] **ENT-03**: User can flag an entity as GST-registered, with effect on whether BAS is required and on default GST codes for new accounts
-- [ ] **ENT-04**: User can declare the accounting method (cash or accruals) per entity, applied to BAS reporting and income recognition
-- [ ] **ENT-05**: User can set the financial-year-end per entity (defaults to 30 June)
-- [ ] **ENT-06**: User can edit, archive, deactivate, or delete entities; deletion either cascades or is blocked when journal entries reference the entity
-- [ ] **ENT-07**: User can record a register of beneficiaries on a Trust entity (name, percentage or fixed share)
-- [ ] **ENT-08**: User can record a register of partners on a Partnership entity (name, percentage share)
+- [x] **ENT-03**: User can flag an entity as GST-registered, with effect on whether BAS is required and on default GST codes for new accounts
+- [x] **ENT-04**: User can declare the accounting method (cash or accruals) per entity, applied to BAS reporting and income recognition
+- [x] **ENT-05**: User can set the financial-year-end per entity (defaults to 30 June)
+- [x] **ENT-06**: User can edit, archive, deactivate, or delete entities; deletion either cascades or is blocked when journal entries reference the entity
+- [x] **ENT-07**: User can record a register of beneficiaries on a Trust entity (name, percentage or fixed share)
+- [x] **ENT-08**: User can record a register of partners on a Partnership entity (name, percentage share)
 
 ### Trial balance import (IMP)
 
-- [ ] **IMP-01**: User can upload a CSV or Excel (XLSX) file containing an opening trial balance
-- [ ] **IMP-02**: A deterministic parser handles standard CSV / XLSX rows; user is shown a column-mapping UI to confirm or override the parser's column choices (code, name, debit, credit)
-- [ ] **IMP-03**: User can match imported account codes against the internal CoA via fuzzy text matching, with an explicit "create new account" option per unmatched row
-- [ ] **IMP-04**: AI-assisted account matching is an optional enhancement, not the only path; the import works fully with no API key configured
-- [ ] **IMP-05**: Re-importing the same trial balance is idempotent (does not produce duplicate opening journals)
-- [ ] **IMP-06**: Import produces a single dated opening-balances journal entry that the user reviews and posts (or rejects)
+- [x] **IMP-01**: User can upload a CSV or Excel (XLSX) file containing an opening trial balance
+- [x] **IMP-02**: A deterministic parser handles standard CSV / XLSX rows; user is shown a column-mapping UI to confirm or override the parser's column choices (code, name, debit, credit)
+- [x] **IMP-03**: User can match imported account codes against the internal CoA via fuzzy text matching, with an explicit "create new account" option per unmatched row
+- [x] **IMP-04**: AI-assisted account matching is an optional enhancement, not the only path; the import works fully with no API key configured
+- [x] **IMP-05**: Re-importing the same trial balance is idempotent (does not produce duplicate opening journals)
+- [x] **IMP-06**: Import produces a single dated opening-balances journal entry that the user reviews and posts (or rejects)
 
 ### BAS / IAS (BAS)
 
