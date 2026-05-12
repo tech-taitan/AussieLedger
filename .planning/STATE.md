@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 3 — Durable Persistence
-current_plan: 03-4 (all tasks complete; phase ready for /gsd:verify-work)
-status: phase-ready-for-verification
+current_phase: Phase 3 — Durable Persistence (verified complete; awaiting Phase 4 research)
+current_plan: none (Phase 3 closed; next is /gsd:research-phase 4)
+status: phase-complete
 last_updated: "2026-05-12T00:00:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
   completed_plans: 11
 ---
@@ -34,15 +34,15 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 3 — Durable Persistence
-**Current plan:** 03-4 (all tasks complete; phase ready for /gsd:verify-work)
-**Phase status:** All four plans complete. 03-1 (Wave 0 scaffolds + StorageAdapter interface), 03-2 (LocalAdapter + hook refactor), 03-3 (ServerAdapter + Express + better-sqlite3), 03-4 (Data page + W5 banner + Vite /api proxy + README dual-shape). Task 3 human-verify checkpoint APPROVED 2026-05-12 — all 8 manual UAT checks passed (W5 banner correct in scenarios 1, 3, 5). 249 SPA tests + 18 server tests GREEN; lint, build, build:server, and `node scripts/test-dev-full.mjs` all EXIT 0. Phase 3 ready for goal-backward verification.
-**Last session:** 2026-05-12 (Task 3 UAT approved; STATE/ROADMAP/SUMMARY updated)
-**Overall progress:** Phases 1 + 2 complete; Phase 3 plans 03-1 through 03-4 complete and awaiting /gsd:verify-work
+**Current phase:** Phase 3 — Durable Persistence (CLOSED 2026-05-12)
+**Current plan:** none — Phase 3 verified complete; next action is `/gsd:research-phase 4` then `/gsd:discuss-phase 4`
+**Phase status:** Phase 3 VERIFIED. All four plans (03-1 Wave 0, 03-2 LocalAdapter, 03-3 ServerAdapter + Express + SQLite, 03-4 Data page + W5 banner) complete and committed. Task 3 human-verify APPROVED 2026-05-12 — 8/8 manual UAT checks passed. `/gsd:verify-work` goal-backward analysis PASS-with-documented-partial (03-UAT.md): 5/5 success criteria met, StorageAdapter abstraction intact (zero `localStorage` references in production hooks/components), FND-02 CSV per-report exports deferred to Phases 4 + 5 (planned cross-phase deferral, not a gap). 249 SPA + 18 server tests GREEN.
+**Last session:** 2026-05-12 (verify-work goal-backward PASS; 03-UAT.md written; STATE/ROADMAP closed Phase 3)
+**Overall progress:** Phases 1 + 2 + 3 complete. Phase 4 (Bookkeeping Core) is next — research-phase required first (CoA + ATO label pre-mappings).
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[ DONE  ] [ DONE  ] [VERIFY ] [  ----  ] [  ----  ] [  ----  ]
+[ DONE  ] [ DONE  ] [ DONE  ] [  ----  ] [  ----  ] [  ----  ]
 ```
 
 ---
@@ -53,7 +53,7 @@ progress:
 |-------|------|-------------|--------|
 | 1 | Safety Net | ATO theatre gone, Vitest + CI green, decimal.js, schema versioning | COMPLETE |
 | 2 | Decompose and Tax Engine | App.tsx ≤250 lines, lib/tax/ pure functions, AI key off client, period model | COMPLETE |
-| 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | Ready for verify (4/4 plans done) |
+| 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | COMPLETE (verified 2026-05-12; FND-02 CSV partial → Phases 4/5) |
 | 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | Not started |
 | 5 | Tax Outputs | All four return types + BAS/IAS, print-ready with ATO field codes | Not started |
 | 6 | Personas, Wizard, Deployment | Dual modes, year-end wizard, anomaly flags, open-source release | Not started |
@@ -64,8 +64,8 @@ progress:
 
 - Plans completed: 11 (Phase 1: 3 plans; Phase 2: 4 plans; Phase 3: 4 plans)
 - Plans total: 11 (Phase 1: 3, Phase 2: 4, Phase 3: 4)
-- Phases complete: 2/6 (Phase 1 + Phase 2 done); Phase 3 awaiting /gsd:verify-work
-- Requirements mapped: 70/70
+- Phases complete: 3/6 (Phase 1 + Phase 2 + Phase 3 done); Phase 4 next (research required first)
+- Requirements mapped: 70/70 (FND-01 ✓, FND-02 ✓ JSON / ⏳ CSV per-report Phases 4+5, FND-03 ✓, DEP-02 ✓)
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
