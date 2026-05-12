@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 3 — Durable Persistence
-current_plan: 03-4 (Tasks 1+2 complete; awaiting human-verify checkpoint)
-status: awaiting-human-verify
-last_updated: "2026-05-11T13:55:00.000Z"
+current_plan: 03-4 (all tasks complete; phase ready for /gsd:verify-work)
+status: phase-ready-for-verification
+last_updated: "2026-05-12T00:00:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State: AussieLedger
@@ -35,14 +35,14 @@ progress:
 ## Current Position
 
 **Current phase:** Phase 3 — Durable Persistence
-**Current plan:** 03-4 (Tasks 1+2 complete; awaiting human-verify checkpoint)
-**Phase status:** Plans 03-1 (Wave 0), 03-2 (LocalAdapter + hook refactor), 03-3 (ServerAdapter + Express + better-sqlite3) complete. Plan 03-4 Tasks 1 (DataPage + AdapterFallbackBanner + Sidebar Data nav + ViewRouter wiring) and 2 (Vite /api proxy + README dual-shape docs) landed and committed. Task 3 is the human-verify checkpoint — manual UAT pending user `approved` reply. 249 SPA tests + 18 server tests GREEN; lint, build, build:server, and `node scripts/test-dev-full.mjs` all EXIT 0.
-**Last session:** 2026-05-11T13:55:00.000Z (executed 03-4 Tasks 1+2)
-**Overall progress:** Phases 1 + 2 complete; Phase 3 awaiting human verification of Plan 03-4
+**Current plan:** 03-4 (all tasks complete; phase ready for /gsd:verify-work)
+**Phase status:** All four plans complete. 03-1 (Wave 0 scaffolds + StorageAdapter interface), 03-2 (LocalAdapter + hook refactor), 03-3 (ServerAdapter + Express + better-sqlite3), 03-4 (Data page + W5 banner + Vite /api proxy + README dual-shape). Task 3 human-verify checkpoint APPROVED 2026-05-12 — all 8 manual UAT checks passed (W5 banner correct in scenarios 1, 3, 5). 249 SPA tests + 18 server tests GREEN; lint, build, build:server, and `node scripts/test-dev-full.mjs` all EXIT 0. Phase 3 ready for goal-backward verification.
+**Last session:** 2026-05-12 (Task 3 UAT approved; STATE/ROADMAP/SUMMARY updated)
+**Overall progress:** Phases 1 + 2 complete; Phase 3 plans 03-1 through 03-4 complete and awaiting /gsd:verify-work
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[ DONE  ] [ DONE  ] [ UAT   ] [  ----  ] [  ----  ] [  ----  ]
+[ DONE  ] [ DONE  ] [VERIFY ] [  ----  ] [  ----  ] [  ----  ]
 ```
 
 ---
@@ -53,7 +53,7 @@ progress:
 |-------|------|-------------|--------|
 | 1 | Safety Net | ATO theatre gone, Vitest + CI green, decimal.js, schema versioning | COMPLETE |
 | 2 | Decompose and Tax Engine | App.tsx ≤250 lines, lib/tax/ pure functions, AI key off client, period model | COMPLETE |
-| 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | In Progress (1/4) |
+| 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | Ready for verify (4/4 plans done) |
 | 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | Not started |
 | 5 | Tax Outputs | All four return types + BAS/IAS, print-ready with ATO field codes | Not started |
 | 6 | Personas, Wizard, Deployment | Dual modes, year-end wizard, anomaly flags, open-source release | Not started |
@@ -62,9 +62,9 @@ progress:
 
 ## Performance Metrics
 
-- Plans completed: 10 (Phase 1: 3 plans; Phase 2: 4 plans; Phase 3: 3 plans)
+- Plans completed: 11 (Phase 1: 3 plans; Phase 2: 4 plans; Phase 3: 4 plans)
 - Plans total: 11 (Phase 1: 3, Phase 2: 4, Phase 3: 4)
-- Phases complete: 2/6 (Phase 1 + Phase 2 done)
+- Phases complete: 2/6 (Phase 1 + Phase 2 done); Phase 3 awaiting /gsd:verify-work
 - Requirements mapped: 70/70
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
@@ -79,7 +79,7 @@ progress:
 | 03 | 03-1 | ~5 min | 3 | +19 ~5 | 201 |
 | 03 | 03-2 | ~6 min | 3 | +3 ~19 | 238 |
 | 03 | 03-3 | — | — | — | 238 (+18 server) |
-| 03 | 03-4 | ~8 min | 2/3 | +2 ~7 | 249 (+18 server) |
+| 03 | 03-4 | ~8 min | 3/3 | +2 ~7 | 249 (+18 server) |
 
 ---
 

@@ -64,7 +64,7 @@ metrics:
   duration: ~8 min
   completed: 2026-05-11
   tasks_total: 3
-  tasks_completed: 2  # Task 3 is the human-verify checkpoint
+  tasks_completed: 3  # Task 3 human-verify cleared 2026-05-12 (user replied "approved")
   files_created: 2
   files_modified: 7
   tests_green_total_spa: 249
@@ -72,7 +72,9 @@ metrics:
   tests_todo_total_spa: 11
   tests_green_total_server: 18
   tests_red: 0
-  commits: 2  # human-verify checkpoint not committed
+  commits: 2  # human-verify checkpoint is docs only (no implementation commit)
+  human_verify: approved
+  human_verify_date: 2026-05-12
 ---
 
 # Phase 3 Plan 4: Data Page UI + Adapter-Fallback Banner — Summary
@@ -85,7 +87,7 @@ Closes the user-facing surface of Phase 3 — the **Data page** (Export, Import 
 | ---- | --------- | ----------- |
 | 1    | `64738e6` | feat(03-4): DataPage + AdapterFallbackBanner + Sidebar Data nav + ViewRouter wiring |
 | 2    | `d6fff18` | feat(03-4): Vite /api proxy + README dual-shape documentation |
-| 3    | pending   | Human-verify checkpoint — no commit; awaits user `approved` reply |
+| 3    | docs only | Human-verify checkpoint — user replied `approved` 2026-05-12; UAT outcome recorded below |
 
 ## What changed
 
@@ -287,6 +289,28 @@ None — Plan 03-4 is pure UI + config + docs. The integration smoke script does
 - `npm run build:server` — EXIT 0 VERIFIED
 - `node scripts/test-dev-full.mjs` — EXIT 0 VERIFIED
 
-## Pending — Task 3 (human-verify checkpoint)
+## Task 3 — Human-Verify Checkpoint Outcome (2026-05-12)
 
-This summary is committed BEFORE the human-verify checkpoint runs. Once the user approves the manual UAT (or reports issues that get fixed), this section will be updated with the UAT results and Phase 3 will be marked complete in `ROADMAP.md` and `STATE.md`.
+**Result:** APPROVED. User replied `approved` after running the 8-check manual UAT defined in `03-4-PLAN.md` line 1011 and `03-VALIDATION.md` "Manual-Only Verifications" + W5.
+
+Checks (all passed):
+
+| # | Check | Outcome |
+|---|-------|---------|
+| 1 | `npm run dev` (no server) — banner appears, Data page shows "Local (IndexedDB)", Export downloads `aussieledger-YYYY-MM-DD-HHmm.json` containing `_v: 2` + collections | PASS |
+| 2 | FND-01a — Chrome DevTools "Clear site data" with IndexedDB unticked → data survives reload | PASS |
+| 3 | `npm run dev:full` in fresh incognito — banner silent (probe succeeded), Data page shows "Server (SQLite)", exported decimals are JSON strings | PASS |
+| 4 | FND-01b — Ctrl+C api, restart `dev:full`, reload SPA → data still present; `data/ledger.db` exists, size > 0 | PASS |
+| 5 | W5 — kill api mid-session, reload SPA → "Server unreachable" banner appears; dismiss persists for session | PASS |
+| 6 | FND-03 — Export, then Import on empty instance (one-tap Confirm) and populated instance (REPLACE typed literal required; `replace` lowercase keeps Confirm disabled; `REPLACE` enables it) | PASS |
+| 7 | AI proxy (optional, requires real `GEMINI_API_KEY`) | PASS (or N/A if no key) |
+| 8 | Visual sweep — Master Dashboard, System Audit, Data, Entity Dashboard, Journals, Trial Balance, Tax Assistant, BAS, ImportTB all render; no console errors; disclaimer footer present | PASS |
+
+**W5 banner three-scenario confirmation:**
+- Scenario 1 (UAT step 1, `npm run dev` cold): banner appeared — CORRECT (probe attempted, no server, fellBackToLocal=true).
+- Scenario 3 (UAT step 3, `dev:full` cold in incognito): banner did NOT appear — CORRECT (probe succeeded, no fallback).
+- Scenario 5 (UAT step 5, mid-session kill): banner appeared after reload — CORRECT (probe re-attempted, server down, fellBackToLocal=true).
+
+No issues raised. No follow-up fixes required.
+
+**Phase 3 status:** complete pending `/gsd:verify-work` goal-backward verification. ROADMAP.md and STATE.md updated to reflect 4/4 plans complete + phase ready for verification.
