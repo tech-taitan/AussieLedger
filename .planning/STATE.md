@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 4 — Bookkeeping Core (Wave 0 landed; Wave 2 ready)
-current_plan: 04-2 + 04-3 (Wave 2, parallel-safe) — next to execute
-status: executing-wave-2
-last_updated: "2026-05-12T23:30:00.000Z"
+current_phase: Phase 4 — Bookkeeping Core (Waves 0 + 2 landed; Wave 3 ready)
+current_plan: 04-4 (Wave 3 — ImportTB refactor + human-verify UAT) — next to execute
+status: executing-wave-3
+last_updated: "2026-05-13T00:00:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 15
-  completed_plans: 12
+  completed_plans: 14
 ---
 
 # Project State: AussieLedger
@@ -34,15 +34,15 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 4 — Bookkeeping Core (Wave 0 LANDED 2026-05-12; Wave 2 ready)
-**Current plan:** 04-2 + 04-3 (Wave 2, parallel-safe) — next to execute via `/gsd:execute-phase 4`
-**Phase status:** Wave 0 (04-1) COMPLETE. v3 type widening + additive v2→v3 migration shipped; 127-row AU SME default CoA + 4 per-type overlays + getDefaultCoaFor resolver shipped; pure-function ledger.ts (validateBalanced/makeReversal/makeSupersedingEdit/searchJournals) + sha256 fingerprint helper + PapaParse/SheetJS CE wrappers shipped; 12 hook/component test scaffolds wired with VALIDATION-bound test names. 4 task commits (64f9632, 34692e5, cb673e5, 5a4f49a) + 1 docs commit. SPA suite 296 GREEN + 80 todo (+47 new GREEN, +69 new todo); server 18 GREEN unchanged. Lint + both builds + dev-full smoke all PASS. StorageAdapter interface untouched (Phase 3 FINAL preserved). Wave 2 (04-2 Journal CRUD + 04-3 CoA UI + registers) and Wave 3 (04-4 ImportTB + UAT) plans remain to execute.
-**Last session:** 2026-05-12 (executed 04-1 Wave 0 foundations — all 4 tasks GREEN, ready for Wave 2 parallel kickoff)
-**Overall progress:** Phases 1 + 2 + 3 complete. Phase 4 Wave 0 landed; 12 of 15 plans done.
+**Current phase:** Phase 4 — Bookkeeping Core (Waves 0 + 2 LANDED 2026-05-12; Wave 3 ready)
+**Current plan:** 04-4 (Wave 3 — ImportTB refactor + human-verify UAT) — next to execute
+**Phase status:** Waves 0 + 2 COMPLETE. **Wave 0 (04-1):** v3 type widening + additive v2→v3 migration; 127-row AU SME default CoA + 4 per-type overlays + getDefaultCoaFor; pure-function ledger.ts; sha256 fingerprint + PapaParse/SheetJS CE wrappers; 12 hook/component test scaffolds. **Wave 2 (04-2 + 04-3 parallel):** Plan 04-2 shipped useJournals lifecycle (postDraft/editPosted supersession/reversePosted/voidDraft/searchJournals) + JournalForm Edit+Reverse + EditJournalDiff + JournalSearch + TrialBalance period-filter + parent subtotals + AuditTrail widened. Plan 04-3 shipped useAccounts (archiveAccount/setIsDefault/isAccountInUse) + useEntities (createEntity-seeds-CoA/tryDeleteEntity/beneficiary+partner writers) + CoaTreeView + AccountManager refactor (tree view, archive-vs-delete, GST 'ITS'→'INP' typo fix) + EntityForm AU-4 + register tabs + BeneficiaryRegister + PartnerRegister. 13 task/docs commits (176ee55, 12b26dd, 05a8a57, b06d134, 2bf2f66, c888480, c9e4668, 8a578b4 — interleaved between executors). Tests: 354 SPA GREEN + 26 todo + 0 RED; 18 server GREEN. Lint + build PASS. StorageAdapter untouched. 17 of 23 Phase 4 requirements DELIVERED end-to-end (BOOK-01..05, BOOK-07, BOOK-09, BOOK-11, BOOK-12, ENT-01, ENT-03..08, IMP-05 fingerprint). Remaining 6 requirements (IMP-01..04, IMP-06) bound to 26 .todo cases that 04-4 will flip GREEN.
+**Last session:** 2026-05-12 → 2026-05-13 (Wave 0 then Wave 2 parallel — 13 commits, +105 GREEN tests, 0 RED)
+**Overall progress:** Phases 1 + 2 + 3 complete. Phase 4 Waves 0 + 2 landed; 14 of 15 plans done; only 04-4 (ImportTB + UAT) remains.
 
 ```
-[Phase 1] [Phase 2] [Phase 3] [Phase 4 ] [Phase 5] [Phase 6]
-[ DONE  ] [ DONE  ] [ DONE  ] [ Wave 0 ] [  ----  ] [  ----  ]
+[Phase 1] [Phase 2] [Phase 3] [Phase 4   ] [Phase 5] [Phase 6]
+[ DONE  ] [ DONE  ] [ DONE  ] [ W0+W2    ] [  ----  ] [  ----  ]
 ```
 
 ---
@@ -54,7 +54,7 @@ progress:
 | 1 | Safety Net | ATO theatre gone, Vitest + CI green, decimal.js, schema versioning | COMPLETE |
 | 2 | Decompose and Tax Engine | App.tsx ≤250 lines, lib/tax/ pure functions, AI key off client, period model | COMPLETE |
 | 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | COMPLETE (verified 2026-05-12; FND-02 CSV partial → Phases 4/5) |
-| 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | Wave 0 complete (04-1 landed 2026-05-12; 04-2 + 04-3 ready to run in parallel; 04-4 follows in Wave 3) |
+| 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | Waves 0 + 2 complete (04-1, 04-2, 04-3 landed 2026-05-12; 04-4 next — ImportTB refactor + UAT) |
 | 5 | Tax Outputs | All four return types + BAS/IAS, print-ready with ATO field codes | Not started |
 | 6 | Personas, Wizard, Deployment | Dual modes, year-end wizard, anomaly flags, open-source release | Not started |
 
@@ -62,9 +62,9 @@ progress:
 
 ## Performance Metrics
 
-- Plans completed: 12 / Plans total: 15 (Phase 1: 3, Phase 2: 4, Phase 3: 4, Phase 4: 1/4)
-- Phases complete: 3/6 (Phase 1 + Phase 2 + Phase 3 done); Phase 4 Wave 0 landed (3 plans remain)
-- Requirements mapped: 70/70 (Phase 1-3 closed FND/ENT-02; Phase 4 Wave 0 covers data layer for BOOK-01/05/07/11/12 + IMP-05)
+- Plans completed: 14 / Plans total: 15 (Phase 1: 3, Phase 2: 4, Phase 3: 4, Phase 4: 3/4)
+- Phases complete: 3/6 (Phase 1 + Phase 2 + Phase 3 done); Phase 4 Waves 0 + 2 landed (only 04-4 remains)
+- Requirements mapped: 70/70 — Phase 4 17/23 DELIVERED through Wave 2 (BOOK-01..05, BOOK-07, BOOK-09, BOOK-11, BOOK-12, ENT-01, ENT-03..08, IMP-05 fingerprint); remaining 6 (IMP-01..04, IMP-06) land in 04-4
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
@@ -80,6 +80,8 @@ progress:
 | 03 | 03-3 | — | — | — | 238 (+18 server) |
 | 03 | 03-4 | ~8 min | 3/3 | +2 ~7 | 249 (+18 server) |
 | 04 | 04-1 | ~12 min | 4/4 | +25 ~11 | 296 (+18 server) |
+| 04 | 04-2 | ~13 min | 3/3 | +2 ~6 | 354 (+18 server) (interleaved) |
+| 04 | 04-3 | ~12 min | 3/3 | +3 ~7 | 354 (+18 server) (interleaved) |
 
 ---
 
