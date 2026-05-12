@@ -53,10 +53,11 @@ describe('AccountManager', () => {
           onCancel={onCancel}
         />
       );
-      // All 3 account names should be visible
-      expect(screen.getByText('Sales')).toBeDefined();
-      expect(screen.getByText('Wages & Salaries')).toBeDefined();
-      expect(screen.getByText('General Check Account')).toBeDefined();
+      // Phase 4: AccountManager renders both a tree view (CoaTreeView) and the
+      // editable table, so names/codes appear in two surfaces. Assert ≥1 match.
+      expect(screen.getAllByText('Sales').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Wages & Salaries').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('General Check Account').length).toBeGreaterThan(0);
     });
 
     it('renders account codes', () => {
@@ -69,9 +70,10 @@ describe('AccountManager', () => {
           onCancel={onCancel}
         />
       );
-      expect(screen.getByText('4100')).toBeDefined();
-      expect(screen.getByText('6400')).toBeDefined();
-      expect(screen.getByText('1110')).toBeDefined();
+      // Phase 4: same dual-surface rendering note as above.
+      expect(screen.getAllByText('4100').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('6400').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('1110').length).toBeGreaterThan(0);
     });
   });
 
@@ -154,13 +156,160 @@ describe('AccountManager', () => {
   });
 
   describe('Phase 4 — AccountManager refactor (BOOK-06, BOOK-07)', () => {
-    it.todo('tree view parents first');
-    it.todo('archive only for default');
-    it.todo('GST dropdown is AU set');
-    it.todo('archive vs delete dialog appears for default account');
-    it.todo('shows per-entity-type template badge');
-    it.todo('archived accounts hidden from default view');
-    it.todo('archived accounts surface via filter toggle');
+    it('tree view parents first', () => {
+      const accounts: Account[] = [
+        {
+          id: 'acc-child', code: '6010', name: 'Rent',
+          type: 'Expense', gstCode: 'GST', parentCode: '6000',
+        },
+        {
+          id: 'acc-parent', code: '6000', name: 'Operating Expenses',
+          type: 'Expense', gstCode: 'N-T', parentCode: null,
+        },
+      ];
+      render(
+        <AccountManager
+          accounts={accounts}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      const rows = screen.getAllByTestId(/^coa-row-/);
+      const parentIndex = rows.findIndex((r) => r.getAttribute('data-testid') === 'coa-row-6000');
+      const childIndex = rows.findIndex((r) => r.getAttribute('data-testid') === 'coa-row-6010');
+      expect(parentIndex).toBeGreaterThanOrEqual(0);
+      expect(childIndex).toBeGreaterThanOrEqual(0);
+      expect(parentIndex).toBeLessThan(childIndex);
+    });
+
+    it('archive only for default', () => {
+      const accounts: Account[] = [
+        {
+          id: 'acc-def', code: '4100', name: 'Sales',
+          type: 'Revenue', gstCode: 'GST', isDefault: true,
+        },
+      ];
+      const onArchive = vi.fn();
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+      render(
+        <AccountManager
+          accounts={accounts}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+          onArchiveAccount={onArchive}
+        />,
+      );
+      const deleteBtn = screen.getByRole('button', { name: /Delete Sales/i });
+      fireEvent.click(deleteBtn);
+      expect(onArchive).toHaveBeenCalledWith('acc-def');
+      confirmSpy.mockRestore();
+    });
+
+    it('GST dropdown is AU set', () => {
+      const accounts: Account[] = [
+        { id: 'acc-1', code: '1000', name: 'Cash', type: 'Asset', gstCode: 'N-T' },
+      ];
+      render(
+        <AccountManager
+          accounts={accounts}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      // Start editing
+      fireEvent.click(screen.getByRole('button', { name: /Edit Cash/i }));
+      const gstSelect = screen.getByRole('combobox', { name: /GST code for Cash/i });
+      const options = Array.from(gstSelect.querySelectorAll('option')).map((o) => o.value);
+      expect(options).toEqual(['GST', 'FRE', 'INP', 'N-T', 'CAP']);
+      expect(options).not.toContain('ITS');
+    });
+
+    it('archive vs delete dialog appears for default account', () => {
+      const accounts: Account[] = [
+        {
+          id: 'acc-def', code: '4100', name: 'Sales',
+          type: 'Revenue', gstCode: 'GST', isDefault: true,
+        },
+      ];
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      render(
+        <AccountManager
+          accounts={accounts}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+          onArchiveAccount={vi.fn()}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: /Delete Sales/i }));
+      expect(confirmSpy).toHaveBeenCalled();
+      const message = confirmSpy.mock.calls[0][0] as string;
+      expect(message).toMatch(/Archive/i);
+      confirmSpy.mockRestore();
+    });
+
+    it('shows per-entity-type template badge', () => {
+      const accounts: Account[] = [
+        {
+          id: 'acc-def', code: '4100', name: 'Sales',
+          type: 'Revenue', gstCode: 'GST', isDefault: true,
+        },
+      ];
+      render(
+        <AccountManager
+          accounts={accounts}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      // Tree-view badge (CoaTreeView renders one per default account).
+      expect(screen.getByTestId('default-badge-4100')).toBeDefined();
+    });
+
+    it('archived accounts hidden from default view', () => {
+      const accounts: Account[] = [
+        {
+          id: 'acc-live', code: '4100', name: 'Sales',
+          type: 'Revenue', gstCode: 'GST',
+        },
+        {
+          id: 'acc-arc', code: '4200', name: 'Old Sales',
+          type: 'Revenue', gstCode: 'GST', isArchived: true,
+        },
+      ];
+      render(
+        <AccountManager
+          accounts={accounts}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      // Tree should hide the archived row by default.
+      expect(screen.queryByTestId('coa-row-4200')).toBeNull();
+      expect(screen.getByTestId('coa-row-4100')).toBeDefined();
+    });
+
+    it('archived accounts surface via filter toggle', () => {
+      const accounts: Account[] = [
+        {
+          id: 'acc-live', code: '4100', name: 'Sales',
+          type: 'Revenue', gstCode: 'GST',
+        },
+        {
+          id: 'acc-arc', code: '4200', name: 'Old Sales',
+          type: 'Revenue', gstCode: 'GST', isArchived: true,
+        },
+      ];
+      render(
+        <AccountManager
+          accounts={accounts}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      const toggle = screen.getByTestId('show-archived-toggle').querySelector('input')!;
+      fireEvent.click(toggle);
+      expect(screen.getByTestId('coa-row-4200')).toBeDefined();
+    });
   });
 
   describe('_needsReview clearing on edit', () => {

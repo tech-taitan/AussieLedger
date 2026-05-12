@@ -4,25 +4,43 @@
  */
 
 import React, { useState } from 'react';
-import { Account, AccountType } from '../types';
+import { Account, AccountType, JournalEntry } from '../types';
 import { Save, X, Plus, Trash2, Edit2, ListTree } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { COMPANY_TAX_LABELS, TRUST_TAX_LABELS, TAX_LABELS } from '../constants';
 import { PARTNERSHIP_LABELS } from '../lib/tax/labels/fy2026';
+import { CoaTreeView } from './CoaTreeView';
 
 interface AccountManagerProps {
   accounts: Account[];
   onSave: (accounts: Account[]) => void;
   onCancel: () => void;
+  // Phase 4 additions (all optional — preserves the Phase 2 contract)
+  allEntries?: Record<string, JournalEntry[]>;
+  onArchiveAccount?: (id: string) => void;
+  onIsAccountInUse?: (
+    id: string,
+    allEntries: Record<string, JournalEntry[]>,
+  ) => boolean;
 }
 
-export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave, onCancel }) => {
+export const AccountManager: React.FC<AccountManagerProps> = ({
+  accounts,
+  onSave,
+  onCancel,
+  allEntries,
+  onArchiveAccount,
+  onIsAccountInUse,
+}) => {
   const [localAccounts, setLocalAccounts] = useState<Account[]>([...accounts]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Account>>({});
+  const [showArchived, setShowArchived] = useState(false);
 
   const ACCOUNT_TYPES: AccountType[] = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
-  const GST_CODES = ['GST', 'FRE', 'N-T', 'ITS', 'CAP'];
+  // Phase 4 — fix Phase-2 typo: 'ITS' is not an AU GST code; correct set is INP (Input-taxed).
+  // Reference: RESEARCH Pitfall 9 + CONTEXT "CoA shape" decisions.
+  const GST_CODES = ['GST', 'FRE', 'INP', 'N-T', 'CAP'];
 
   const handleStartEdit = (account: Account) => {
     setEditingId(account.id);
@@ -59,9 +77,50 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
     setEditFormData(newAccount);
   };
 
+  // Phase 4 — Block-or-Archive deletion policy (CONTEXT "Deletion & Import").
+  // Default accounts: archive only (no hard delete).
+  // User accounts in use: block + offer archive.
+  // User accounts free of references: hard delete allowed.
   const handleDeleteAccount = (id: string) => {
-    if (confirm('Are you sure you want to delete this account? Any existing transactions using this account may cause errors.')) {
-      setLocalAccounts(prev => prev.filter(a => a.id !== id));
+    const account = localAccounts.find((a) => a.id === id);
+    if (!account) return;
+
+    const inUse = onIsAccountInUse?.(id, allEntries ?? {}) ?? false;
+
+    if (account.isDefault) {
+      const confirmed = confirm(
+        'This is a default account. Archive instead of delete? Archived accounts are hidden from journal pickers but remain in historical reports.',
+      );
+      if (confirmed) {
+        if (onArchiveAccount) {
+          onArchiveAccount(id);
+        } else {
+          setLocalAccounts((prev) =>
+            prev.map((a) => (a.id === id ? { ...a, isArchived: true } : a)),
+          );
+        }
+      }
+      return;
+    }
+
+    if (inUse) {
+      const confirmed = confirm(
+        'Cannot delete — this account is referenced by journal entries. Archive instead?',
+      );
+      if (confirmed) {
+        if (onArchiveAccount) {
+          onArchiveAccount(id);
+        } else {
+          setLocalAccounts((prev) =>
+            prev.map((a) => (a.id === id ? { ...a, isArchived: true } : a)),
+          );
+        }
+      }
+      return;
+    }
+
+    if (confirm('Delete this user-added account? This cannot be undone.')) {
+      setLocalAccounts((prev) => prev.filter((a) => a.id !== id));
     }
   };
 
@@ -69,17 +128,11 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
     onSave(localAccounts);
   };
 
-  // Group labels for UI selection
-  const allTaxLabels = [
-    ...Object.keys(TAX_LABELS),
-    ...Object.keys(COMPANY_TAX_LABELS.INCOME),
-    ...Object.keys(COMPANY_TAX_LABELS.EXPENSES),
-    ...Object.keys(TRUST_TAX_LABELS.INCOME),
-    ...Object.keys(TRUST_TAX_LABELS.EXPENSES)
-  ].filter((v, i, a) => a.indexOf(v) === i); // Deduplicate
-
   // Accounts requiring review after migration
   const needsReviewAccounts = localAccounts.filter(a => a._needsReview);
+
+  // Phase 4 — filter the table rows by archived toggle (same source feeds tree view).
+  const visibleAccounts = localAccounts.filter((a) => showArchived || !a.isArchived);
 
   return (
     <div className="bg-white border border-[var(--line-strong)] shadow-sm">
@@ -118,6 +171,36 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
           </div>
         )}
 
+        {/* Phase 4 — archived-toggle (CONTEXT: archived accounts hidden by default,
+            filterable to show; consistent with journal-picker behaviour). */}
+        <label
+          className="flex items-center gap-2 text-sm mb-3"
+          data-testid="show-archived-toggle"
+        >
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+          />
+          Show archived accounts
+        </label>
+
+        {/* Phase 4 — tree view for browse mode (BOOK-07 parent/child). Inline edit
+            stays per-row in the table below when editingId is set. */}
+        {!editingId && (
+          <div className="mb-4 border border-[var(--line)] rounded">
+            <CoaTreeView
+              accounts={localAccounts}
+              onSelect={(id) => {
+                const a = localAccounts.find((x) => x.id === id);
+                if (a) handleStartEdit(a);
+              }}
+              selectedId={editingId ?? undefined}
+              showArchived={showArchived}
+            />
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -132,11 +215,12 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
-              {localAccounts.sort((a, b) => a.code.localeCompare(b.code)).map((account) => (
+              {visibleAccounts.sort((a, b) => a.code.localeCompare(b.code)).map((account) => (
                 <tr key={account.id} className={cn(
                   "hover:bg-gray-50/50 transition-colors",
                   editingId === account.id ? "bg-indigo-50/50" : "",
-                  account._needsReview ? "border-l-2 border-amber-400" : ""
+                  account._needsReview ? "border-l-2 border-amber-400" : "",
+                  account.isArchived ? "opacity-60" : ""
                 )}>
                   <td className="p-2 text-xs font-mono">
                     {editingId === account.id ? (
@@ -161,6 +245,17 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
                     ) : (
                       <span className="flex items-center gap-1">
                         {account.name}
+                        {account.isDefault && (
+                          <span
+                            className="text-[9px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-1 rounded uppercase tracking-wider"
+                            data-testid={`default-badge-row-${account.code}`}
+                          >
+                            default
+                          </span>
+                        )}
+                        {account.isArchived && (
+                          <span className="text-[9px] font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 px-1 rounded uppercase">archived</span>
+                        )}
                         {account._needsReview && (
                           <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1 rounded">review</span>
                         )}
@@ -186,8 +281,9 @@ export const AccountManager: React.FC<AccountManagerProps> = ({ accounts, onSave
                     {editingId === account.id ? (
                       <select
                         value={editFormData.gstCode}
-                        onChange={e => setEditFormData({ ...editFormData, gstCode: e.target.value })}
+                        onChange={e => setEditFormData({ ...editFormData, gstCode: e.target.value as Account['gstCode'] })}
                         className="p-1 border border-[var(--line-strong)] focus:outline-none text-xs bg-white"
+                        aria-label={`GST code for ${account.name}`}
                       >
                         {GST_CODES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
