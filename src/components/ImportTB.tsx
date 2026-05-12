@@ -4,104 +4,195 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, ArrowRight, X, Settings2 } from 'lucide-react';
-import { ImportedAccount, JournalEntry, Account } from '../types';
-import { cn } from '../lib/utils';
+import {
+  Upload,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Sparkles,
+  ArrowRight,
+  Settings2,
+} from 'lucide-react';
+import type { ImportedAccount, JournalEntry, JournalLine, Account } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { isAiEnabled, GEMINI_MODEL } from '../lib/ai';
 import { fuzzyMatch, HIGH_CONFIDENCE_THRESHOLD } from '../lib/import/match';
+import { parseCsvFile } from '../lib/import/csv';
+import { parseXlsxBuffer, pickSheetByName } from '../lib/import/xlsx';
+import {
+  computeImportFingerprint,
+  type ColumnMappingByName,
+  type RawRow,
+} from '../lib/import/fingerprint';
+import { XlsxSheetPicker } from './XlsxSheetPicker';
+import { ImportReviewPane, type ReviewRow } from './ImportReviewPane';
 import { today } from '../lib/period';
-
-interface ColumnMapping {
-  code: number;
-  name: number;
-  debit: number;
-  credit: number;
-}
 
 interface ImportTBProps {
   accounts: Account[];
   onImport: (entries: JournalEntry[]) => void;
+  /** Phase 4 — active entity for fingerprint scoping (IMP-05). */
+  activeEntityId?: string;
+  /** Phase 4 — active entity's existing journals for fingerprint dedup. */
+  existingEntries?: JournalEntry[];
+  /**
+   * Phase 4 Replace-path correctness hook. When the fingerprint dialog's
+   * Replace button fires, ImportTB calls onReplace(existingId, newEntry)
+   * so the parent (App.tsx) can mark the existing entry as status:
+   * 'superseded' + replacedByEntryId in a SINGLE state update. Without
+   * this, the 04-2 TrialBalance rollup (which filters status !==
+   * 'superseded') would double-count both the original and the
+   * replacement opening balances. If onReplace is absent the component
+   * falls back to onImport (best-effort, but TB will double-count —
+   * App.tsx SHOULD wire this prop via useJournals.supersedeImport).
+   */
+  onReplace?: (existingId: string, newEntry: JournalEntry) => void;
 }
 
-export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
-  const [fileData, setFileData] = useState<ImportedAccount[]>([]);
-  const [rawRows, setRawRows] = useState<string[][]>([]);
-  const [isMapping, setIsMapping] = useState(false);
+export const ImportTB: React.FC<ImportTBProps> = ({
+  accounts,
+  onImport,
+  activeEntityId,
+  existingEntries,
+  onReplace,
+}) => {
+  // ── Deterministic parse stage ─────────────────────────────────────────────
+  const [parsedRows, setParsedRows] = useState<RawRow[] | null>(null);
+  const [parsedHeaders, setParsedHeaders] = useState<string[]>([]);
+  const [xlsxBuffer, setXlsxBuffer] = useState<ArrayBuffer | null>(null);
+  const [sheetPickerNames, setSheetPickerNames] = useState<string[] | null>(null);
+
+  // ── Column mapping (by header NAME, not index) ────────────────────────────
+  const [columnMappingByName, setColumnMappingByName] =
+    useState<ColumnMappingByName>({ code: '', name: '', debit: '', credit: '' });
   const [isColumnMapping, setIsColumnMapping] = useState(false);
+
+  // ── Review stage ──────────────────────────────────────────────────────────
+  const [importedRows, setImportedRows] = useState<ReviewRow[]>([]);
+  const [reviewing, setReviewing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [mappingComplete, setMappingComplete] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [columnMapping, setColumnMapping] = useState<ColumnMapping>({
-    code: 0,
-    name: 1,
-    debit: 2,
-    credit: 3
-  });
+
+  // ── Fingerprint collision dialog ──────────────────────────────────────────
+  const [fingerprintCollision, setFingerprintCollision] = useState<{
+    fingerprint: string;
+    existing: JournalEntry;
+  } | null>(null);
+
+  // ── As-at date (used for fingerprint + journal date) ──────────────────────
+  const [asAtDate, setAsAtDate] = useState<string>(
+    today().toISOString().split('T')[0],
+  );
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ── File pick → CSV or XLSX deterministic parse ───────────────────────────
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split('\n').filter(l => l.trim() !== '');
-      const rows = lines.map(row => {
-        // Simple CSV split handling some quoted values
-        return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-      });
-
-      setRawRows(rows);
-      setIsColumnMapping(true);
-    };
-    reader.readAsText(file);
-  };
-
-  const processColumnMapping = () => {
-    // Skip header and map based on configuration
-    const imported: ImportedAccount[] = rawRows.slice(1)
-      .filter(row => row.length > Math.max(columnMapping.code, columnMapping.name, columnMapping.debit, columnMapping.credit))
-      .map(row => ({
-        externalCode: row[columnMapping.code] || '',
-        externalName: row[columnMapping.name] || '',
-        debit: parseFloat(row[columnMapping.debit]?.replace(/[^0-9.-]+/g, '')) || 0,
-        credit: parseFloat(row[columnMapping.credit]?.replace(/[^0-9.-]+/g, '')) || 0,
-      }));
-
-    setFileData(imported);
-    setIsColumnMapping(false);
-    setIsMapping(true);
+    const lower = file.name.toLowerCase();
+    try {
+      if (lower.endsWith('.csv')) {
+        const { rows, headers } = await parseCsvFile(file);
+        setParsedRows(rows);
+        setParsedHeaders(headers);
+        seedDefaultMapping(headers);
+        setIsColumnMapping(true);
+      } else if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+        const buf = await file.arrayBuffer();
+        setXlsxBuffer(buf);
+        const { sheetNames, rows, headers } = parseXlsxBuffer(buf);
+        if (sheetNames.length > 1) {
+          setSheetPickerNames(sheetNames);
+        } else {
+          setParsedRows(rows);
+          setParsedHeaders(headers);
+          seedDefaultMapping(headers);
+          setIsColumnMapping(true);
+        }
+      } else {
+        alert('Unsupported file type. Please choose .csv, .xls, or .xlsx.');
+      }
+    } catch (err) {
+      console.error('Import parse failed', err);
+      alert(`Could not parse file: ${(err as Error).message}`);
+    }
   };
 
   /**
-   * Deterministic account mapping using fuzzyMatch from src/lib/import/match.ts.
-   * This is the primary (always-visible) matching path.
-   * Rows with confidence >= HIGH_CONFIDENCE_THRESHOLD are auto-matched.
-   * Rows below threshold show top candidates for manual selection.
+   * Seed best-effort default column mapping by guessing common header names.
+   * The user can override on the column-mapping screen — this is purely a UX
+   * shortcut so most CSVs land on the correct mapping out of the gate.
    */
-  const runDeterministicMapping = () => {
-    setIsProcessing(true);
-    const mapped: ImportedAccount[] = fileData.map(imported => {
-      const result = fuzzyMatch(imported, accounts);
-      return {
-        ...imported,
-        mappedAccountId: result.mappedAccountId,
-        confidence: result.confidence,
-        reasoning: result.confidence >= HIGH_CONFIDENCE_THRESHOLD
-          ? 'Auto-matched (deterministic)'
-          : 'Manual review recommended',
-      };
+  const seedDefaultMapping = (headers: string[]) => {
+    const find = (re: RegExp) => headers.find((h) => re.test(h)) ?? '';
+    setColumnMappingByName({
+      code: find(/^code$|account.*code|account_no|account#|acc_id/i),
+      name: find(/^name$|account.*name|description$|account$/i),
+      debit: find(/^debit$|dr$|debit.*amount/i),
+      credit: find(/^credit$|cr$|credit.*amount/i),
     });
-    setFileData(mapped);
-    setMappingComplete(true);
-    setIsProcessing(false);
   };
 
+  // ── Sheet picker → buffer-aware sheet selection ───────────────────────────
+  const handleSheetPick = (name: string) => {
+    if (!xlsxBuffer) return;
+    try {
+      const { rows, headers } = pickSheetByName(xlsxBuffer, name);
+      setParsedRows(rows);
+      setParsedHeaders(headers);
+      seedDefaultMapping(headers);
+      setSheetPickerNames(null);
+      setIsColumnMapping(true);
+    } catch (err) {
+      console.error('Sheet pick failed', err);
+      alert(`Could not read sheet "${name}": ${(err as Error).message}`);
+    }
+  };
+
+  const handleSheetPickCancel = () => {
+    setSheetPickerNames(null);
+    setXlsxBuffer(null);
+  };
+
+  // ── Column mapping → review stage (deterministic fuzzyMatch baseline) ─────
+  const processColumnMapping = () => {
+    if (!parsedRows) return;
+    const imported: ImportedAccount[] = parsedRows
+      .map((r) => ({
+        externalCode: (r[columnMappingByName.code] ?? '').toString().trim(),
+        externalName: (r[columnMappingByName.name] ?? '').toString().trim(),
+        debit: Number(r[columnMappingByName.debit] ?? 0) || 0,
+        credit: Number(r[columnMappingByName.credit] ?? 0) || 0,
+      }))
+      .filter(
+        (r) =>
+          (r.externalCode || r.externalName) &&
+          (r.debit !== 0 || r.credit !== 0),
+      );
+
+    // Deterministic baseline match — always runs (IMP-04 deterministic path).
+    const matched: ReviewRow[] = imported.map((row) => {
+      const result = fuzzyMatch(row, accounts);
+      return {
+        ...row,
+        mappedAccountId: result.mappedAccountId,
+        confidence: result.confidence,
+        reasoning:
+          result.confidence >= HIGH_CONFIDENCE_THRESHOLD
+            ? 'Auto-matched (deterministic)'
+            : 'Manual review recommended',
+        _include: true,
+      };
+    });
+    setImportedRows(matched);
+    setIsColumnMapping(false);
+    setReviewing(true);
+  };
+
+  // ── Optional AI re-match (gated on isAiEnabled() — IMP-04) ────────────────
   const runAIMapping = async () => {
-    // Defence-in-depth: guard even if called programmatically when AI is disabled
-    if (!isAiEnabled()) return;
+    if (!isAiEnabled()) return; // defence-in-depth
 
     setIsProcessing(true);
     try {
@@ -110,10 +201,13 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
         I have a list of accounts from an external system and I need to map them to my internal Chart of Accounts.
 
         Internal Chart of Accounts:
-        ${accounts.map(a => `${a.id}: ${a.code} - ${a.name} (${a.type})`).join('\n')}
+        ${accounts
+          .filter((a) => !a.isArchived)
+          .map((a) => `${a.id}: ${a.code} - ${a.name} (${a.type})`)
+          .join('\n')}
 
         External Accounts to map:
-        ${fileData.map(a => `${a.externalCode} ${a.externalName}`).join('\n')}
+        ${importedRows.map((a) => `${a.externalCode} ${a.externalName}`).join('\n')}
 
         Return a JSON array of objects with:
         - externalCode: string
@@ -143,492 +237,398 @@ export const ImportTB: React.FC<ImportTBProps> = ({ accounts, onImport }) => {
       });
       if (!res.ok) {
         console.error('AI Mapping failed', res.status, await res.text());
-        alert('AI Mapping failed. Please map manually.');
+        alert('AI Mapping failed. Falling back to deterministic match.');
         return;
       }
       const geminiBody = await res.json();
-      const textPart = geminiBody?.candidates?.[0]?.content?.parts?.[0]?.text;
-      const mappings: Array<{ externalCode: string; mappedAccountId: string; confidence: number; reasoning?: string }> =
-        typeof textPart === 'string' ? JSON.parse(textPart) : [];
+      const textPart =
+        geminiBody?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const mappings: Array<{
+        externalCode: string;
+        mappedAccountId: string;
+        confidence: number;
+        reasoning?: string;
+      }> = typeof textPart === 'string' ? JSON.parse(textPart) : [];
 
-      const updatedData = fileData.map(item => {
-        const mapping = mappings.find(m => m.externalCode === item.externalCode);
+      const updated: ReviewRow[] = importedRows.map((item) => {
+        const m = mappings.find((x) => x.externalCode === item.externalCode);
+        if (!m) return item;
         return {
           ...item,
-          mappedAccountId: mapping?.mappedAccountId,
-          confidence: mapping?.confidence,
-          reasoning: mapping?.reasoning,
+          mappedAccountId: m.mappedAccountId,
+          confidence: m.confidence,
+          reasoning: m.reasoning ?? item.reasoning,
         };
       });
-
-      setFileData(updatedData);
-      setMappingComplete(true);
+      setImportedRows(updated);
     } catch (error) {
       console.error('AI Mapping failed', error);
-      alert('AI Mapping failed. Please map manually.');
+      alert('AI Mapping failed. Falling back to deterministic match.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleConfirmImport = () => {
-    // Create a single journal entry for the opening balances
-    const entry: JournalEntry = {
+  // ── Post path with fingerprint dedup (IMP-05) + single opening journal (IMP-06)
+  const buildOpeningEntry = (
+    rows: ReviewRow[],
+    fingerprint: string | undefined,
+    options?: { replacesEntryId?: string; referenceSuffix?: string },
+  ): JournalEntry => {
+    const lines: JournalLine[] = rows
+      .filter(
+        (r) =>
+          r.mappedAccountId &&
+          !r.mappedAccountId.startsWith('NEW:'), // unresolved create-new is dropped at post; user must pick a real account or skip
+      )
+      .map((r) => ({
+        accountId: r.mappedAccountId!,
+        description: `Opening: ${r.externalName}`,
+        debit: r.debit,
+        credit: r.credit,
+        taxAmount: 0,
+      }));
+    const referenceBase = `OPENING-${asAtDate}`;
+    const reference = options?.referenceSuffix
+      ? `${referenceBase}-${options.referenceSuffix}`
+      : referenceBase;
+    return {
+      _v: 3,
       id: crypto.randomUUID(),
-      date: today().toISOString().split('T')[0],
-      reference: 'IMPORT-TB',
-      description: 'Opening balances from imported Trial Balance',
+      date: asAtDate,
+      reference,
+      description: options?.replacesEntryId
+        ? `Opening balances replacing import ${options.replacesEntryId}`
+        : `Opening balances imported ${asAtDate}`,
+      lines,
       isPosted: true,
-      lines: fileData
-        .filter(item => item.mappedAccountId)
-        .map(item => ({
-          accountId: item.mappedAccountId!,
-          description: `Imported: ${item.externalName}`,
-          debit: item.debit,
-          credit: item.credit,
-          taxAmount: 0 // Opening balances usually don't carry GST lines
-        }))
+      status: 'posted',
+      importFingerprint: fingerprint,
+      ...(options?.replacesEntryId
+        ? { replacesEntryId: options.replacesEntryId }
+        : {}),
     };
-
-    onImport([entry]);
-    setFileData([]);
-    setIsMapping(false);
-    setMappingComplete(false);
-    setShowPreview(false);
   };
+
+  const handleAcceptImport = async () => {
+    const included = importedRows.filter((r) => r._include !== false);
+    if (included.length === 0) {
+      alert('No rows selected to include — nothing to post.');
+      return;
+    }
+
+    // Fingerprint dedup only fires when we know the active entity AND have
+    // existingEntries to compare against. Best-effort fallback otherwise.
+    if (activeEntityId && parsedRows && parsedRows.length > 0) {
+      try {
+        const fingerprint = await computeImportFingerprint(
+          parsedRows,
+          columnMappingByName,
+          activeEntityId,
+          asAtDate,
+        );
+        const collision = (existingEntries ?? []).find(
+          (e) => e.importFingerprint === fingerprint,
+        );
+        if (collision) {
+          setFingerprintCollision({ fingerprint, existing: collision });
+          return;
+        }
+        postEntry(buildOpeningEntry(included, fingerprint));
+        return;
+      } catch (err) {
+        console.error('Fingerprint compute failed', err);
+        // Fall through to post without fingerprint
+      }
+    }
+    postEntry(buildOpeningEntry(included, undefined));
+  };
+
+  const postEntry = (entry: JournalEntry) => {
+    onImport([entry]);
+    resetState();
+  };
+
+  const resetState = () => {
+    setImportedRows([]);
+    setParsedRows(null);
+    setParsedHeaders([]);
+    setXlsxBuffer(null);
+    setReviewing(false);
+    setIsColumnMapping(false);
+    setFingerprintCollision(null);
+    setColumnMappingByName({ code: '', name: '', debit: '', credit: '' });
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  const showUploadScreen =
+    !isColumnMapping && !reviewing && !sheetPickerNames && !fingerprintCollision;
 
   return (
     <div className="space-y-6">
-      {!isMapping && !isColumnMapping ? (
+      {showUploadScreen && (
         <div className="bg-white p-6 sm:p-12 border-2 border-dashed border-[var(--line-strong)] flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4">
             <Upload size={32} />
           </div>
           <h2 className="text-xl font-medium mb-2">Upload Trial Balance</h2>
           <p className="text-gray-500 text-sm max-w-md mb-6 px-4">
-            Upload your existing Trial Balance in CSV format.
-            You can configure column mappings and use account matching to map your accounts.
+            Upload your existing Trial Balance in CSV or XLSX format. You can
+            configure column mappings and use account matching to map your
+            accounts.
           </p>
           <input
             type="file"
-            accept=".csv"
+            accept=".csv,.xls,.xlsx"
             onChange={handleFileUpload}
             className="hidden"
             ref={fileInputRef}
+            data-testid="import-tb-file-input"
+            aria-label="import-tb-file-input"
           />
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             className="w-full sm:w-auto bg-[var(--ink)] text-white px-8 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
           >
-            Select CSV File
+            Select CSV or XLSX File
           </button>
           <div className="mt-4 text-[10px] text-gray-400 uppercase tracking-widest font-bold px-4">
             Supports Xero, MYOB, and QuickBooks exports
           </div>
+          <div className="mt-6 w-full sm:w-auto">
+            <label className="text-[10px] font-bold uppercase text-gray-500 tracking-wider block mb-1">
+              As-at date
+            </label>
+            <input
+              type="date"
+              value={asAtDate}
+              onChange={(e) => setAsAtDate(e.target.value)}
+              className="border border-[var(--line)] p-2 text-sm bg-white focus:outline-none focus:border-[var(--ink)]"
+              aria-label="import-as-at-date"
+            />
+          </div>
         </div>
-      ) : isColumnMapping ? (
-        <div className="bg-white border border-[var(--line-strong)] shadow-sm">
-          <div className="p-4 border-b border-[var(--line-strong)] flex items-center gap-3 bg-gray-50">
+      )}
+
+      {sheetPickerNames && (
+        <XlsxSheetPicker
+          sheetNames={sheetPickerNames}
+          onSelect={handleSheetPick}
+          onCancel={handleSheetPickCancel}
+        />
+      )}
+
+      {isColumnMapping && parsedRows && (
+        <div
+          className="bg-white border border-[var(--line-strong)] rounded p-4"
+          data-testid="column-mapping"
+        >
+          <div className="flex items-center gap-3 mb-4">
             <Settings2 className="text-blue-600" size={20} />
             <div>
-              <h3 className="font-medium text-sm">Configure Column Mapping</h3>
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Step 1 of 2: Define your data structure</p>
+              <h3 className="font-medium text-sm">Confirm column mapping</h3>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
+                Step 1 of 2: Map your columns by name
+              </p>
             </div>
           </div>
 
-          <div className="p-6">
-            <div className="mb-6 bg-blue-50 border border-blue-100 p-4 rounded flex items-start gap-3">
-              <AlertCircle className="text-blue-500 shrink-0 mt-0.5" size={16} />
-              <div className="text-xs text-blue-700 leading-relaxed">
-                Matches the columns from your uploaded CSV to the required ledger fields.
-                Common formats vary between software providers.
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {(['code', 'name', 'debit', 'credit'] as const).map((field) => (
-                <div key={field} className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">
-                    {field} Column
-                  </label>
-                  <select
-                    value={columnMapping[field]}
-                    onChange={(e) => setColumnMapping(prev => ({ ...prev, [field]: parseInt(e.target.value) }))}
-                    className="w-full border border-[var(--line)] p-2 text-sm bg-white focus:outline-none focus:border-[var(--ink)]"
-                  >
-                    {rawRows[0]?.map((header, colIdx) => (
-                      <option key={colIdx} value={colIdx}>
-                        Col {colIdx + 1}: {header || '(Empty)'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
-
-            <div className="border border-[var(--line)] overflow-hidden">
-              <div className="bg-gray-50 p-2 text-[10px] font-bold uppercase text-gray-400 tracking-wider border-b border-[var(--line)]">
-                Data Preview (First 5 Rows)
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-white border-b border-[var(--line)]">
-                      {rawRows[0]?.map((header, idx) => (
-                        <th key={idx} className="p-2 text-left bg-gray-50/50 border-r border-[var(--line)] last:border-r-0">
-                          <div className="text-gray-400 font-mono">Col {idx + 1}</div>
-                          <div className="truncate max-w-[120px]">{header}</div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rawRows.slice(1, 6).map((row, rowIdx) => (
-                      <tr key={rowIdx} className="border-b border-[var(--line)] last:border-b-0">
-                        {row.map((cell, cellIdx) => (
-                          <td key={cellIdx} className="p-2 border-r border-[var(--line)] last:border-r-0 text-gray-600">
-                            <div className="truncate max-w-[120px]">{cell}</div>
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          <div className="mb-4 bg-blue-50 border border-blue-100 p-3 rounded flex items-start gap-2">
+            <AlertCircle
+              className="text-blue-500 shrink-0 mt-0.5"
+              size={14}
+            />
+            <div className="text-xs text-blue-700 leading-relaxed">
+              {parsedRows.length} rows parsed from{' '}
+              {parsedHeaders.length} columns. Pick which header maps to each
+              field below.
             </div>
           </div>
 
-          <div className="p-4 bg-gray-50 border-t border-[var(--line-strong)] flex justify-end gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(['code', 'name', 'debit', 'credit'] as const).map((role) => (
+              <label key={role} className="flex flex-col text-sm">
+                <span className="text-[10px] font-bold uppercase text-gray-500 tracking-wider mb-1">
+                  {role.charAt(0).toUpperCase() + role.slice(1)} column
+                </span>
+                <select
+                  value={columnMappingByName[role]}
+                  onChange={(e) =>
+                    setColumnMappingByName({
+                      ...columnMappingByName,
+                      [role]: e.target.value,
+                    })
+                  }
+                  aria-label={`map-${role}`}
+                  className="border border-[var(--line)] px-2 py-1.5 bg-white"
+                >
+                  <option value="">— select —</option>
+                  {parsedHeaders.map((h) => (
+                    <option key={h} value={h}>
+                      {h}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-2 mt-4">
             <button
-              onClick={() => setIsColumnMapping(false)}
-              className="px-6 py-2 text-sm font-medium border border-[var(--line)] hover:bg-gray-100"
+              type="button"
+              onClick={resetState}
+              className="px-4 py-2 text-sm border border-[var(--line)] hover:bg-gray-100"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={processColumnMapping}
-              className="bg-[var(--ink)] text-white px-8 py-2 text-sm font-bold uppercase tracking-widest hover:opacity-90"
+              disabled={
+                !columnMappingByName.code ||
+                !columnMappingByName.name ||
+                !columnMappingByName.debit ||
+                !columnMappingByName.credit
+              }
+              className="bg-blue-600 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
+              data-testid="confirm-mapping"
             >
-              Continue to Account Mapping
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white border border-[var(--line-strong)] shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-[var(--line-strong)] flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-50 gap-4">
-            <div>
-              <h3 className="font-medium flex items-center gap-2">
-                <FileText size={18} className="text-blue-600" />
-                Mapping Imported Accounts
-              </h3>
-              <p className="text-xs text-gray-500 mt-1">
-                {fileData.length} accounts found in file.
-              </p>
-            </div>
-            <div className="flex w-full sm:w-auto gap-3">
-              {!mappingComplete && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={runDeterministicMapping}
-                    disabled={isProcessing}
-                    className="bg-[var(--ink)] text-white px-4 py-2 text-sm font-medium flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
-                  >
-                    {isProcessing ? <Loader2 className="animate-spin" size={16} /> : <ArrowRight size={16} />}
-                    Auto-match Accounts
-                  </button>
-                  {isAiEnabled() && (
-                    <button
-                      onClick={runAIMapping}
-                      disabled={isProcessing}
-                      className="border border-[var(--line-strong)] bg-white px-4 py-2 text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                    >
-                      <Sparkles size={16} className="text-amber-500" />
-                      Enhance with AI
-                    </button>
-                  )}
-                </div>
-              )}
-              <button
-                onClick={() => setIsMapping(false)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium border border-[var(--line)] hover:bg-gray-100 flex items-center justify-center"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-
-          {/* Desktop Table View */}
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--line)] bg-gray-50">
-                  <th className="col-header text-left p-4">External Account</th>
-                  <th className="col-header text-right p-4">Debit</th>
-                  <th className="col-header text-right p-4">Credit</th>
-                  <th className="w-12 text-center"></th>
-                  <th className="col-header text-left p-4">LedgerAU Account (Mapping)</th>
-                  <th className="col-header text-center p-4">Match</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--line)]">
-                {fileData.map((item, idx) => (
-                  <tr key={idx} className="data-row">
-                    <td className="p-4">
-                      <div className="font-medium">{item.externalName}</div>
-                      <div className="text-xs text-gray-400 font-mono">{item.externalCode}</div>
-                      {item.reasoning && (
-                        <div className="mt-2 text-[11px] text-blue-700 bg-blue-50 p-2 rounded border border-blue-100 flex items-start gap-1.5 leading-tight">
-                          <Sparkles size={12} className="shrink-0 mt-0.5 text-blue-500" />
-                          <span>{item.reasoning}</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="p-4 text-right data-value">
-                      {item.debit > 0 ? item.debit.toLocaleString() : '-'}
-                    </td>
-                    <td className="p-4 text-right data-value">
-                      {item.credit > 0 ? item.credit.toLocaleString() : '-'}
-                    </td>
-                    <td className="text-center text-gray-300">
-                      <ArrowRight size={16} />
-                    </td>
-                    <td className="p-4">
-                      <select
-                        value={item.mappedAccountId || ''}
-                        onChange={(e) => {
-                          const newData = [...fileData];
-                          newData[idx].mappedAccountId = e.target.value;
-                          setFileData(newData);
-                        }}
-                        className={cn(
-                          "w-full border p-1 text-sm focus:outline-none",
-                          item.mappedAccountId ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
-                        )}
-                      >
-                        <option value="">Select Mapping...</option>
-                        {accounts.map(acc => (
-                          <option key={acc.id} value={acc.id}>
-                            {acc.code} - {acc.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="p-4 text-center">
-                      {item.confidence ? (
-                        <div className={cn(
-                          "text-[10px] font-bold px-2 py-0.5 rounded-full inline-block",
-                          item.confidence > 0.8 ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                        )}>
-                          {Math.round(item.confidence * 100)}%
-                        </div>
-                      ) : (
-                        <AlertCircle size={16} className="text-gray-300 mx-auto" />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="lg:hidden divide-y divide-[var(--line)]">
-            {fileData.map((item, idx) => (
-              <div key={idx} className="p-4 space-y-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-medium">{item.externalName}</div>
-                    <div className="text-xs text-gray-400 font-mono">{item.externalCode}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-green-600">
-                      {item.debit > 0 ? `DR: ${item.debit.toLocaleString()}` : ''}
-                    </div>
-                    <div className="text-sm font-medium text-red-600">
-                      {item.credit > 0 ? `CR: ${item.credit.toLocaleString()}` : ''}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Mapping</label>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={item.mappedAccountId || ''}
-                      onChange={(e) => {
-                        const newData = [...fileData];
-                        newData[idx].mappedAccountId = e.target.value;
-                        setFileData(newData);
-                      }}
-                      className={cn(
-                        "flex-1 border p-2 text-sm focus:outline-none rounded",
-                        item.mappedAccountId ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
-                      )}
-                    >
-                      <option value="">Select Mapping...</option>
-                      {accounts.map(acc => (
-                        <option key={acc.id} value={acc.id}>
-                          {acc.code} - {acc.name}
-                        </option>
-                      ))}
-                    </select>
-                    {item.confidence && (
-                      <div className={cn(
-                        "text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap",
-                        item.confidence > 0.8 ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                      )}>
-                        {Math.round(item.confidence * 100)}%
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {item.reasoning && (
-                  <div className="text-[11px] text-blue-700 bg-blue-50 p-2 rounded border border-blue-100 flex items-start gap-1.5 leading-tight">
-                    <Sparkles size={12} className="shrink-0 mt-0.5 text-blue-500" />
-                    <span>{item.reasoning}</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="p-4 sm:p-6 bg-gray-50 border-t border-[var(--line-strong)] flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-gray-500 flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-green-500" />
-              Ready to import {fileData.filter(i => i.mappedAccountId).length} of {fileData.length} accounts.
-            </div>
-            <button
-              onClick={() => setShowPreview(true)}
-              disabled={!fileData.some(i => i.mappedAccountId)}
-              className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3 font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              Preview Import
-              <ArrowRight size={18} />
+              Continue to review
             </button>
           </div>
         </div>
       )}
 
-      <AnimatePresence>
-        {showPreview && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowPreview(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-4xl bg-white shadow-2xl border border-[var(--line-strong)] flex flex-col max-h-full"
-            >
-              <div className="p-6 border-b border-[var(--line-strong)] bg-gray-50 flex justify-between items-center shrink-0">
-                <div>
-                  <h3 className="text-lg font-bold flex items-center gap-2">
-                    <CheckCircle2 size={24} className="text-green-500" />
-                    Review Import Data
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">Please confirm the totals and mappings before finalizing.</p>
-                </div>
-                <button
-                  onClick={() => setShowPreview(false)}
-                  className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="p-6 overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="p-4 bg-blue-50 border border-blue-100">
-                    <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Accounts</div>
-                    <div className="text-2xl font-bold">{fileData.filter(i => i.mappedAccountId).length}</div>
-                  </div>
-                  <div className="p-4 bg-gray-100/50 border border-gray-200">
-                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Debits</div>
-                    <div className="text-2xl font-bold font-mono text-green-600">
-                      ${fileData.filter(i => i.mappedAccountId).reduce((sum, i) => sum + i.debit, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                  <div className="p-4 bg-gray-100/50 border border-gray-200">
-                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Credits</div>
-                    <div className="text-2xl font-bold font-mono text-rose-600">
-                      ${fileData.filter(i => i.mappedAccountId).reduce((sum, i) => sum + i.credit, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                </div>
-
-                {Math.abs(fileData.filter(i => i.mappedAccountId).reduce((sum, i) => sum + i.debit, 0) - fileData.filter(i => i.mappedAccountId).reduce((sum, i) => sum + i.credit, 0)) > 0.01 && (
-                  <div className="mb-6 p-4 bg-amber-50 border border-amber-200 flex items-start gap-3">
-                    <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={18} />
-                    <div className="text-sm text-amber-800">
-                      <p className="font-bold">Caution: Trial Balance Out of Balance</p>
-                      <p className="opacity-80">Finalizing this import will result in an unbalanced journal entry.</p>
-                    </div>
-                  </div>
+      {reviewing && (
+        <div className="space-y-4">
+          <div className="bg-white p-3 border border-[var(--line)] rounded flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm">
+              <FileText size={16} className="text-blue-600" />
+              <span>
+                {importedRows.length} rows parsed; review matches below.
+              </span>
+            </div>
+            {isAiEnabled() && (
+              <button
+                type="button"
+                onClick={runAIMapping}
+                disabled={isProcessing}
+                className="border border-[var(--line-strong)] bg-white px-3 py-1.5 text-xs font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                data-testid="ai-rematch"
+              >
+                {isProcessing ? (
+                  <Loader2 className="animate-spin" size={14} />
+                ) : (
+                  <Sparkles size={14} className="text-amber-500" />
                 )}
-
-                <div className="border border-[var(--line)]">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-[var(--line)]">
-                        <th className="text-[10px] font-bold uppercase text-gray-400 p-3 text-left">Internal Mapping</th>
-                        <th className="text-[10px] font-bold uppercase text-gray-400 p-3 text-left">External Source</th>
-                        <th className="text-[10px] font-bold uppercase text-gray-400 p-3 text-right">Debit</th>
-                        <th className="text-[10px] font-bold uppercase text-gray-400 p-3 text-right">Credit</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--line)]">
-                      {fileData.filter(i => i.mappedAccountId).map((item, idx) => {
-                        const mappedAccount = accounts.find(a => a.id === item.mappedAccountId);
-                        return (
-                          <tr key={idx} className="hover:bg-gray-50/50">
-                            <td className="p-3">
-                              <div className="font-bold text-gray-800 text-xs">{mappedAccount?.name}</div>
-                              <div className="text-[10px] text-gray-400 font-mono italic">{mappedAccount?.code}</div>
-                            </td>
-                            <td className="p-3">
-                              <div className="text-gray-600 text-xs">{item.externalName}</div>
-                              <div className="text-[10px] text-gray-400 font-mono">{item.externalCode}</div>
-                            </td>
-                            <td className="p-3 text-right font-mono text-xs">
-                              {item.debit > 0 ? `$${item.debit.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '-'}
-                            </td>
-                            <td className="p-3 text-right font-mono text-xs">
-                              {item.credit > 0 ? `$${item.credit.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '-'}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="p-6 bg-gray-50 border-t border-[var(--line-strong)] flex flex-col sm:flex-row justify-end items-center gap-4 shrink-0">
-                <button
-                  onClick={() => setShowPreview(false)}
-                  className="w-full sm:w-auto px-6 py-2 text-sm font-bold uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  Go Back
-                </button>
-                <button
-                  onClick={handleConfirmImport}
-                  className="w-full sm:w-auto bg-[var(--ink)] text-white px-10 py-3 text-xs font-bold uppercase tracking-widest hover:bg-black transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-lg"
-                >
-                  <CheckCircle2 size={16} />
-                  Confirm & Finalize
-                </button>
-              </div>
-            </motion.div>
+                Enhance with AI
+              </button>
+            )}
           </div>
+          <ImportReviewPane
+            rows={importedRows}
+            accounts={accounts}
+            onUpdate={(rs) => setImportedRows(rs as ReviewRow[])}
+            onAccept={handleAcceptImport}
+            onReject={resetState}
+          />
+        </div>
+      )}
+
+      <AnimatePresence>
+        {fingerprintCollision && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+            data-testid="fingerprint-collision-dialog"
+          >
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
+                <AlertCircle className="text-amber-600" size={18} />
+                Duplicate trial balance detected
+              </h3>
+              <p className="text-sm mb-4 text-gray-700">
+                A trial-balance import already exists for this entity as-at{' '}
+                {fingerprintCollision.existing.date} (reference{' '}
+                <span className="font-mono">
+                  {fingerprintCollision.existing.reference}
+                </span>
+                ).
+              </p>
+              <div className="flex flex-wrap gap-2 justify-end">
+                <button
+                  type="button"
+                  data-testid="fp-skip"
+                  onClick={() => setFingerprintCollision(null)}
+                  className="text-sm underline px-3 py-1"
+                >
+                  Skip
+                </button>
+                <button
+                  type="button"
+                  data-testid="fp-replace"
+                  onClick={() => {
+                    const included = importedRows.filter(
+                      (r) => r._include !== false,
+                    );
+                    const replacement = buildOpeningEntry(
+                      included,
+                      fingerprintCollision.fingerprint,
+                      {
+                        replacesEntryId: fingerprintCollision.existing.id,
+                        referenceSuffix: 'REPLACE',
+                      },
+                    );
+                    if (typeof onReplace === 'function') {
+                      onReplace(
+                        fingerprintCollision.existing.id,
+                        replacement,
+                      );
+                    } else {
+                      // Fallback: parent did not wire onReplace. TB will
+                      // double-count the original AND replacement until the
+                      // wiring is fixed in App.tsx via supersedeImport.
+                      onImport([replacement]);
+                    }
+                    resetState();
+                  }}
+                  className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                >
+                  Replace existing journal
+                </button>
+                <button
+                  type="button"
+                  data-testid="fp-additional"
+                  onClick={() => {
+                    const included = importedRows.filter(
+                      (r) => r._include !== false,
+                    );
+                    // Append :additional-{ts} so dedup doesn't keep firing
+                    const newFp = `${fingerprintCollision.fingerprint}:additional-${Date.now()}`;
+                    postEntry(buildOpeningEntry(included, newFp));
+                  }}
+                  className="bg-gray-200 px-3 py-1 rounded text-sm"
+                >
+                  Import as additional
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
+
+      {reviewing && importedRows.length > 0 && (
+        <div className="text-xs text-gray-500 flex items-center gap-2 px-1">
+          <CheckCircle2 size={14} className="text-green-500" />
+          {importedRows.filter((r) => r.mappedAccountId && r._include !== false)
+            .length}{' '}
+          of {importedRows.length} rows mapped and included.
+          <ArrowRight size={14} className="text-gray-300 ml-1" />
+        </div>
+      )}
     </div>
   );
 };

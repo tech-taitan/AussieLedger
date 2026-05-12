@@ -607,7 +607,15 @@ export function ViewRouter({
           )}
 
           {view === 'import' && (
-            <ImportTB accounts={accounts} onImport={journals.importEntries} />
+            <ImportTB
+              accounts={accounts}
+              onImport={journals.importEntries}
+              activeEntityId={activeEntityId ?? undefined}
+              existingEntries={
+                activeEntityId ? (journals.allEntries[activeEntityId] ?? []) : []
+              }
+              onReplace={journals.supersedeImport}
+            />
           )}
 
           {view === 'data' && <DataPage />}

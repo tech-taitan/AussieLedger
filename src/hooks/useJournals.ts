@@ -38,6 +38,16 @@ export interface JournalsHook {
   reversePosted: (original: JournalEntry, reversalDate?: string) => void;
   voidDraft: (entry: JournalEntry) => void;
   searchJournals: (filters: SearchFilters) => JournalEntry[];
+  /**
+   * IMP-05 Replace path: supersede an existing opening-balances entry with a
+   * new one in a single state update — mirrors `editPosted`'s supersession
+   * arm but takes the fully-built replacement entry from ImportTB (which
+   * already validated balance and computed the fingerprint). Without this
+   * helper, ImportTB's Replace path would emit TWO posted entries with the
+   * SAME importFingerprint (the original AND the replacement) — TrialBalance
+   * (which filters out `status === 'superseded'`) would double-count.
+   */
+  supersedeImport: (existingId: string, newEntry: JournalEntry) => void;
 }
 
 export function useJournals(
@@ -283,6 +293,48 @@ export function useJournals(
     [entries],
   );
 
+  /**
+   * IMP-05 Replace path: in one setAllEntries call, mark the existing entry
+   * as `status: 'superseded' + replacedByEntryId` AND prepend the new entry.
+   * Mirrors editPosted's supersession arm but accepts a pre-built replacement
+   * from ImportTB (which has already computed the fingerprint + validated the
+   * balance). Emits an EDIT_JOURNAL audit row with before/after snapshots so
+   * the Audit Trail surfaces the replace operation alongside regular edits.
+   */
+  const supersedeImport = useCallback(
+    (existingId: string, newEntry: JournalEntry) => {
+      if (!activeEntityId) return;
+      // Validate the incoming entry's balance defensively — ImportTB already
+      // does this, but a stray caller shouldn't be able to bypass BOOK-01.
+      validateBalanced(newEntry.lines);
+
+      let before: JournalEntry | undefined;
+      setAllEntries((prev) => {
+        const list = prev[activeEntityId] ?? [];
+        const existing = list.find((e) => e.id === existingId);
+        before = existing;
+        const updated = list.map((e) =>
+          e.id === existingId
+            ? {
+                ...e,
+                _v: 3,
+                status: 'superseded' as const,
+                replacedByEntryId: newEntry.id,
+              }
+            : e,
+        );
+        return { ...prev, [activeEntityId]: [newEntry, ...updated] };
+      });
+
+      void emitAudit('EDIT_JOURNAL', {
+        summary: 'Opening balance replaced via TB re-import',
+        before: before ?? { id: existingId },
+        after: newEntry,
+      });
+    },
+    [activeEntityId, emitAudit],
+  );
+
   return {
     allEntries,
     entries,
@@ -300,5 +352,6 @@ export function useJournals(
     reversePosted,
     voidDraft,
     searchJournals,
+    supersedeImport,
   };
 }
