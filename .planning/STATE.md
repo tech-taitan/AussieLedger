@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 4 — Bookkeeping Core (all plans complete; phase ready for /gsd:verify-work)
-current_plan: none (Phase 4 closed; next is /gsd:verify-work 4)
-status: phase-ready-for-verification
-last_updated: "2026-05-13T00:00:00.000Z"
+current_phase: Phase 4 — Bookkeeping Core (verified complete 2026-05-13)
+current_plan: none (Phase 4 closed; next is /gsd:research-phase 5)
+status: phase-complete
+last_updated: "2026-05-13T08:00:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 15
   completed_plans: 15
 ---
@@ -34,15 +34,15 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 4 — Bookkeeping Core (all plans CLOSED 2026-05-13; awaiting /gsd:verify-work)
-**Current plan:** none — Phase 4 ready for goal-backward verification
+**Current phase:** Phase 4 — Bookkeeping Core (CLOSED 2026-05-13; goal-backward verification PASS)
+**Current plan:** none — Phase 4 verified complete; next action is `/gsd:research-phase 5`
 **Phase status:** Phase 4 fully PLAN-COMPLETE. **Wave 0 (04-1):** v3 type widening + additive v2→v3 migration + 127-row AU SME default CoA + 4 per-type overlays + getDefaultCoaFor + pure-function ledger.ts + sha256 fingerprint + PapaParse/SheetJS CE wrappers + 12 hook/component test scaffolds. **Wave 2 (04-2 + 04-3 parallel):** useJournals lifecycle (postDraft/editPosted supersession/reversePosted/voidDraft/searchJournals) + JournalForm Edit+Reverse + EditJournalDiff + JournalSearch + TrialBalance period-filter + parent subtotals + AuditTrail widened (04-2); useAccounts (archiveAccount/setIsDefault/isAccountInUse) + useEntities (createEntity-seeds-CoA/tryDeleteEntity/beneficiary+partner writers) + CoaTreeView + AccountManager refactor + GST 'ITS'→'INP' typo fix + EntityForm AU-4 + register tabs + BeneficiaryRegister + PartnerRegister (04-3). **Wave 3 (04-4):** XlsxSheetPicker + ImportReviewPane + ImportTB refactor (634→520 lines) consuming Wave 0 wrappers + fingerprint Skip/Replace/Add-additional dialog + onReplace prop + useJournals.supersedeImport helper (closes the plan-checker-flagged TB-double-count risk) + ViewRouter wiring. **Task 3 UAT APPROVED 2026-05-13** — all 28 manual checks passed including step-18 Replace regression. Tests: 371 SPA GREEN + 11 todo + 0 RED; 18 server GREEN. lint + build + build:server + dev-full smoke all EXIT 0. StorageAdapter untouched (Phase 3 FINAL preserved). 23/23 Phase 4 requirements DELIVERED end-to-end.
 **Last session:** 2026-05-13 (Wave 3 04-4 Tasks 1+2 executed; Task 3 manual UAT approved — Phase 4 closed)
 **Overall progress:** Phases 1 + 2 + 3 + 4 (pending /gsd:verify-work) — 15/15 plans complete.
 
 ```
-[Phase 1] [Phase 2] [Phase 3] [Phase 4 ] [Phase 5] [Phase 6]
-[ DONE  ] [ DONE  ] [ DONE  ] [ VERIFY ] [  ----  ] [  ----  ]
+[Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
+[ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [  ----  ] [  ----  ]
 ```
 
 ---
@@ -54,7 +54,7 @@ progress:
 | 1 | Safety Net | ATO theatre gone, Vitest + CI green, decimal.js, schema versioning | COMPLETE |
 | 2 | Decompose and Tax Engine | App.tsx ≤250 lines, lib/tax/ pure functions, AI key off client, period model | COMPLETE |
 | 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | COMPLETE (verified 2026-05-12; FND-02 CSV partial → Phases 4/5) |
-| 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | Ready for /gsd:verify-work (all 4 plans + 28-step UAT approved 2026-05-13; 23/23 requirements delivered) |
+| 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | COMPLETE (verified 2026-05-13; 23/23 requirements; 371 SPA + 18 server GREEN; UAT step-18 Replace regression confirmed PASS) |
 | 5 | Tax Outputs | All four return types + BAS/IAS, print-ready with ATO field codes | Not started |
 | 6 | Personas, Wizard, Deployment | Dual modes, year-end wizard, anomaly flags, open-source release | Not started |
 
@@ -63,8 +63,8 @@ progress:
 ## Performance Metrics
 
 - Plans completed: 15 / Plans total: 15 (Phase 1: 3, Phase 2: 4, Phase 3: 4, Phase 4: 4)
-- Phases complete: 3/6 (Phase 1 + Phase 2 + Phase 3 done); Phase 4 awaiting /gsd:verify-work
-- Requirements mapped: 70/70 — Phase 4 23/23 DELIVERED end-to-end and signed off by UAT 2026-05-13
+- Phases complete: 4/6 (Phase 1 + Phase 2 + Phase 3 + Phase 4 done)
+- Requirements mapped: 70/70 — Phase 4 23/23 DELIVERED end-to-end + verified 2026-05-13; Phase 5 (Tax Outputs) and Phase 6 (Personas/Wizard/Deployment) remain
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|

@@ -11,7 +11,7 @@
 - [x] **Phase 1: Safety Net** — Remove regulatory theatre, install test infrastructure, lock in decimal arithmetic and schema versioning before any user data accumulates (completed 2026-05-10)
 - [x] **Phase 2: Decompose and Tax Engine** — Break up the monolithic App.tsx, extract pure tax functions into a shared lib, remove AI key from client bundle, introduce period model (completed 2026-05-10)
 - [x] **Phase 3: Durable Persistence** — Replace localStorage with a StorageAdapter backed by IndexedDB (no-server) and SQLite (server); add export/import (completed 2026-05-12; FND-02 CSV per-report exports deferred to Phases 4 + 5 per 03-UAT.md)
-- [ ] **Phase 4: Bookkeeping Core** — Full 80–150 account CoA with GST codes and tax-label pre-mapping, complete journal CRUD, TB import, entity management with AU-specific fields
+- [x] **Phase 4: Bookkeeping Core** — Full 80–150 account CoA with GST codes and tax-label pre-mapping, complete journal CRUD, TB import, entity management with AU-specific fields (completed 2026-05-13; 23/23 requirements delivered + 28-step UAT all pass + goal-backward PASS per 04-UAT.md)
 - [ ] **Phase 5: Tax Outputs** — All four AU return types (Individual, Company, Trust, Partnership), BAS/IAS, and print-ready working-paper output
 - [ ] **Phase 6: Personas, Wizard, and Deployment** — Dual consumer/agent modes, year-end preparation wizard, anomaly flags, in-context help, and open-source deployment polish
 
