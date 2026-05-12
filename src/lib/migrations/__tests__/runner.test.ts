@@ -10,7 +10,15 @@ describe('migrate()', () => {
   it('preserves existing data through the 0 → 1 identity migration', () => {
     const result = migrate({ entities: [{ id: 'x' }] });
     expect(result._v).toBe(CURRENT_VERSION);
-    expect(result.entities).toEqual([{ id: 'x' }]);
+    // v3 migration adds Entity defaults (gstRegistered, accountingMethod, fyEndDate, lockedFys).
+    // The original `id: 'x'` field is preserved; the additive defaults are appended.
+    const ents = result.entities as Array<Record<string, unknown>>;
+    expect(ents).toHaveLength(1);
+    expect(ents[0].id).toBe('x');
+    expect(ents[0].gstRegistered).toBe(false);
+    expect(ents[0].accountingMethod).toBe('accruals');
+    expect(ents[0].fyEndDate).toBe('06-30');
+    expect(ents[0].lockedFys).toEqual([]);
   });
 
   it('passes through already-current data unchanged', () => {
@@ -25,7 +33,7 @@ describe('migrate()', () => {
     expect(() => migrate({ _v: 999 })).toThrow();
   });
 
-  it('CURRENT_VERSION is 2 after Phase 2', () => {
-    expect(CURRENT_VERSION).toBe(2);
+  it('CURRENT_VERSION is 3 after Phase 4', () => {
+    expect(CURRENT_VERSION).toBe(3);
   });
 });

@@ -25,7 +25,8 @@ export interface Entity {
   _v?: number;
   id: string;
   name: string;
-  type: string;
+  /** Constrained to AU four for new entities; legacy seeds may carry other strings until v3 migration normalises. */
+  type: 'Company' | 'Trust' | 'Individual' | 'Partnership' | string;
   registrationNumber?: string;
   businessAddress?: string;
   contactPerson?: string;
@@ -34,6 +35,32 @@ export interface Entity {
   taxAgentPhone?: string;
   taxAgentEmail?: string;
   notes?: string;
+  // _v:3 additions
+  gstRegistered?: boolean;
+  accountingMethod?: 'cash' | 'accruals';
+  /** ISO MM-DD; defaults '06-30' for AU FY-end. */
+  fyEndDate?: string;
+  /** Phase 5/6 will populate; Phase 4 ships empty default. */
+  lockedFys?: string[];
+  /** Trust beneficiary register (ENT-07). */
+  beneficiaries?: BeneficiaryRow[];
+  /** Partnership partner register (ENT-08). */
+  partners?: PartnerRow[];
+}
+
+export interface BeneficiaryRow {
+  id: string;
+  name: string;
+  sharePercent: number;
+  /** Phase 5 streaming overrides; Phase 4 ships shape only, UI exposes sharePercent. */
+  sharePerType?: Partial<Record<'interest' | 'dividend' | 'capitalGain' | 'foreign' | 'other', number>>;
+}
+
+export interface PartnerRow {
+  id: string;
+  name: string;
+  sharePercent: number;
+  sharePerType?: Partial<Record<'interest' | 'dividend' | 'capitalGain' | 'foreign' | 'other', number>>;
 }
 
 export interface Account {
@@ -42,12 +69,19 @@ export interface Account {
   code: string;
   name: string;
   type: AccountType;
-  taxLabel?: string;            // Individual ATO label (NAT 0660)
-  companyTaxLabel?: string;     // Company ATO label (NAT 0656)
-  trustTaxLabel?: string;       // Trust ATO label (NAT 0659)
-  partnershipTaxLabel?: string; // NEW _v: 2 — Partnership ATO label (NAT 0976)
-  gstCode: 'GST' | 'FRE' | 'INP' | 'N-T' | 'CAP'; // WIDENED _v: 2 — added INP and CAP
-  _needsReview?: boolean;       // NEW _v: 2 — set by migration when label inference fails for Revenue/Expense
+  taxLabel?: string;
+  companyTaxLabel?: string;
+  trustTaxLabel?: string;
+  partnershipTaxLabel?: string;
+  gstCode: 'GST' | 'FRE' | 'INP' | 'N-T' | 'CAP';
+  _needsReview?: boolean;
+  // _v:3 additions
+  /** parent_code reference for hierarchy (BOOK-07). null for root headers. */
+  parentCode?: string | null;
+  /** Default seed account — UI blocks hard delete; archive only. */
+  isDefault?: boolean;
+  /** Soft-delete flag — hides from journal pickers and AccountManager default view. */
+  isArchived?: boolean;
 }
 
 export interface JournalLine {
@@ -60,6 +94,12 @@ export interface JournalLine {
   isManualTax?: boolean;
 }
 
+/** Journal entry lifecycle states. `draft` is pre-post; `posted` is authoritative;
+ *  `superseded` means a later entry replaces this one via `replacedByEntryId`;
+ *  `reversed` means a balancing entry references this one via `reversesEntryId`;
+ *  `voided` is a soft-deleted draft. */
+export type JournalEntryStatus = 'draft' | 'posted' | 'superseded' | 'reversed' | 'voided';
+
 export interface JournalEntry {
   _v?: number;
   id: string;
@@ -67,7 +107,18 @@ export interface JournalEntry {
   reference: string;
   description: string;
   lines: JournalLine[];
+  /** Authoritative posting flag from Phase 1/2; v3 makes `status` the new source of truth but keeps this for compat. */
   isPosted: boolean;
+  // _v:3 additions
+  status?: JournalEntryStatus;
+  /** Set on a reversal entry pointing back to the original (BOOK-03). */
+  reversesEntryId?: string;
+  /** Set on a supersedes (edit) entry pointing back to the prior version (BOOK-02). */
+  replacesEntryId?: string;
+  /** Set on the prior version pointing forward to its replacement. */
+  replacedByEntryId?: string;
+  /** sha256(canonical rows + entityId + asAtDate) — set on opening-balances journal from IMP-05. */
+  importFingerprint?: string;
 }
 
 export interface TrialBalanceRow {
@@ -75,6 +126,12 @@ export interface TrialBalanceRow {
   debit: number;
   credit: number;
   balance: number;
+  /** _v:3 — depth in CoA tree (0=root, 1=child, ...). */
+  depth?: number;
+  /** _v:3 — true if any other Account has parentCode === this.account.code. */
+  isParent?: boolean;
+  /** _v:3 — pre-aggregated child sums for parent rows. */
+  childTotals?: { debit: number; credit: number; balance: number };
 }
 
 export interface ImportedAccount {
@@ -87,12 +144,20 @@ export interface ImportedAccount {
   reasoning?: string;
 }
 
+/** Phase 4 widens the action enum to cover Phase 4 + 5 + 6 actions, avoiding a future v3→v4 migration. */
+export type AuditAction =
+  | 'CREATE_ENTITY' | 'UPDATE_ENTITY' | 'DELETE_ENTITY'
+  | 'POST_JOURNAL' | 'EDIT_JOURNAL' | 'REVERSE_JOURNAL' | 'VOID_JOURNAL' | 'DELETE_JOURNAL'
+  | 'CREATE_ACCOUNT' | 'UPDATE_ACCOUNT' | 'ARCHIVE_ACCOUNT' | 'DELETE_ACCOUNT'
+  | 'IMPORT_TB' | 'IMPORT_DATA' | 'EXPORT_DATA'
+  | 'LOCK_FY' | 'UNLOCK_FY';
+
 export interface AuditLog {
   _v?: number;
   id: string;
   timestamp: string;
   user: string;
-  action: 'CREATE_ENTITY' | 'UPDATE_ENTITY' | 'POST_JOURNAL' | 'DELETE_JOURNAL' | 'IMPORT_DATA';
+  action: AuditAction;
   entityId?: string;
   details: string;
 }

@@ -10,6 +10,28 @@
  */
 import { z } from 'zod';
 
+const ShareTypeRecord = z.object({
+  interest: z.number().optional(),
+  dividend: z.number().optional(),
+  capitalGain: z.number().optional(),
+  foreign: z.number().optional(),
+  other: z.number().optional(),
+}).partial();
+
+export const BeneficiaryRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  sharePercent: z.number(),
+  sharePerType: ShareTypeRecord.optional(),
+});
+
+export const PartnerRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  sharePercent: z.number(),
+  sharePerType: ShareTypeRecord.optional(),
+});
+
 export const EntitySchema = z.object({
   _v: z.number().optional(),
   id: z.string(),
@@ -23,6 +45,13 @@ export const EntitySchema = z.object({
   taxAgentPhone: z.string().optional(),
   taxAgentEmail: z.string().optional(),
   notes: z.string().optional(),
+  // v3 additions
+  gstRegistered: z.boolean().optional(),
+  accountingMethod: z.enum(['cash', 'accruals']).optional(),
+  fyEndDate: z.string().optional(),
+  lockedFys: z.array(z.string()).optional(),
+  beneficiaries: z.array(BeneficiaryRowSchema).optional(),
+  partners: z.array(PartnerRowSchema).optional(),
 });
 
 export const AccountSchema = z.object({
@@ -37,6 +66,10 @@ export const AccountSchema = z.object({
   partnershipTaxLabel: z.string().optional(),
   gstCode: z.enum(['GST', 'FRE', 'INP', 'N-T', 'CAP']),
   _needsReview: z.boolean().optional(),
+  // v3 additions
+  parentCode: z.string().nullable().optional(),
+  isDefault: z.boolean().optional(),
+  isArchived: z.boolean().optional(),
 });
 
 export const JournalLineSchema = z.object({
@@ -49,6 +82,8 @@ export const JournalLineSchema = z.object({
   isManualTax: z.boolean().optional(),
 });
 
+export const JournalEntryStatusEnum = z.enum(['draft', 'posted', 'superseded', 'reversed', 'voided']);
+
 export const JournalEntrySchema = z.object({
   _v: z.number().optional(),
   id: z.string(),
@@ -57,14 +92,28 @@ export const JournalEntrySchema = z.object({
   description: z.string(),
   lines: z.array(JournalLineSchema),
   isPosted: z.boolean(),
+  // v3 additions
+  status: JournalEntryStatusEnum.optional(),
+  reversesEntryId: z.string().optional(),
+  replacesEntryId: z.string().optional(),
+  replacedByEntryId: z.string().optional(),
+  importFingerprint: z.string().optional(),
 });
+
+export const AuditActionEnum = z.enum([
+  'CREATE_ENTITY', 'UPDATE_ENTITY', 'DELETE_ENTITY',
+  'POST_JOURNAL', 'EDIT_JOURNAL', 'REVERSE_JOURNAL', 'VOID_JOURNAL', 'DELETE_JOURNAL',
+  'CREATE_ACCOUNT', 'UPDATE_ACCOUNT', 'ARCHIVE_ACCOUNT', 'DELETE_ACCOUNT',
+  'IMPORT_TB', 'IMPORT_DATA', 'EXPORT_DATA',
+  'LOCK_FY', 'UNLOCK_FY',
+]);
 
 export const AuditLogSchema = z.object({
   _v: z.number().optional(),
   id: z.string(),
   timestamp: z.string(),
   user: z.string(),
-  action: z.enum(['CREATE_ENTITY', 'UPDATE_ENTITY', 'POST_JOURNAL', 'DELETE_JOURNAL', 'IMPORT_DATA']),
+  action: AuditActionEnum,
   entityId: z.string().optional(),
   details: z.string(),
 });

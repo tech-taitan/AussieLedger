@@ -4,13 +4,15 @@
  */
 
 import { migrateV1ToV2 } from './v1-to-v2.js';
+import { migrateV2ToV3 } from './v2-to-v3.js';
 
 /**
  * Root shape of all persisted state. The `_v` field is the schema version.
  * Phase 1 registered the 0 → 1 identity migration; Phase 2 adds 1 → 2 which
  * populates per-entity-type tax labels (specifically partnershipTaxLabel) on
  * existing accounts via name inference and flags unmappable accounts with
- * _needsReview.
+ * _needsReview. Phase 4 adds 2 → 3 which widens Account/JournalEntry/Entity/
+ * AuditLog with additive defaults (see migrations/v2-to-v3.ts).
  */
 export interface PersistedRoot {
   _v: number;
@@ -32,9 +34,14 @@ const MIGRATIONS: Record<number, MigrationFn> = {
   0: (state) => ({ ...state, _v: 1 }),
   // 1 → 2: populate per-entity-type tax labels on accounts (Phase 2).
   1: migrateV1ToV2,
+  // 2 → 3: additive Phase 4 widening (Account.parentCode/isDefault/isArchived,
+  //         JournalEntry.status + reverses/replaces links + importFingerprint,
+  //         Entity.gstRegistered/accountingMethod/fyEndDate/lockedFys,
+  //         AuditLog.action enum widening).
+  2: migrateV2ToV3,
 };
 
-export const CURRENT_VERSION = 2;
+export const CURRENT_VERSION = 3;
 
 /**
  * Run all pending migrations on the given state.
