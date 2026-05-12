@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 3 — Durable Persistence (verified complete; awaiting Phase 4 research)
-current_plan: none (Phase 3 closed; next is /gsd:research-phase 4)
-status: phase-complete
+current_phase: Phase 4 — Bookkeeping Core (planned, ready to execute)
+current_plan: 04-1 (Wave 0 foundations) — next to execute
+status: ready-to-execute
 last_updated: "2026-05-12T00:00:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 11
+  total_plans: 15
   completed_plans: 11
 ---
 
@@ -34,11 +34,11 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 3 — Durable Persistence (CLOSED 2026-05-12)
-**Current plan:** none — Phase 3 verified complete; next action is `/gsd:research-phase 4` then `/gsd:discuss-phase 4`
-**Phase status:** Phase 3 VERIFIED. All four plans (03-1 Wave 0, 03-2 LocalAdapter, 03-3 ServerAdapter + Express + SQLite, 03-4 Data page + W5 banner) complete and committed. Task 3 human-verify APPROVED 2026-05-12 — 8/8 manual UAT checks passed. `/gsd:verify-work` goal-backward analysis PASS-with-documented-partial (03-UAT.md): 5/5 success criteria met, StorageAdapter abstraction intact (zero `localStorage` references in production hooks/components), FND-02 CSV per-report exports deferred to Phases 4 + 5 (planned cross-phase deferral, not a gap). 249 SPA + 18 server tests GREEN.
-**Last session:** 2026-05-12 (verify-work goal-backward PASS; 03-UAT.md written; STATE/ROADMAP closed Phase 3)
-**Overall progress:** Phases 1 + 2 + 3 complete. Phase 4 (Bookkeeping Core) is next — research-phase required first (CoA + ATO label pre-mappings).
+**Current phase:** Phase 4 — Bookkeeping Core (PLANNED 2026-05-12; ready to execute)
+**Current plan:** 04-1 (Wave 0 foundations) — next to execute via `/gsd:execute-phase 4`
+**Phase status:** Phase 4 PLANNED. 04-RESEARCH (1088 lines: prescriptive PapaParse + xlsx CE stack, 121-row AU SME CoA spine, architecture patterns), 04-CONTEXT (16 decisions across 4 gray areas: CoA shape, edit-vs-reversal UX, deletion + import policy, Phase 5 anticipation), 04-VALIDATION (183 lines: per-task verification map, Wave 0 scaffold list, Nyquist sampling guarantees), and four executable plans 04-1 (Wave 0, 2344 lines, 4 tasks), 04-2 (Wave 2 Journal CRUD + Audit + TB, 1222 lines, 3 tasks), 04-3 (Wave 2 CoA UI + Entity registers, 1215 lines, 3 tasks), 04-4 (Wave 3 ImportTB + UAT, 963 lines, 3 tasks). gsd-plan-checker verdict: PASS-WITH-MINOR-ISSUES (23/23 reqs, 5/5 success criteria, parallel-safe Wave 2). Two checker fixes applied: (1) useAccounts.test.ts scaffold language corrected in 04-3 T1; (2) Replace-path TB double-count risk closed in 04-4 T2 via new onReplace prop + supersedeImport wiring directive + widened UAT step 18.
+**Last session:** 2026-05-12 (research → discuss → plan + checker fixes — Phase 4 ready for execution)
+**Overall progress:** Phases 1 + 2 + 3 complete. Phase 4 planned and ready.
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -54,7 +54,7 @@ progress:
 | 1 | Safety Net | ATO theatre gone, Vitest + CI green, decimal.js, schema versioning | COMPLETE |
 | 2 | Decompose and Tax Engine | App.tsx ≤250 lines, lib/tax/ pure functions, AI key off client, period model | COMPLETE |
 | 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | COMPLETE (verified 2026-05-12; FND-02 CSV partial → Phases 4/5) |
-| 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | Not started |
+| 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | Planned (RESEARCH + CONTEXT + 4 plans + VALIDATION ready; PASS-WITH-MINOR-ISSUES) |
 | 5 | Tax Outputs | All four return types + BAS/IAS, print-ready with ATO field codes | Not started |
 | 6 | Personas, Wizard, Deployment | Dual modes, year-end wizard, anomaly flags, open-source release | Not started |
 
@@ -62,10 +62,9 @@ progress:
 
 ## Performance Metrics
 
-- Plans completed: 11 (Phase 1: 3 plans; Phase 2: 4 plans; Phase 3: 4 plans)
-- Plans total: 11 (Phase 1: 3, Phase 2: 4, Phase 3: 4)
-- Phases complete: 3/6 (Phase 1 + Phase 2 + Phase 3 done); Phase 4 next (research required first)
-- Requirements mapped: 70/70 (FND-01 ✓, FND-02 ✓ JSON / ⏳ CSV per-report Phases 4+5, FND-03 ✓, DEP-02 ✓)
+- Plans completed: 11 / Plans total: 15 (Phase 1: 3, Phase 2: 4, Phase 3: 4, Phase 4: 4 — planned)
+- Phases complete: 3/6 (Phase 1 + Phase 2 + Phase 3 done); Phase 4 planned and ready
+- Requirements mapped: 70/70 (Phase 1-3 closed FND/ENT-02; Phase 4 plans cover all 23 BOOK/ENT/IMP)
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|

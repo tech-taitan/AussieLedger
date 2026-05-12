@@ -104,7 +104,11 @@
 4. Re-uploading the same CSV does not create duplicate opening-balance journals (idempotent import)
 5. A Trust entity carries a beneficiary register (name + share); a Partnership entity carries a partner register (name + percentage); these registers are used by Phase 5 return assembly
 
-**Plans:** TBD
+**Plans:** 4 plans (Wave 0 + 2 + 2 + 3) — planned 2026-05-12
+- [ ] 04-1-PLAN.md — Wave 0: deps install (papaparse@^5.5.3, xlsx@^0.20.3), v2→v3 additive migration, 121-row CoA seeds (base + 4 per-type overlays + getDefaultCoaFor resolver), src/lib/ledger.ts posting engine (validateBalanced/makeReversal/makeSupersedingEdit/searchJournals), src/lib/import/{csv,xlsx,fingerprint}.ts wrappers, 12 hook/component test scaffolds (4 tasks)
+- [ ] 04-2-PLAN.md — Wave 2 (parallel with 04-3): useJournals extensions (postDraft/editPosted/reversePosted/voidDraft/searchJournals); JournalForm refactor with banner + EditJournalDiff; JournalSearch panel; TrialBalance period-filter + parent subtotals + status-aware exclusion; AuditTrail widened (3 tasks)
+- [ ] 04-3-PLAN.md — Wave 2 (parallel with 04-2): useAccounts/useEntities extensions (archive, isDefault, isAccountInUse, tryDeleteEntity, beneficiary/partner writers, CoA seeding on entity creation); AccountManager + CoaTreeView refactor; EntityForm AU-4 + GST/method/FY-end + Block-or-Archive delete; BeneficiaryRegister + PartnerRegister components (3 tasks)
+- [ ] 04-4-PLAN.md — Wave 3: ImportTB refactor (PapaParse + xlsx CE + XlsxSheetPicker auto-select + ImportReviewPane row-level review + Skip/Replace/Add-additional fingerprint dialog + onReplace prop for TB-correct supersession + AI-assist gate preserved); manual UAT checkpoint covering all 5 success criteria + 23 reqs (2 auto tasks + 1 human-verify)
 
 ---
 
