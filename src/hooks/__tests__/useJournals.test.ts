@@ -90,3 +90,18 @@ describe('useJournals', () => {
     });
   });
 });
+
+describe('Phase 4 — supersession + reversal + void + audit (BOOK-02..04, BOOK-11)', () => {
+  it.todo('postDraft enforces balance at data layer');
+  it.todo('editPosted supersedes original');
+  it.todo('editPosted writes EDIT_JOURNAL audit with before snapshot');
+  it.todo('EDIT_JOURNAL audit has before snapshot');
+  it.todo('reversePosted mirrors lines');
+  it.todo('reversePosted writes REVERSE_JOURNAL audit');
+  it.todo('reversesEntryId link');
+  it.todo('voidDraft only on drafts');
+  it.todo('voidDraft refuses posted');
+  it.todo('searchJournals reference and description');
+  it.todo('searchJournals by account');
+  it.todo('searchJournals by amount range');
+});

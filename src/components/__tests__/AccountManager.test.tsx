@@ -153,6 +153,16 @@ describe('AccountManager', () => {
     });
   });
 
+  describe('Phase 4 — AccountManager refactor (BOOK-06, BOOK-07)', () => {
+    it.todo('tree view parents first');
+    it.todo('archive only for default');
+    it.todo('GST dropdown is AU set');
+    it.todo('archive vs delete dialog appears for default account');
+    it.todo('shows per-entity-type template badge');
+    it.todo('archived accounts hidden from default view');
+    it.todo('archived accounts surface via filter toggle');
+  });
+
   describe('_needsReview clearing on edit', () => {
     it('clears _needsReview when account is saved via edit', () => {
       const onSave = vi.fn();

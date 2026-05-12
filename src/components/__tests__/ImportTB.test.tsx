@@ -82,6 +82,15 @@ describe('ImportTB', () => {
     });
   });
 
+  describe('Phase 4 — ImportTB refactor (IMP-01..06)', () => {
+    it.todo('column mapping UI confirmation');
+    it.todo('deterministic path works without AI');
+    it.todo('fingerprint Skip Replace dialog');
+    it.todo('single opening journal posted');
+    it.todo('XLSX flow opens sheet picker when multi-sheet');
+    it.todo('XLSX flow auto-selects single matching sheet');
+  });
+
   describe('deterministic mapping', () => {
     it('fuzzyMatch module is mockable and ImportTB renders with the mock', async () => {
       const mockFn = vi.fn().mockReturnValue({

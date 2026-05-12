@@ -122,3 +122,11 @@ describe('useEntities', () => {
     });
   });
 });
+
+describe('Phase 4 — default-CoA seeding on entity creation (BOOK-05)', () => {
+  it.todo('creates default CoA per type');
+  it.todo('Trust entity gets BeneficiaryRow placeholder ready');
+  it.todo('Partnership entity gets PartnerRow placeholder ready');
+  it.todo('archiveEntity sets status Archived');
+  it.todo('deleteEntity refuses if journals reference entity, suggests Archive');
+});

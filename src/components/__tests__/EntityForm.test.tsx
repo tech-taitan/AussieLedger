@@ -27,3 +27,13 @@ describe('EntityForm — Phase 1 ABN validation (ENT-02)', () => {
     expect(screenText).not.toMatch(/Tax File Number/i);
   });
 });
+
+describe('Phase 4 — EntityForm v3 widening (ENT-01/03/04/05/06)', () => {
+  it.todo('AU four entity types only');
+  it.todo('gstRegistered toggle');
+  it.todo('accountingMethod radio');
+  it.todo('fyEndDate default 06-30');
+  it.todo('delete blocked with journals offers Archive');
+  it.todo('Trust entity shows BeneficiaryRegister tab');
+  it.todo('Partnership entity shows PartnerRegister tab');
+});
