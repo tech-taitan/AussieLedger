@@ -5,31 +5,52 @@
 
 import React, { useState } from 'react';
 import { Entity } from '../types';
-import { Save, X, Building2, UserCheck, AlertTriangle } from 'lucide-react';
+import { Save, X, Building2, UserCheck, AlertTriangle, Trash2 } from 'lucide-react';
 import { validateAbn } from '../lib/validation';
 import { cn } from '../lib/utils';
+import { BeneficiaryRegister } from './BeneficiaryRegister';
+import { PartnerRegister } from './PartnerRegister';
 
 interface EntityFormProps {
   entity?: Entity;
   onSave: (entity: Entity) => void;
   onCancel: () => void;
+  // Phase 4 additions (all optional — preserves Phase 2 contract)
+  onDelete?: (id: string) => void;
+  onArchive?: (id: string) => void;
+  /** Number of journal entries currently referencing this entity. >0 triggers
+   *  the block-or-archive dialog (ENT-06 deletion policy). */
+  inUseCount?: number;
 }
 
-export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel }) => {
+export const EntityForm: React.FC<EntityFormProps> = ({
+  entity,
+  onSave,
+  onCancel,
+  onDelete,
+  onArchive,
+  inUseCount,
+}) => {
   const isEdit = !!entity;
-  const [formData, setFormData] = useState<Entity>(entity || {
-    id: `ent-${Math.random().toString(36).substr(2, 9)}`,
-    name: '',
-    type: 'Company',
-    registrationNumber: '',
-    businessAddress: '',
-    contactPerson: '',
-    status: 'Active',
-    taxAgentName: '',
-    taxAgentPhone: '',
-    taxAgentEmail: '',
-    notes: ''
-  });
+  const [formData, setFormData] = useState<Entity>(
+    entity || {
+      id: `ent-${Math.random().toString(36).substr(2, 9)}`,
+      name: '',
+      type: 'Company',
+      registrationNumber: '',
+      businessAddress: '',
+      contactPerson: '',
+      status: 'Active',
+      taxAgentName: '',
+      taxAgentPhone: '',
+      taxAgentEmail: '',
+      notes: '',
+      // Phase 4 v3 defaults
+      gstRegistered: false,
+      accountingMethod: 'accruals',
+      fyEndDate: '06-30',
+    },
+  );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -66,7 +87,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
   const handleChange = (field: keyof Entity, value: string) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
-    
+
     // Real-time validation update
     const newErrors = { ...errors };
     if (field === 'name') {
@@ -82,12 +103,12 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
         if (digits.length === 11) {
           const result = validateAbn(value);
           if (!result.valid) {
-            newWarnings.registrationNumber = result.reason ?? 'ABN checksum invalid — please check the number';
+            newWarnings.registrationNumber =
+              result.reason ?? 'ABN checksum invalid — please check the number';
           } else {
             delete newWarnings.registrationNumber;
           }
         } else {
-          // Not yet 11 digits — clear any prior warning silently while user types
           delete newWarnings.registrationNumber;
         }
       } else {
@@ -115,7 +136,6 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
     if (validate(formData)) {
       onSave(formData);
     } else {
-      // Mark all fields as touched to show errors
       setTouched({
         name: true,
         type: true,
@@ -126,6 +146,26 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
         taxAgentPhone: true,
         taxAgentEmail: true,
       });
+    }
+  };
+
+  // Phase 4 — block-or-archive deletion (ENT-06). Mirrors AccountManager's
+  // archive-vs-delete policy: if any journals reference the entity, block hard
+  // delete and offer Archive instead.
+  const handleDeleteClick = () => {
+    if (!onDelete) return;
+    if ((inUseCount ?? 0) > 0) {
+      if (
+        confirm(
+          `Cannot delete — ${inUseCount} journals reference this entity. Archive instead?`,
+        )
+      ) {
+        onArchive?.(formData.id);
+      }
+    } else {
+      if (confirm('Delete this entity? This cannot be undone.')) {
+        onDelete(formData.id);
+      }
     }
   };
 
@@ -140,7 +180,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
           <X size={20} />
         </button>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
@@ -161,17 +201,19 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
               )}
             />
           </div>
-          
+
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase text-gray-500 tracking-wider">Entity Type</label>
             <select
               value={formData.type}
               onChange={(e) => handleChange('type', e.target.value)}
+              aria-label="entity-type-select"
               className="w-full p-2 border border-[var(--line)] focus:ring-1 focus:ring-[var(--ink)] outline-none bg-white transition-colors"
             >
-              <option value="Company">Company</option>
+              {/* Phase 4 — AU four entity types only (ENT-01). */}
+              <option value="Company">Company (Pty Ltd)</option>
               <option value="Trust">Trust</option>
-              <option value="Individual">Individual</option>
+              <option value="Individual">Individual / Sole Trader</option>
               <option value="Partnership">Partnership</option>
             </select>
           </div>
@@ -250,6 +292,103 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
           </div>
         </div>
 
+        {/* Phase 4 — v3 AU-specific fields (ENT-03/04/05). */}
+        <div className="pt-6 border-t border-[var(--line)]">
+          <h4 className="text-sm font-bold uppercase text-[var(--ink)] mb-4">
+            AU compliance settings
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.gstRegistered ?? false}
+                onChange={(e) =>
+                  setFormData({ ...formData, gstRegistered: e.target.checked })
+                }
+                aria-label="GST registered"
+              />
+              <span className="text-sm">GST registered</span>
+            </label>
+
+            <fieldset>
+              <legend className="text-xs font-bold uppercase text-gray-500 tracking-wider mb-2">
+                Accounting method
+              </legend>
+              <label className="flex items-center gap-2 mb-1">
+                <input
+                  type="radio"
+                  name="accountingMethod"
+                  value="cash"
+                  checked={(formData.accountingMethod ?? 'accruals') === 'cash'}
+                  onChange={() =>
+                    setFormData({ ...formData, accountingMethod: 'cash' })
+                  }
+                  aria-label="accounting-method-cash"
+                />
+                <span className="text-sm">Cash</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="accountingMethod"
+                  value="accruals"
+                  checked={(formData.accountingMethod ?? 'accruals') === 'accruals'}
+                  onChange={() =>
+                    setFormData({ ...formData, accountingMethod: 'accruals' })
+                  }
+                  aria-label="accounting-method-accruals"
+                />
+                <span className="text-sm">Accruals</span>
+              </label>
+            </fieldset>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="entity-fy-end"
+                className="text-xs font-bold uppercase text-gray-500 tracking-wider"
+              >
+                Financial year end (MM-DD)
+              </label>
+              <input
+                id="entity-fy-end"
+                type="text"
+                value={formData.fyEndDate ?? '06-30'}
+                onChange={(e) =>
+                  setFormData({ ...formData, fyEndDate: e.target.value })
+                }
+                aria-label="fy-end-date"
+                placeholder="06-30"
+                pattern="\d{2}-\d{2}"
+                className="border border-[var(--line)] rounded px-2 py-1 text-sm w-32 font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Phase 4 — Trust beneficiary register (ENT-07). */}
+        {formData.type === 'Trust' && (
+          <div className="pt-6 border-t border-[var(--line)]">
+            <BeneficiaryRegister
+              rows={formData.beneficiaries ?? []}
+              onChange={(rows) =>
+                setFormData({ ...formData, beneficiaries: rows })
+              }
+            />
+          </div>
+        )}
+
+        {/* Phase 4 — Partnership partner register (ENT-08). */}
+        {formData.type === 'Partnership' && (
+          <div className="pt-6 border-t border-[var(--line)]">
+            <PartnerRegister
+              rows={formData.partners ?? []}
+              onChange={(rows) =>
+                setFormData({ ...formData, partners: rows })
+              }
+            />
+          </div>
+        )}
+
         <div className="pt-6 border-t border-[var(--line)]">
           <h4 className="text-sm font-bold uppercase text-[var(--ink)] mb-4 flex items-center gap-2">
             <UserCheck size={16} />
@@ -307,8 +446,19 @@ export const EntityForm: React.FC<EntityFormProps> = ({ entity, onSave, onCancel
           />
         </div>
 
-        <div className="pt-6 border-t border-[var(--line)] flex flex-col sm:flex-row justify-end gap-3">
-          {Object.keys(errors).length > 0 && Object.values(touched).some(v => v) && (
+        <div className="pt-6 border-t border-[var(--line)] flex flex-col sm:flex-row justify-end gap-3 items-center">
+          {/* Phase 4 — block-or-archive delete (ENT-06) on existing entities only. */}
+          {isEdit && onDelete && (
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              className="text-red-600 text-sm flex items-center gap-1 mr-auto hover:underline"
+              data-testid="entity-delete-btn"
+            >
+              <Trash2 size={14} /> Delete entity
+            </button>
+          )}
+          {Object.keys(errors).length > 0 && Object.values(touched).some((v) => v) && (
             <div className="flex-1 flex items-center text-red-500 text-xs font-bold uppercase">
               Please correct errors before saving
             </div>

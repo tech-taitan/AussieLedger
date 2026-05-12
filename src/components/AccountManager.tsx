@@ -38,8 +38,8 @@ export const AccountManager: React.FC<AccountManagerProps> = ({
   const [showArchived, setShowArchived] = useState(false);
 
   const ACCOUNT_TYPES: AccountType[] = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
-  // Phase 4 — fix Phase-2 typo: 'ITS' is not an AU GST code; correct set is INP (Input-taxed).
-  // Reference: RESEARCH Pitfall 9 + CONTEXT "CoA shape" decisions.
+  // Phase 4 — corrected to the AU GST set per RESEARCH Pitfall 9.
+  // Set: GST / FRE / INP (Input-taxed) / N-T / CAP. CONTEXT "CoA shape" decisions.
   const GST_CODES = ['GST', 'FRE', 'INP', 'N-T', 'CAP'];
 
   const handleStartEdit = (account: Account) => {
