@@ -118,7 +118,7 @@
 
 **Depends on:** Phase 4
 
-**Requirements:** BAS-01, BAS-02, BAS-03, BAS-04, BAS-05, BAS-06, TAX-02, IND-01, IND-02, IND-03, COY-01, COY-02, COY-03, COY-04, TRT-01, TRT-02, TRT-03, PSP-01, PSP-02
+**Requirements:** BAS-01, BAS-02, BAS-03, BAS-04, BAS-05, BAS-06, TAX-02, IND-01, IND-02, IND-03, IND-04, COY-01, COY-02, COY-03, TRT-01, TRT-02, TRT-03, PSP-01, PSP-02 *(IND-04 re-scoped from obsoleted COY-04 in 05-CONTEXT 2026-05-13)*
 
 **Success Criteria** (what must be TRUE):
 1. A BAS produced for a period with a mix of GST-taxable, GST-free (FRE), and input-taxed (INP) transactions shows correct values for G1, G2, G3, G10, G11, 1A, 1B, W1, W2, and T7; the totals match a hand-calculated reference to the cent
