@@ -76,13 +76,14 @@ Quality-floor and credibility prerequisites — must clear these before any user
 - [ ] **IND-01**: User can produce a Form I (individual) return with the Business and Professional Items schedule populated from the entity's GL
 - [ ] **IND-02**: Return covers the business-schedule labels: item P1 (business income), P2 (deductions), P8 (net small business income), and item 15 (net business income flow-through)
 - [ ] **IND-03**: Return calculates net taxable income from business and shows individual marginal-rate tax payable using FY-versioned brackets (including LITO and Medicare levy)
+- [ ] **IND-04**: User can apply the small business income tax offset where eligible — 16% × tax payable on net small business income, capped at $1,000, for individuals with aggregated turnover < $5M; item 7D on Form I (re-scoped from the original COY-04 which was mis-attributed to companies — see 05-CONTEXT.md decisions)
 
 ### Company tax return (COY)
 
 - [ ] **COY-01**: User can produce a Form C (company) return covering core labels for a small Pty Ltd: gross sales (item 6), total expenses (item 7), taxable income (item 7S)
 - [ ] **COY-02**: Tax payable is calculated using the Base Rate Entity test: 25% if aggregated turnover < $50M and ≤ 80% passive income, otherwise 30%
 - [ ] **COY-03**: Return records franking-account opening balance and movements (credits / debits) so the year-end balance can be carried forward
-- [ ] **COY-04**: User can apply the small business tax offset where eligible (item 7D)
+- [~] **COY-04**: ~~User can apply the small business tax offset where eligible (item 7D)~~ — **OBSOLETE / re-scoped to IND-04** in 05-CONTEXT. Item 7D is on Form I (Individual sole-traders), not Form C (Company). Companies get the BRE 25%/30% derived rate via COY-02 with no separate small-business offset.
 
 ### Trust tax return (TRT)
 
@@ -222,10 +223,11 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | IND-01 | Phase 5 | Pending |
 | IND-02 | Phase 5 | Pending |
 | IND-03 | Phase 5 | Pending |
+| IND-04 | Phase 5 | Pending (re-scoped from COY-04 in 05-CONTEXT) |
 | COY-01 | Phase 5 | Pending |
 | COY-02 | Phase 5 | Pending |
 | COY-03 | Phase 5 | Pending |
-| COY-04 | Phase 5 | Pending |
+| COY-04 | Phase 5 | Obsolete (mis-scoped; see IND-04) |
 | TRT-01 | Phase 5 | Pending |
 | TRT-02 | Phase 5 | Pending |
 | TRT-03 | Phase 5 | Pending |
