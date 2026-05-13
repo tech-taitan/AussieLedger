@@ -127,7 +127,11 @@
 4. An Individual return populates all business-schedule labels (P1, P2, P8, item 15) from the entity's GL and calculates marginal-rate tax payable using FY-versioned brackets including LITO and Medicare levy
 5. The print output (via browser print or `@media print` CSS) for any return type shows ATO field codes alongside plain-English labels (e.g. "Gross business income (6S): $142,000"), contains the working-paper disclaimer, and contains no screen UI chrome (sidebar, nav buttons, hover states)
 
-**Plans:** TBD
+**Plans:** 4 plans (Wave 0 + 2 + 2 + 3) — planned 2026-05-13
+- [ ] 05-1-PLAN.md — Wave 0: v3→v4 additive migration (Entity.aggregatedTurnover + paygInstalmentAmount); FY2026 rate helpers (marginal post-Stage-3 / LITO / Medicare / BRE / smallBizOffset for IND-04); 3 in-repo corrections (NAT comments + BRE legislative cite + REQUIREMENTS verification); shared print primitives (PrintBanner / AnomalyBadge / AssumptionsBlock / print.css); 26 test scaffolds (5 tasks)
+- [ ] 05-2-PLAN.md — Wave 2 (parallel with 05-3): computeIndividualReturn (Form I + B&P + LITO + Medicare + IND-04) + computeCompanyReturn (Form C + BRE 25%/30% + franking) + TaxReturnAssistant refactor + CompanyTaxReturn refactor + EntityForm widening (3 tasks)
+- [ ] 05-3-PLAN.md — Wave 2 (parallel with 05-2): computeTrustReturn (Form T + per-beneficiary distribution + mandatory streaming disclaimer) + computePartnershipReturn (Form P + per-partner distribution) + TrustTaxReturn refactor + PartnershipTaxReturn new (3 tasks)
+- [ ] 05-4-PLAN.md — Wave 3: computeBas (Simpler BAS with G1/1A/1B/W1/W2/T7 lodgement + G2/G3/G10/G11 internal-only) + computeIas + BasIasAssistant refactor + ViewRouter wiring + Print-button audit; manual UAT checkpoint covering all 5 success criteria + 19 working reqs (2 auto tasks + 1 human-verify)
 
 ---
 

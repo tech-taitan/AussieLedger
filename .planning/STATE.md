@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 4 — Bookkeeping Core (verified complete 2026-05-13)
-current_plan: none (Phase 4 closed; next is /gsd:research-phase 5)
-status: phase-complete
-last_updated: "2026-05-13T08:00:00.000Z"
+current_phase: Phase 5 — Tax Outputs (planned, ready to execute)
+current_plan: 05-1 (Wave 0 foundations) — next to execute
+status: ready-to-execute
+last_updated: "2026-05-13T09:00:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 15
+  total_plans: 19
   completed_plans: 15
 ---
 
@@ -34,8 +34,9 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 4 — Bookkeeping Core (CLOSED 2026-05-13; goal-backward verification PASS)
-**Current plan:** none — Phase 4 verified complete; next action is `/gsd:research-phase 5`
+**Current phase:** Phase 5 — Tax Outputs (PLANNED 2026-05-13; ready to execute)
+**Current plan:** 05-1 (Wave 0 foundations) — next to execute via `/gsd:execute-phase 5`
+**Phase 5 status:** PLANNED. 05-RESEARCH (1202 lines; FY2026 brackets post-Stage-3, BRE legislation, trust streaming scope, ATO field codes), 05-CONTEXT (265 lines; 12 decisions + COY-04→IND-04 rescope + 3 Wave-0 corrections), 05-VALIDATION (238 lines; 26 test scaffolds), 4 executable plans (05-1 Wave 0 1819 lines / 5 tasks, 05-2 Wave 2 Individual+Company 834 lines / 3 tasks, 05-3 Wave 2 Trust+Partnership 659 lines / 3 tasks parallel with 05-2, 05-4 Wave 3 BAS/IAS+UAT 867 lines / 2 auto + 1 human-verify). gsd-plan-checker verdict: PASS-WITH-MINOR-ISSUES. Two checker fixes applied (ROADMAP COY-04→IND-04 swap; 05-1 BAS-03/BAS-05 frontmatter addition). Zero new runtime deps. Estimated end-state: ~454 SPA + 18 server GREEN (+83 over Phase 4).
 **Phase status:** Phase 4 fully PLAN-COMPLETE. **Wave 0 (04-1):** v3 type widening + additive v2→v3 migration + 127-row AU SME default CoA + 4 per-type overlays + getDefaultCoaFor + pure-function ledger.ts + sha256 fingerprint + PapaParse/SheetJS CE wrappers + 12 hook/component test scaffolds. **Wave 2 (04-2 + 04-3 parallel):** useJournals lifecycle (postDraft/editPosted supersession/reversePosted/voidDraft/searchJournals) + JournalForm Edit+Reverse + EditJournalDiff + JournalSearch + TrialBalance period-filter + parent subtotals + AuditTrail widened (04-2); useAccounts (archiveAccount/setIsDefault/isAccountInUse) + useEntities (createEntity-seeds-CoA/tryDeleteEntity/beneficiary+partner writers) + CoaTreeView + AccountManager refactor + GST 'ITS'→'INP' typo fix + EntityForm AU-4 + register tabs + BeneficiaryRegister + PartnerRegister (04-3). **Wave 3 (04-4):** XlsxSheetPicker + ImportReviewPane + ImportTB refactor (634→520 lines) consuming Wave 0 wrappers + fingerprint Skip/Replace/Add-additional dialog + onReplace prop + useJournals.supersedeImport helper (closes the plan-checker-flagged TB-double-count risk) + ViewRouter wiring. **Task 3 UAT APPROVED 2026-05-13** — all 28 manual checks passed including step-18 Replace regression. Tests: 371 SPA GREEN + 11 todo + 0 RED; 18 server GREEN. lint + build + build:server + dev-full smoke all EXIT 0. StorageAdapter untouched (Phase 3 FINAL preserved). 23/23 Phase 4 requirements DELIVERED end-to-end.
 **Last session:** 2026-05-13 (Wave 3 04-4 Tasks 1+2 executed; Task 3 manual UAT approved — Phase 4 closed)
 **Overall progress:** Phases 1 + 2 + 3 + 4 (pending /gsd:verify-work) — 15/15 plans complete.
@@ -55,16 +56,16 @@ progress:
 | 2 | Decompose and Tax Engine | App.tsx ≤250 lines, lib/tax/ pure functions, AI key off client, period model | COMPLETE |
 | 3 | Durable Persistence | Data survives cache clear; StorageAdapter; export/import | COMPLETE (verified 2026-05-12; FND-02 CSV partial → Phases 4/5) |
 | 4 | Bookkeeping Core | 80–150 account CoA, journal CRUD + audit, TB import, entity registers | COMPLETE (verified 2026-05-13; 23/23 requirements; 371 SPA + 18 server GREEN; UAT step-18 Replace regression confirmed PASS) |
-| 5 | Tax Outputs | All four return types + BAS/IAS, print-ready with ATO field codes | Not started |
+| 5 | Tax Outputs | All four return types + BAS/IAS, print-ready with ATO field codes | Planned (RESEARCH + CONTEXT + 4 plans + VALIDATION ready; PASS-WITH-MINOR-ISSUES) |
 | 6 | Personas, Wizard, Deployment | Dual modes, year-end wizard, anomaly flags, open-source release | Not started |
 
 ---
 
 ## Performance Metrics
 
-- Plans completed: 15 / Plans total: 15 (Phase 1: 3, Phase 2: 4, Phase 3: 4, Phase 4: 4)
-- Phases complete: 4/6 (Phase 1 + Phase 2 + Phase 3 + Phase 4 done)
-- Requirements mapped: 70/70 — Phase 4 23/23 DELIVERED end-to-end + verified 2026-05-13; Phase 5 (Tax Outputs) and Phase 6 (Personas/Wizard/Deployment) remain
+- Plans completed: 15 / Plans total: 19 (Phase 1: 3, Phase 2: 4, Phase 3: 4, Phase 4: 4, Phase 5: 4 planned)
+- Phases complete: 4/6 (Phase 1 + Phase 2 + Phase 3 + Phase 4 done); Phase 5 planned and ready
+- Requirements mapped: 70/70 — Phases 1-4 closed FND/ENT-02/BOOK/ENT/IMP; Phase 5 plans cover 20 reqs (incl. IND-04 re-scoped from obsolete COY-04)
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
