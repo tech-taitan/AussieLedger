@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 5 — Tax Outputs (planned, ready to execute)
-current_plan: 05-1 (Wave 0 foundations) — next to execute
-status: ready-to-execute
-last_updated: "2026-05-13T09:00:00.000Z"
+current_phase: Phase 5 — Tax Outputs (in progress)
+current_plan: 05-2 (Wave 2 Individual + Company) — next to execute
+status: in-progress
+last_updated: "2026-05-28T10:46:49Z"
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 19
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 # Project State: AussieLedger
@@ -34,16 +34,16 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 5 — Tax Outputs (PLANNED 2026-05-13; ready to execute)
-**Current plan:** 05-1 (Wave 0 foundations) — next to execute via `/gsd:execute-phase 5`
-**Phase 5 status:** PLANNED. 05-RESEARCH (1202 lines; FY2026 brackets post-Stage-3, BRE legislation, trust streaming scope, ATO field codes), 05-CONTEXT (265 lines; 12 decisions + COY-04→IND-04 rescope + 3 Wave-0 corrections), 05-VALIDATION (238 lines; 26 test scaffolds), 4 executable plans (05-1 Wave 0 1819 lines / 5 tasks, 05-2 Wave 2 Individual+Company 834 lines / 3 tasks, 05-3 Wave 2 Trust+Partnership 659 lines / 3 tasks parallel with 05-2, 05-4 Wave 3 BAS/IAS+UAT 867 lines / 2 auto + 1 human-verify). gsd-plan-checker verdict: PASS-WITH-MINOR-ISSUES. Two checker fixes applied (ROADMAP COY-04→IND-04 swap; 05-1 BAS-03/BAS-05 frontmatter addition). Zero new runtime deps. Estimated end-state: ~454 SPA + 18 server GREEN (+83 over Phase 4).
+**Current phase:** Phase 5 — Tax Outputs (IN PROGRESS — 05-1 complete 2026-05-28)
+**Current plan:** 05-2 (Wave 2 Individual + Company) — next to execute via `/gsd:execute-phase 5`
+**Phase 5 status:** IN PROGRESS. **Wave 0 (05-1) COMPLETE:** v4 additive migration, FY2026 rate helpers (marginal/LITO/Medicare/BRE/smallBizOffset all GREEN), shared compute-function contract types, 6 compute*Return skeletons, rollup helper, aggregatedTurnover helper, shared print primitives (PrintBanner/AnomalyBadge/AssumptionsBlock), print.css, PartnershipTaxReturn Wave 0 skeleton, all Phase 5 it.todo test scaffolds. 455 SPA GREEN + 80 todo, 0 RED. lint + build EXIT 0. StorageAdapter untouched (Phase 3 FINAL). Zero new runtime deps. All golden tests locked: marginalTaxFY2026($45,000)=$4,288.00, $190,000=$51,638.00; BRE 90% dividend→30%.
 **Phase status:** Phase 4 fully PLAN-COMPLETE. **Wave 0 (04-1):** v3 type widening + additive v2→v3 migration + 127-row AU SME default CoA + 4 per-type overlays + getDefaultCoaFor + pure-function ledger.ts + sha256 fingerprint + PapaParse/SheetJS CE wrappers + 12 hook/component test scaffolds. **Wave 2 (04-2 + 04-3 parallel):** useJournals lifecycle (postDraft/editPosted supersession/reversePosted/voidDraft/searchJournals) + JournalForm Edit+Reverse + EditJournalDiff + JournalSearch + TrialBalance period-filter + parent subtotals + AuditTrail widened (04-2); useAccounts (archiveAccount/setIsDefault/isAccountInUse) + useEntities (createEntity-seeds-CoA/tryDeleteEntity/beneficiary+partner writers) + CoaTreeView + AccountManager refactor + GST 'ITS'→'INP' typo fix + EntityForm AU-4 + register tabs + BeneficiaryRegister + PartnerRegister (04-3). **Wave 3 (04-4):** XlsxSheetPicker + ImportReviewPane + ImportTB refactor (634→520 lines) consuming Wave 0 wrappers + fingerprint Skip/Replace/Add-additional dialog + onReplace prop + useJournals.supersedeImport helper (closes the plan-checker-flagged TB-double-count risk) + ViewRouter wiring. **Task 3 UAT APPROVED 2026-05-13** — all 28 manual checks passed including step-18 Replace regression. Tests: 371 SPA GREEN + 11 todo + 0 RED; 18 server GREEN. lint + build + build:server + dev-full smoke all EXIT 0. StorageAdapter untouched (Phase 3 FINAL preserved). 23/23 Phase 4 requirements DELIVERED end-to-end.
-**Last session:** 2026-05-13 (Wave 3 04-4 Tasks 1+2 executed; Task 3 manual UAT approved — Phase 4 closed)
-**Overall progress:** Phases 1 + 2 + 3 + 4 (pending /gsd:verify-work) — 15/15 plans complete.
+**Last session:** 2026-05-28 (Phase 5 Wave 0 05-1 complete — all 5 tasks executed, 455 GREEN, 7 commits including Rule 1 structural-lint fix)
+**Overall progress:** Phases 1 + 2 + 3 + 4 complete + Phase 5 Wave 0 — 16/19 plans complete.
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [  ----  ] [  ----  ]
+[ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [  1/4   ] [  ----  ]
 ```
 
 ---
@@ -84,6 +84,7 @@ progress:
 | 04 | 04-2 | ~13 min | 3/3 | +2 ~6 | 354 (+18 server) (interleaved) |
 | 04 | 04-3 | ~12 min | 3/3 | +3 ~7 | 354 (+18 server) (interleaved) |
 | 04 | 04-4 | ~12 min | 3/3 | +2 ~5 | 371 (+18 server) [UAT approved 2026-05-13] |
+| 05 | 05-1 | multi-session | 5/5 | +47 ~9 | 455 (+18 server) [Wave 0 complete 2026-05-28] |
 
 ---
 
@@ -126,6 +127,10 @@ progress:
 | Server's /api/health left at hardcoded version: 2 | health endpoint denotes the SERVER PERSISTENCE PROTOCOL shape (Phase 3 invariant), not the SPA's migration schema version; dev-full smoke only checks typeof === 'number' so the SPA's bump to CURRENT_VERSION = 3 is transparent to the server health check | 04-1 |
 | AuditAction widened to 17 actions now (incl. EXPORT_DATA, LOCK_FY, UNLOCK_FY) | Forward-compat for Phase 5/6 — avoids a v3→v4 migration just for an enum widening; older Phase 1-3 actions (DELETE_JOURNAL, IMPORT_DATA, UPDATE_ACCOUNT) retained for compat | 04-1 |
 | ledger.ts is a PURE module — no React, no adapter I/O, no parameterless `new Date()` | makeReversal default date uses today() from src/lib/period.ts (Phase 2 test seam); _setNowProvider() in tests works as expected; structural lint stays GREEN | 04-1 |
+| lowerBound embedded directly in FY2026_MARGINAL_BRACKETS bracket objects | marginal.ts destructures { baseAt, rate, lowerBound } per bracket without index coupling; golden tests confirm $45,000 → $4,288.00 and $190,000 → $51,638.00 to-the-cent | 05-1 |
+| types.ts created during Task 2 (BRE implementation) rather than Task 3 | bre.ts needed Anomaly type import before types.ts was scheduled; pure-type file with zero runtime cost; no side effects from early creation | 05-1 |
+| structural-lint stripCommentsAndStrings extended to skip JSDoc block-comment lines | bas.ts comment text (1/11) and types.ts (05-2/05-3/05-4) both triggered digit/slash/digit regex; fix is cleaner than rewriting comment text; Rule 1 auto-fix | 05-1 |
+| PartnershipTaxReturn Wave 0 skeleton uses currentFy() fallback for non-FY period types | Aligns with all other form component conventions; Plan 05-3 replaces the placeholder body with full Form P compute wiring | 05-1 |
 
 ### Research Flags Pending
 
