@@ -9,9 +9,9 @@
 
 Quality-floor and credibility prerequisites — must clear these before any user data is trustworthy.
 
-- [ ] **FND-01**: User's bookkeeping data survives a browser cache clear (durable persistence; not `localStorage`-only)
-- [ ] **FND-02**: User can export their entire dataset (entities, journals, accounts, audit log) as JSON and CSV
-- [ ] **FND-03**: User can import a previously-exported JSON dataset to restore on the same or a different instance
+- [x] **FND-01**: User's bookkeeping data survives a browser cache clear (durable persistence; not `localStorage`-only)
+- [~] **FND-02**: User can export their entire dataset (entities, journals, accounts, audit log) as JSON and CSV — JSON delivered v1.0; CSV per-report export deferred to v2 (consciously de-scoped Phase 3 UAT, re-confirmed Phase 6)
+- [x] **FND-03**: User can import a previously-exported JSON dataset to restore on the same or a different instance
 - [x] **FND-04**: A self-hosted instance works without any third-party API keys configured (AI features must be optional)
 - [x] **FND-05**: No user-facing surface displays misleading "ATO Connected", simulated agency status, or fabricated trend metrics
 - [x] **FND-06**: An always-visible disclaimer states the product produces working papers / draft returns, not tax advice; the user/agent retains responsibility for the lodged return
@@ -68,7 +68,7 @@ Quality-floor and credibility prerequisites — must clear these before any user
 - [x] **TAX-01**: Tax-rate and threshold constants are centralised in a single FY-versioned module (no magic numbers in components)
 - [x] **TAX-02**: User can produce a print-ready tax return PDF (or print-CSS browser print) for any entity type — all 5 form types (Form I/C/T/P/BAS+IAS) verified via UAT 2026-05-28; ATO codes + disclaimer + no UI chrome confirmed on all forms
 - [x] **TAX-03**: Each account in the default CoA is pre-mapped to the correct ATO labels for every relevant entity type (individual, company, trust, partnership) on first install
-- [ ] **TAX-04**: User can override the auto-mapping for any account in the CoA editor
+- [x] **TAX-04**: User can override the auto-mapping for any account in the CoA editor
 - [x] **TAX-05**: All tax-output components consume a single shared "tax engine" library of pure functions (no duplicated rollup logic across components)
 
 ### Individual tax return (IND)
@@ -113,7 +113,7 @@ Quality-floor and credibility prerequisites — must clear these before any user
 ### Deployment / open-source (DEP)
 
 - [x] **DEP-01**: A new user can clone the repository, run `npm install && npm run build`, and serve a working instance with no paid services configured
-- [ ] **DEP-02**: An optional Express + better-sqlite3 server can be started for shared/firm instances, with documented deployment steps
+- [x] **DEP-02**: An optional Express + better-sqlite3 server can be started for shared/firm instances, with documented deployment steps
 - [x] **DEP-03**: README documents both deployment shapes (single-user local, small-firm VPS), with step-by-step instructions
 - [x] **DEP-04**: Repository has a permissive open-source licence (e.g. Apache 2.0, matching existing per-file SPDX headers) and a CONTRIBUTING.md with a hard rule about schema migrations
 - [x] **DEP-05**: CI (e.g. GitHub Actions) runs `npm run build`, `npm run lint`, and the test suite on every push
@@ -174,9 +174,9 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | Phase 3 | Pending |
-| FND-02 | Phase 3 | Pending |
-| FND-03 | Phase 3 | Pending |
+| FND-01 | Phase 3 | Delivered (03-UAT 2026-05-12; IndexedDB via LocalAdapter + SQLite via ServerAdapter, both survive cache clear) |
+| FND-02 | Phase 3 | Partial (JSON shipped Phase 3; CSV per-report deferred to v2) |
+| FND-03 | Phase 3 | Delivered (03-UAT 2026-05-12; DataPage import → migrate() → adapter.importAll round-trip GREEN) |
 | FND-04 | Phase 2 | Complete |
 | FND-05 | Phase 1 | Complete |
 | FND-06 | Phase 1 | Complete |
@@ -218,7 +218,7 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | TAX-01 | Phase 2 | Complete |
 | TAX-02 | Phase 5 | Delivered (05-4 2026-05-28; all 5 form types verified via UAT — Form I/C/T/P/BAS+IAS; ATO codes + disclaimer + no UI chrome) |
 | TAX-03 | Phase 2 | Complete |
-| TAX-04 | Phase 2 | Pending |
+| TAX-04 | Phase 2 | Delivered (02-VERIFICATION; AccountManager editable taxLabel/companyTaxLabel/trustTaxLabel/partnershipTaxLabel inputs; _needsReview cleared on save) |
 | TAX-05 | Phase 2 | Complete |
 | IND-01 | Phase 5 | Delivered (05-2 2026-05-28) |
 | IND-02 | Phase 5 | Delivered (05-2 2026-05-28) |
@@ -242,7 +242,7 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | PERS-02 | Phase 6 Plan 06-3 | Delivered (06-3 2026-05-29; agent mode shows MasterDashboard with FY badges + recent-clients section; Sidebar shows "Clients" link in agent mode) |
 | PERS-03 | Phase 6 Plan 06-2 | Delivered (06-2 2026-05-29; useEntities.updateEntity round-trips returnStatusByFy+wizardState without touching entries/accounts; UE.1/UE.2 confirm PERS-03 invariant) |
 | DEP-01 | Phase 6 Plan 06-1 | Delivered (06-1 2026-05-29; README quick-start + npm install && npm run build verified + no paid services) |
-| DEP-02 | Phase 3 | Pending |
+| DEP-02 | Phase 3 | Delivered (03-UAT 2026-05-12; server/ Express + better-sqlite3 boots via npm run dev:full; /api/health smoke GREEN) |
 | DEP-03 | Phase 6 Plan 06-1 | Delivered (06-1 2026-05-29; README rewritten with Single-user local + Small-firm VPS deployment shapes) |
 | DEP-04 | Phase 6 Plan 06-1 | Delivered (06-1 2026-05-29; LICENSE Apache 2.0 + CONTRIBUTING.md with schema-migration hard rule + SPDX lint 84 files) |
 | DEP-05 | Phase 1 | Complete |
