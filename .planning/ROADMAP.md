@@ -130,7 +130,7 @@
 **Plans:** 4 plans (Wave 0 + 2 + 2 + 3) — planned 2026-05-13
 - [x] 05-1-PLAN.md — Wave 0: v3→v4 additive migration (Entity.aggregatedTurnover + paygInstalmentAmount); FY2026 rate helpers (marginal post-Stage-3 / LITO / Medicare / BRE / smallBizOffset for IND-04); 3 in-repo corrections (NAT comments + BRE legislative cite + REQUIREMENTS verification); shared print primitives (PrintBanner / AnomalyBadge / AssumptionsBlock / print.css); 26 test scaffolds (5 tasks) [COMPLETE 2026-05-28; 455 SPA GREEN, +84 new GREEN, 80 todos, 0 RED; lint + build EXIT 0]
 - [ ] 05-2-PLAN.md — Wave 2 (parallel with 05-3): computeIndividualReturn (Form I + B&P + LITO + Medicare + IND-04) + computeCompanyReturn (Form C + BRE 25%/30% + franking) + TaxReturnAssistant refactor + CompanyTaxReturn refactor + EntityForm widening (3 tasks)
-- [ ] 05-3-PLAN.md — Wave 2 (parallel with 05-2): computeTrustReturn (Form T + per-beneficiary distribution + mandatory streaming disclaimer) + computePartnershipReturn (Form P + per-partner distribution) + TrustTaxReturn refactor + PartnershipTaxReturn new (3 tasks)
+- [x] 05-3-PLAN.md — Wave 2 (parallel with 05-2): computeTrustReturn (Form T + per-beneficiary distribution + mandatory streaming disclaimer) + computePartnershipReturn (Form P + per-partner distribution) + TrustTaxReturn refactor + PartnershipTaxReturn new (3 tasks) [COMPLETE 2026-05-28; +27 GREEN (10 trust + 7 partnership + 6 TrustTaxReturn + 4 PartnershipTaxReturn); success criterion #3 locked; lint + build EXIT 0]
 - [ ] 05-4-PLAN.md — Wave 3: computeBas (Simpler BAS with G1/1A/1B/W1/W2/T7 lodgement + G2/G3/G10/G11 internal-only) + computeIas + BasIasAssistant refactor + ViewRouter wiring + Print-button audit; manual UAT checkpoint covering all 5 success criteria + 19 working reqs (2 auto tasks + 1 human-verify)
 
 ---
@@ -162,7 +162,7 @@
 | 2. Decompose and Tax Engine | 4/4 | Complete   | 2026-05-10 |
 | 3. Durable Persistence | 3/4 (Plan 03-4 awaiting human-verify) | In progress | - |
 | 4. Bookkeeping Core | 1/4 | In progress (Wave 0 landed 2026-05-12; Wave 2 next) | - |
-| 5. Tax Outputs | 1/4 | In progress (Wave 0 landed 2026-05-28; Wave 2 next) | - |
+| 5. Tax Outputs | 2/4 (05-1 + 05-3 complete; 05-2 parallel; 05-4 next) | In progress | - |
 | 6. Personas, Wizard, and Deployment | 0/? | Not started | - |
 
 ---

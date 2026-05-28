@@ -87,14 +87,14 @@ Quality-floor and credibility prerequisites — must clear these before any user
 
 ### Trust tax return (TRT)
 
-- [ ] **TRT-01**: User can produce a Form T (trust) return showing trust net income, deductions, and taxable income
-- [ ] **TRT-02**: User can produce per-beneficiary distribution statements that aggregate to the trust's net income
-- [ ] **TRT-03**: Distribution percentages or fixed amounts come from the entity's beneficiary register (ENT-07)
+- [x] **TRT-01**: User can produce a Form T (trust) return showing trust net income, deductions, and taxable income
+- [x] **TRT-02**: User can produce per-beneficiary distribution statements that aggregate to the trust's net income
+- [x] **TRT-03**: Distribution percentages or fixed amounts come from the entity's beneficiary register (ENT-07)
 
 ### Partnership tax return (PSP)
 
-- [ ] **PSP-01**: User can produce a Form P (partnership) return showing partnership income, deductions, and net income or loss
-- [ ] **PSP-02**: User can produce per-partner distribution statements based on the entity's partner register (ENT-08)
+- [x] **PSP-01**: User can produce a Form P (partnership) return showing partnership income, deductions, and net income or loss
+- [x] **PSP-02**: User can produce per-partner distribution statements based on the entity's partner register (ENT-08)
 
 ### Guidance / UX (UX)
 
@@ -228,11 +228,11 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | COY-02 | Phase 5 | Pending |
 | COY-03 | Phase 5 | Pending |
 | COY-04 | Phase 5 | Obsolete (mis-scoped; see IND-04) |
-| TRT-01 | Phase 5 | Pending |
-| TRT-02 | Phase 5 | Pending |
-| TRT-03 | Phase 5 | Pending |
-| PSP-01 | Phase 5 | Pending |
-| PSP-02 | Phase 5 | Pending |
+| TRT-01 | Phase 5 Plan 05-3 | Delivered (computeTrustReturn Form T labels 5B/5E/5F/5L/5M/5N/5S/5T/11J/26/56 + TrustTaxReturn renderer) |
+| TRT-02 | Phase 5 Plan 05-3 | Delivered (distributeTrustIncome + Item 57 distribution table + mandatory streaming disclaimer always visible) |
+| TRT-03 | Phase 5 Plan 05-3 | Delivered (distributeTrustIncome reads entity.beneficiaries; 60/40 split → $120k/$80k reconciles to-the-cent) |
+| PSP-01 | Phase 5 Plan 05-3 | Delivered (computePartnershipReturn Form P labels P1/P2/P8 + PartnershipTaxReturn renderer) |
+| PSP-02 | Phase 5 Plan 05-3 | Delivered (distributePartnershipNetIncome reads entity.partners; Item 54 per-partner distribution table) |
 | UX-01 | Phase 6 | Pending |
 | UX-02 | Phase 6 | Pending |
 | UX-03 | Phase 6 | Pending |

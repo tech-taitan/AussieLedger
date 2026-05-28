@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 5 — Tax Outputs (in progress)
-current_plan: 05-2 (Wave 2 Individual + Company) — next to execute
+current_plan: 05-4 (Wave 3 BAS/IAS + UAT) — 05-2 parallel + 05-3 complete
 status: in-progress
 last_updated: "2026-05-28T10:46:49Z"
 progress:
@@ -34,16 +34,16 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 5 — Tax Outputs (IN PROGRESS — 05-1 complete 2026-05-28)
-**Current plan:** 05-2 (Wave 2 Individual + Company) — next to execute via `/gsd:execute-phase 5`
-**Phase 5 status:** IN PROGRESS. **Wave 0 (05-1) COMPLETE:** v4 additive migration, FY2026 rate helpers (marginal/LITO/Medicare/BRE/smallBizOffset all GREEN), shared compute-function contract types, 6 compute*Return skeletons, rollup helper, aggregatedTurnover helper, shared print primitives (PrintBanner/AnomalyBadge/AssumptionsBlock), print.css, PartnershipTaxReturn Wave 0 skeleton, all Phase 5 it.todo test scaffolds. 455 SPA GREEN + 80 todo, 0 RED. lint + build EXIT 0. StorageAdapter untouched (Phase 3 FINAL). Zero new runtime deps. All golden tests locked: marginalTaxFY2026($45,000)=$4,288.00, $190,000=$51,638.00; BRE 90% dividend→30%.
+**Current phase:** Phase 5 — Tax Outputs (IN PROGRESS — 05-1 complete 2026-05-28, 05-3 complete 2026-05-28)
+**Current plan:** 05-4 (Wave 3 BAS/IAS + UAT) — 05-2 running parallel, 05-3 COMPLETE
+**Phase 5 status:** IN PROGRESS. **Wave 0 (05-1) COMPLETE.** **Wave 2 (05-3) COMPLETE:** computeTrustReturn (Form T + distributeTrustIncome + STREAMING_DISCLAIMER), computePartnershipReturn (Form P + distributePartnershipNetIncome + loss warning), TrustTaxReturn refactored (Form T + distribution table + streaming disclaimer + print), PartnershipTaxReturn fleshed out (Form P + distribution table + print). +27 GREEN tests. Success criterion #3 locked: Trust $200k → Alice $120k / Bob $80k + streaming disclaimer visible. 498 SPA GREEN + 37 todo, 0 RED. build EXIT 0. StorageAdapter untouched (Phase 3 FINAL).
 **Phase status:** Phase 4 fully PLAN-COMPLETE. **Wave 0 (04-1):** v3 type widening + additive v2→v3 migration + 127-row AU SME default CoA + 4 per-type overlays + getDefaultCoaFor + pure-function ledger.ts + sha256 fingerprint + PapaParse/SheetJS CE wrappers + 12 hook/component test scaffolds. **Wave 2 (04-2 + 04-3 parallel):** useJournals lifecycle (postDraft/editPosted supersession/reversePosted/voidDraft/searchJournals) + JournalForm Edit+Reverse + EditJournalDiff + JournalSearch + TrialBalance period-filter + parent subtotals + AuditTrail widened (04-2); useAccounts (archiveAccount/setIsDefault/isAccountInUse) + useEntities (createEntity-seeds-CoA/tryDeleteEntity/beneficiary+partner writers) + CoaTreeView + AccountManager refactor + GST 'ITS'→'INP' typo fix + EntityForm AU-4 + register tabs + BeneficiaryRegister + PartnerRegister (04-3). **Wave 3 (04-4):** XlsxSheetPicker + ImportReviewPane + ImportTB refactor (634→520 lines) consuming Wave 0 wrappers + fingerprint Skip/Replace/Add-additional dialog + onReplace prop + useJournals.supersedeImport helper (closes the plan-checker-flagged TB-double-count risk) + ViewRouter wiring. **Task 3 UAT APPROVED 2026-05-13** — all 28 manual checks passed including step-18 Replace regression. Tests: 371 SPA GREEN + 11 todo + 0 RED; 18 server GREEN. lint + build + build:server + dev-full smoke all EXIT 0. StorageAdapter untouched (Phase 3 FINAL preserved). 23/23 Phase 4 requirements DELIVERED end-to-end.
-**Last session:** 2026-05-28 (Phase 5 Wave 0 05-1 complete — all 5 tasks executed, 455 GREEN, 7 commits including Rule 1 structural-lint fix)
-**Overall progress:** Phases 1 + 2 + 3 + 4 complete + Phase 5 Wave 0 — 16/19 plans complete.
+**Last session:** 2026-05-28 (Phase 5 Wave 2 05-3 complete — all 3 tasks executed, +27 GREEN, 3 commits + 2 Rule 3 auto-fixes; running parallel with 05-2)
+**Overall progress:** Phases 1 + 2 + 3 + 4 complete + Phase 5 Wave 0 + Wave 2 (05-3) — 17/19 plans complete (05-2 parallel in progress).
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [  1/4   ] [  ----  ]
+[ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [  2/4   ] [  ----  ]
 ```
 
 ---
@@ -85,6 +85,7 @@ progress:
 | 04 | 04-3 | ~12 min | 3/3 | +3 ~7 | 354 (+18 server) (interleaved) |
 | 04 | 04-4 | ~12 min | 3/3 | +2 ~5 | 371 (+18 server) [UAT approved 2026-05-13] |
 | 05 | 05-1 | multi-session | 5/5 | +47 ~9 | 455 (+18 server) [Wave 0 complete 2026-05-28] |
+| 05 | 05-3 | ~30 min | 3/3 | ~10 | 498 (+18 server) [Wave 2 trust+partnership complete 2026-05-28] |
 
 ---
 
@@ -131,6 +132,10 @@ progress:
 | types.ts created during Task 2 (BRE implementation) rather than Task 3 | bre.ts needed Anomaly type import before types.ts was scheduled; pure-type file with zero runtime cost; no side effects from early creation | 05-1 |
 | structural-lint stripCommentsAndStrings extended to skip JSDoc block-comment lines | bas.ts comment text (1/11) and types.ts (05-2/05-3/05-4) both triggered digit/slash/digit regex; fix is cleaner than rewriting comment text; Rule 1 auto-fix | 05-1 |
 | PartnershipTaxReturn Wave 0 skeleton uses currentFy() fallback for non-FY period types | Aligns with all other form component conventions; Plan 05-3 replaces the placeholder body with full Form P compute wiring | 05-1 |
+| distributeTrustIncome uses sharePercent-only allocation regardless of sharePerType; anomaly emitted but flow proceeds | CONTEXT v2-deferral: streaming UI deferred; per-class shares data model exists but not consumed in v1 distribution | 05-3 |
+| STREAMING_DISCLAIMER emitted as meta.streamingDisclaimer string (not anomaly) — mandatory metadata always present | It is a regulatory disclosure requirement, not an anomaly flag; rendered as red-bordered aside visible in screen + print | 05-3 |
+| 57_total omitted from TrustReturnLabels labels map; distributionTotal stored in meta instead | TrustLabel union does not include 57_total; using index signature hacks would weaken type safety; meta field is cleaner | 05-3 |
+| TrustTaxReturn interface changed from onUpdateAccount + no entity to entity-required + addLog optional | Phase 2 placeholder owned CoA editing in-component; Plan 05-3 delegates to compute layer; ViewRouter updated (Rule 3) | 05-3 |
 
 ### Research Flags Pending
 
