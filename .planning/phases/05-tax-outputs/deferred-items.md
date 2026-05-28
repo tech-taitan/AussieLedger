@@ -22,3 +22,5 @@ deferred_by: 05-2
 **Assigned to:** Plan 05-4 or the 05-3 agent on next run. This is a pre-existing issue from 05-3, not introduced by 05-2.
 
 **Impact:** 1 structural test fails. All 05-2 owned tests pass.
+
+**Resolution:** Fixed by orchestrator before Wave 3 spawn — commit `afdfcb4` "fix(05-3): use today() not new Date() in print audit handler". Imported `today` from `'../lib/period'` and replaced both `new Date().toISOString()` call sites. Structural test now GREEN.
