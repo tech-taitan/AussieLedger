@@ -120,3 +120,8 @@ describe('Phase 4 — EntityForm v3 widening (ENT-01/03/04/05/06)', () => {
     expect(screen.queryByTestId('beneficiary-register')).toBeNull();
   });
 });
+
+describe('EntityForm — Phase 5 wiring (v4 fields)', () => {
+  it.todo('aggregatedTurnover field — renders numeric input and passes value to onSave entity');
+  it.todo('paygInstalmentAmount field — renders numeric input and passes value to onSave entity');
+});
