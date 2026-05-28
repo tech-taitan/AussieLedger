@@ -1,161 +1,68 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
 # AussieLedger
 
-Free, self-hosted, open-source Australian bookkeeping-to-tax-return tool for all four AU entity types (Company, Trust, Sole Trader, Partnership).
+Free, self-hosted, open-source Australian bookkeeping → tax return tool.
+AU only. All four entity types (Company, Trust, Sole Trader / Individual, Partnership).
 
-View the AI Studio reference build: https://ai.studio/apps/266bde54-dfb0-47e1-837f-206e78d7e3da
+## What This Is
 
----
+**For small-business owners** — take your trial balance, record your year's adjustments and journals in plain English, and walk away with a print-ready working paper to hand to the ATO via myGov or to your tax agent. No subscription, no paid services in the critical path.
 
-## Quick start
+**For tax agents** — a no-cost workspace for your smaller clients. Multi-client list, fast entity switching, print-ready Form I / Form C / Form T / Form P / BAS / IAS working papers with ATO field codes.
 
-**Prerequisites:** Node.js 20 LTS or 22 LTS.
+## Quick Start
+
+```bash
+git clone <repo-url>
+cd AussieLedger
+npm install && npm run build
+npm run dev
+```
+
+Visit http://localhost:3000. On first load, you'll be asked to pick **owner mode** (single business) or **agent mode** (multiple clients).
+
+## Deployment Shapes
+
+AussieLedger ships in two shapes from the same codebase.
+
+### Single-user local (no server)
 
 ```bash
 npm install
-npm run dev          # development at http://localhost:3000 (IndexedDB; no server)
+npm run dev
 ```
+Data persists in your browser's IndexedDB. Survives cache clear unless you clear site data. Export your data periodically via the Data page.
 
-That's it for the simplest setup. For the server-backed shape (Express + SQLite),
-see [Deployment shapes](#deployment-shapes) below.
-
-> Optional: set `GEMINI_API_KEY` in `.env.local` if you want AI-assisted account
-> matching during trial-balance import. The app is fully functional without it.
-
----
-
-## Deployment shapes
-
-AussieLedger ships with two deployment options. Both produce a fully working app;
-pick the one that matches your usage.
-
-### 1. Local single-user (no server) — IndexedDB
-
-The simplest setup. No backend, no SQLite. Data lives in your browser's
-IndexedDB.
+### Small-firm VPS (Vite + Express + SQLite)
 
 ```bash
 npm install
-npm run dev          # development at http://localhost:3000
-npm run build        # production build into dist/
-npm run preview      # serve the production build locally
+npm run build
+npm run build:server
+npm run start:server &
+# serve dist/ via your reverse proxy (Caddy / nginx)
 ```
 
-Pros: zero infrastructure. Cons: data lives in *this* browser on *this* machine.
-If you "Clear all site data" in the browser, your AussieLedger data is gone —
-**Export your data periodically via the Data page** (sidebar → Data → Export).
+Set env vars: `PORT` (default 4000), `DB_PATH` (default ./data/ledger.db), `GEMINI_API_KEY` (optional — enables AI account-matching in TB import). For multi-user access, run behind your reverse proxy with basic auth or VPN.
 
-### 2. Self-hosted firm (Express + SQLite)
+Windows dev note: `npm run dev:full` requires Visual Studio Build Tools for the native `better-sqlite3` compile.
 
-Add the optional server tier for a shared instance (single firm, behind reverse
-proxy). Data persists in a SQLite file on the server.
+## How It Works
 
-```bash
-npm install                       # installs better-sqlite3 as optional dep
-npm run dev:full                  # vite + server, both with hot reload
-npm run build && npm run build:server
-npm run start:server              # production server only
-```
+- **Persistence:** StorageAdapter abstracts the storage layer. LocalAdapter (IndexedDB) + ServerAdapter (HTTP → Express → SQLite). Same SPA bundle, runtime probe picks the shape.
+- **Tax engine:** Pure functions in `src/lib/tax/` consume Chart of Accounts + Journal Entries and produce ATO-label-tagged working papers. Decimal arithmetic throughout (decimal.js).
+- **Print working papers:** `window.print()` + `@media print` CSS. No PDF library. ATO field codes shown alongside plain-English labels.
+- **Year-end wizard:** Guided 7-step flow (confirm → unreconciled → GST codes → unmapped → preview → attest → finalise). Locks the FY when finalised; post-finalise corrections route through Reverse-and-Re-post.
 
-`npm run start:server` listens on `http://127.0.0.1:4000` by default. The SPA's
-Vite proxy forwards `/api/*` from `http://localhost:3000` to the server during
-development. In production, serve the built SPA (from `dist/`) through the same
-reverse proxy that fronts the server, so `/api/*` reaches the Express process.
+## Optional: AI Account-Matching
 
-### Windows prerequisites for `dev:full` / `start:server`
+If `GEMINI_API_KEY` is set in `.env.local` (single-user) or as a server env var (small-firm), the TB import shows an "AI re-match accounts" button. Without a key, you'll see a one-line note saying AI suggestions are disabled — the rest of the app works exactly the same.
 
-`better-sqlite3` is a native Node module. **Windows builds from source**; there
-are no prebuilt binaries shipped. You need:
+## Contributing
 
-1. **Python 3** on `PATH` — install from the Microsoft Store (recommended) or
-   python.org. Anaconda/embeddable distributions do not set PATH correctly.
-2. **Visual Studio Build Tools 2022** with the "Desktop development with C++"
-   workload (~6 GB on disk; the free Build Tools download — no full IDE
-   required).
-3. **Node 20 LTS or 22 LTS**.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for dev setup, test patterns, the hard schema-migration rule, and how to add a new FY.
 
-After installing the tools, run `npm rebuild better-sqlite3 --build-from-source`.
-macOS and Linux receive prebuilt binaries automatically.
+## License
 
-`better-sqlite3` is an `optionalDependencies` entry — `npm install` succeeds even
-when the build fails. In that case, `npm run dev` continues to work (IndexedDB
-only); `dev:full` will fail loudly when the server tries to load the missing
-native binding.
+Apache 2.0. See [LICENSE](./LICENSE).
 
-### Server environment variables
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `PORT` | `4000` | Server bind port |
-| `HOST` | `127.0.0.1` | Server bind interface — **change to `0.0.0.0` only if running behind a trusted reverse proxy** |
-| `DB_PATH` | `./data/ledger.db` | SQLite file path |
-| `GEMINI_API_KEY` | unset | Gemini API key — when set, enables AI-assisted import; when unset, deterministic fuzzy match is the only path |
-
-`data/` is gitignored. Production deploys should mount or back up
-`data/ledger.db*` (the WAL + SHM companions matter — back up while the server
-is stopped, or use `cp data/ledger.db*`).
-
-### Auth / shared-firm note
-
-Phase 3 ships **no built-in auth**. The server binds `127.0.0.1` by default. For
-shared/firm use on a VPS:
-
-1. Set `HOST=0.0.0.0` (or keep `127.0.0.1` and reverse-proxy via loopback).
-2. Front the server with **Caddy** or **nginx** + basic auth, OR put it behind
-   a VPN.
-
-Auth + multi-user features are tracked for a later milestone.
-
----
-
-## Data durability
-
-| Action | IndexedDB (no server) | SQLite (server) |
-|--------|-----------------------|------------------|
-| Close + reopen browser | Survives | Survives |
-| Clear "cookies and cached images" | Survives | Survives |
-| "Clear all site data" (Chrome Application tab) | **Lost** | Survives |
-| Server restart | n/a | Survives |
-| `rm -rf data/` | n/a | **Lost** |
-
-**Export your data regularly via the Data page** — it's the single recovery
-path for the local IDB shape. On the Data page, the Import flow requires you to
-type the literal word `REPLACE` (uppercase, case-sensitive) before replacing an
-existing instance — to prevent accidental wipes.
-
----
-
-## AI features (optional)
-
-AI-assisted account matching (in the Trial Balance import flow) is **optional**.
-The application is fully functional without an API key:
-
-- In **local mode** (no server): set `GEMINI_API_KEY` in `.env.local` before
-  `npm run dev` / `npm run build`. The key is bundled into the SPA — acceptable
-  only for fully-private self-hosted installs.
-- In **server mode**: set `GEMINI_API_KEY` in the server's environment. The key
-  stays server-side; the SPA calls `/api/ai/match-accounts` which proxies to
-  Gemini.
-
-When neither is configured, the deterministic Levenshtein-based matcher
-(Phase 2) is the only path.
-
----
-
-## Development scripts
-
-| Script | What it does |
-|--------|--------------|
-| `npm run dev` | Vite dev server (IndexedDB; no Express) |
-| `npm run dev:server` | tsx-watch Express server (without SPA) |
-| `npm run dev:full` | Both above, concurrently — Vite proxies `/api` to Express |
-| `npm run build` | Vite production build of the SPA (output: `dist/`) |
-| `npm run build:server` | TypeScript compile of the server (output: `server/dist/`) |
-| `npm run start:server` | Run the compiled server (production) |
-| `npm run test` | Vitest SPA test suite (jsdom + fake-indexeddb) |
-| `npm run test:server` | Vitest server suite (node env + better-sqlite3 in-memory) |
-| `npm run lint` | TypeScript noEmit type-check (SPA + server) |
-| `node scripts/test-dev-full.mjs` | Integration smoke: boot `dev:full`, hit `/api/health`, kill |
+AussieLedger produces working papers, not tax advice. The lodging entity retains all responsibility for the return.
