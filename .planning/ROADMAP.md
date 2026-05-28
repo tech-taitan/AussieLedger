@@ -13,7 +13,7 @@
 - [x] **Phase 3: Durable Persistence** — Replace localStorage with a StorageAdapter backed by IndexedDB (no-server) and SQLite (server); add export/import (completed 2026-05-12; FND-02 CSV per-report exports deferred to Phases 4 + 5 per 03-UAT.md)
 - [x] **Phase 4: Bookkeeping Core** — Full 80–150 account CoA with GST codes and tax-label pre-mapping, complete journal CRUD, TB import, entity management with AU-specific fields (completed 2026-05-13; 23/23 requirements delivered + 28-step UAT all pass + goal-backward PASS per 04-UAT.md)
 - [x] **Phase 5: Tax Outputs** — All four AU return types (Individual, Company, Trust, Partnership), BAS/IAS, and print-ready working-paper output (completed 2026-05-28; 20/20 requirements; 526 SPA + 18 server GREEN; UAT all 12 steps PASS)
-- [ ] **Phase 6: Personas, Wizard, and Deployment** — Dual consumer/agent modes, year-end preparation wizard, anomaly flags, in-context help, and open-source deployment polish
+- [x] **Phase 6: Personas, Wizard, and Deployment** — Dual consumer/agent modes, year-end preparation wizard, anomaly flags, in-context help, and open-source deployment polish (completed 2026-05-29; 11/11 requirements; 763 SPA + 18 server GREEN; UAT all 12 steps PASS)
 
 ---
 
@@ -150,11 +150,11 @@
 4. Every ATO label and field in tax output has a tooltip or side-panel showing a plain-English explanation of what it means and what data populates it; the help text never states whether an expense is deductible
 5. A new user can clone the repository, run `npm install && npm run build`, serve the built output, and have a fully working instance with no paid services configured; the README documents both single-user local and small-firm VPS deployment shapes; a CONTRIBUTING.md states the schema-migration rule
 
-**Plans:** 4 plans (Wave 1 + 2 + 2 + 3) — planned 2026-05-29 — 3/4 complete
+**Plans:** 4 plans (Wave 1 + 2 + 2 + 3) — planned 2026-05-29 — 4/4 complete
 - [x] 06-1-PLAN.md — Wave 1: v4→v5 additive migration + Settings/persona module + useAnomalyCounts + LabelTooltip + PersonaModeModal + AiGateNote + YearEndWizard scaffold + helpText widening on all 6 label catalogues + LICENSE + CONTRIBUTING.md + README rewrite + SPDX-headers lint + Radix tooltip install (3 tasks) [COMPLETE 2026-05-29; 692 SPA GREEN +166 new; 3 commits: 9da476b/b48dfaa/4c000ce]
 - [x] 06-2-PLAN.md — Wave 2 (parallel with 06-3): YearEndWizard orchestrator + 7 step components + Step5Preview embedding Phase-5 renderers + JournalForm lockedFy finalise guard + useEntities round-trip (2 tasks) [COMPLETE 2026-05-29; 748 SPA GREEN +56 new; 2 commits: 64ca0f1/54c6bd5]
 - [x] 06-3-PLAN.md — Wave 2 (parallel with 06-2): persona-aware Sidebar + ViewRouter mode-gated landing + Settings page + MasterDashboard agent badges + inline AnomalyBadge on Journal/TB/CoA + Sidebar count badges + mobile responsive classes + AiGateNote in ImportTB + LabelTooltip in 5 tax-return components (3 tasks) [COMPLETE 2026-05-29; 763 SPA GREEN +15 new; 3 commits: 5e5a768/6e8ad2b/69c006f]
-- [ ] 06-4-PLAN.md — Wave 3: full automated pre-UAT + 12-step manual UAT covering all 5 success criteria + phase closure (STATE/ROADMAP/REQUIREMENTS updates) (3 tasks)
+- [x] 06-4-PLAN.md — Wave 3: full automated pre-UAT + 12-step manual UAT covering all 5 success criteria + phase closure (STATE/ROADMAP/REQUIREMENTS updates) (3 tasks) [COMPLETE 2026-05-29; UAT APPROVED; 11/11 requirements delivered; Phase 6 CLOSED; v1 milestone COMPLETE]
 
 ---
 
@@ -167,7 +167,7 @@
 | 3. Durable Persistence | 4/4 | Complete | 2026-05-12 |
 | 4. Bookkeeping Core | 4/4 | Complete | 2026-05-13 |
 | 5. Tax Outputs | 4/4 | Complete | 2026-05-28 |
-| 6. Personas, Wizard, and Deployment | 3/4 | In Progress | - |
+| 6. Personas, Wizard, and Deployment | 4/4 | Complete | 2026-05-29 |
 
 ---
 
@@ -218,4 +218,4 @@
 ---
 
 *Roadmap created: 2026-05-10*
-*Last updated: 2026-05-10 after initial creation*
+*Last updated: 2026-05-29 — Phase 6 closed; v1 milestone complete (6 phases, 23 plans, 70 requirements)*

@@ -17,19 +17,19 @@ key_files:
 decisions:
   - "Pre-UAT automated gates must all be EXIT 0 before manual UAT proceeds"
 metrics:
-  status: "partial — awaiting manual UAT"
-  completed: "2026-05-29 (partial)"
-  tasks_completed: 1
+  status: "complete"
+  completed: "2026-05-29"
+  tasks_completed: 3
   tasks_total: 3
   tests_green: 763
   tests_server_green: 18
 ---
 
-# Phase 06 Plan 4: Final UAT — Summary (PARTIAL)
+# Phase 06 Plan 4: Final UAT — Summary
 
-**Status: AWAITING MANUAL UAT (Task 2 checkpoint)**
+**Status: COMPLETE**
 
-**One-liner:** Pre-UAT automated gate PASS (763 SPA + 18 server GREEN, lint clean, build clean); 06-UAT.md initialised with 5 pre-gate PASS rows + 12 manual verification steps awaiting human tester sign-off.
+**One-liner:** All pre-UAT automated gates PASS (763 SPA + 18 server GREEN, lint clean, build clean); all 12 manual UAT steps PASS; Phase 6 v1 milestone signed off 2026-05-29; 6 phases, 23 plans, 70 requirements delivered.
 
 ---
 
@@ -49,29 +49,43 @@ All 5 automated gates PASS:
 
 ---
 
-## Task 2: Manual UAT — AWAITING
+## Task 2: Manual UAT — COMPLETE (APPROVED 2026-05-29)
 
-12 steps covering all 5 Phase 6 success criteria + DEP-01 clone-and-run check. See `.planning/phases/06-personas-wizard-and-deployment/06-UAT.md` for the full step-by-step verification log.
+All 12 UAT steps PASSED. See `.planning/phases/06-personas-wizard-and-deployment/06-UAT.md` for the full signed UAT log.
 
-**Steps awaiting human sign-off:**
-1. First-run mode prompt (UX-05)
-2. Owner mode no-entity flow (PERS-01)
-3. Year-end CTA one click away (PERS-01)
-4. Inline anomaly on JournalForm (UX-02)
-5. Sidebar count badges (UX-02)
-6. ATO label tooltip + print rendering (UX-03)
-7. Wizard finalise gate (UX-01)
-8. Post-finalise journal edit guard (UX-01)
-9. Unfinalise (UX-01)
-10. Persona mode switch round-trip (UX-05 + PERS-02 + PERS-03)
-11. Mobile responsive at 375px (UX-04)
-12. Clone-and-run check (DEP-01 + DEP-03)
+**All steps PASS:**
+1. First-run mode prompt (UX-05) — PASS
+2. Owner mode no-entity flow (PERS-01) — PASS
+3. Year-end CTA one click away (PERS-01) — PASS
+4. Inline anomaly on JournalForm (UX-02) — PASS
+5. Sidebar count badges (UX-02) — PASS
+6. ATO label tooltip + print rendering (UX-03) — PASS
+7. Wizard finalise gate (UX-01) — PASS
+8. Post-finalise journal edit guard (UX-01) — PASS
+9. Unfinalise (UX-01) — PASS
+10. Persona mode switch round-trip (UX-05 + PERS-02 + PERS-03) — PASS
+11. Mobile responsive at 375px (UX-04) — PASS
+12. Clone-and-run check (DEP-01 + DEP-03) — PASS
+
+**UAT APPROVED 2026-05-29T00:00Z**
+
+## UAT Outcome
+
+The human tester approved all 12 UAT steps on 2026-05-29 via `resume-signal: approved`. All 5 Phase 6 success criteria verified end-to-end in a real browser with real fixture data:
+
+1. Owner-mode entity dashboard with year-end wizard one click away; agent-mode client list with fast switching — VERIFIED
+2. Year-end wizard completes full sequence, refuses to finalise with unmapped accounts — VERIFIED
+3. Anomaly flags surface in-context on relevant screens (JournalForm, TrialBalance, CoaTreeView, Sidebar badges) — VERIFIED
+4. Every ATO label has plain-English tooltip; help text never states deductibility; renders inline in print — VERIFIED
+5. Clone-and-run produces working instance with no paid services; README documents both deployment shapes — VERIFIED
+
+**Final test counts:** 763 SPA GREEN + 11 todo + 0 RED; 18 server GREEN. lint + build EXIT 0.
 
 ---
 
-## Task 3: Phase Closure — BLOCKED ON UAT
+## Task 3: Phase Closure — COMPLETE
 
-STATE.md, ROADMAP.md, REQUIREMENTS.md updates will be applied by the continuation agent after UAT APPROVED.
+STATE.md, ROADMAP.md, REQUIREMENTS.md updated. Phase 6 closed. v1 milestone complete.
 
 ---
 
@@ -87,14 +101,35 @@ STATE.md, ROADMAP.md, REQUIREMENTS.md updates will be applied by the continuatio
 
 ---
 
-## Deviations from Plan
+## v1 Milestone Closure
 
-None during Task 1 — automated gate ran cleanly.
+Phase 6 is the final phase of the v1 milestone. With its closure:
+
+- **6 phases** complete (Safety Net → Decompose → Persistence → Bookkeeping Core → Tax Outputs → Personas/Wizard/Deployment)
+- **23 plans** complete (01-1 through 06-4)
+- **70 requirements** delivered (0 orphans, 0 pending v1 requirements except explicitly deferred items)
+- **v1.0 milestone**: AussieLedger is ready for public open-source release
+
+**Deferred to v2:**
+- FND-02 (CSV per-report export — JSON export done; CSV was scoped to v2 from Phase 3 UAT)
+- TAX-04 (account CoA override mapping UI — data model supports it; UI surface deferred)
+- DEP-02 (Express server documented; optional deployment shape)
+- Bank reconciliation (REC-01..03), specialist tax surfaces (SPEC-01..07), direct lodgement (LOD-01..02)
 
 ---
 
-## Self-Check: PARTIAL
+## Deviations from Plan
 
-- 06-UAT.md created at `.planning/phases/06-personas-wizard-and-deployment/06-UAT.md` — FOUND
-- Commit 7acd3b4 exists — VERIFIED
-- Summary partial pending UAT completion
+None during Task 1 — automated gate ran cleanly. None during Task 3 — STATE/ROADMAP/REQUIREMENTS updates applied as planned.
+
+---
+
+## Self-Check: COMPLETE
+
+- 06-UAT.md created and signed — FOUND, status: approved, UAT APPROVED present
+- 06-4-SUMMARY.md finalised — this file
+- Commit 7acd3b4 (pre-UAT gates) — VERIFIED
+- Commit 8224435 (partial SUMMARY + STATE) — VERIFIED
+- STATE.md updated — Phase 6 COMPLETE, completed_phases: 6, completed_plans: 23
+- ROADMAP.md updated — Phase 6 [x], Progress Table 4/4 Complete
+- REQUIREMENTS.md — all Phase 6 requirements already marked delivered in prior plans
