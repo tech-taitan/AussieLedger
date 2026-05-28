@@ -1,84 +1,323 @@
-import React, { useMemo } from 'react';
-import { Account, JournalEntry } from '../types';
-import { computeBas } from '../lib/tax/bas';
-import { currentFy } from '../lib/period';
-import { FileSignature, Info } from 'lucide-react';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * BasIasAssistant — Phase 5 Plan 05-4 refactor.
+ * BAS (Business Activity Statement) and IAS (Instalment Activity Statement) renderer.
+ *
+ * Dispatches:
+ *   - entity.gstRegistered === false → IAS shape (PAYG labels only)
+ *   - else                          → BAS shape (Simpler BAS lodgement + internal-only section)
+ *
+ * Features:
+ *   - Period selector (Full FY / Q1 / Q2 / Q3 / Q4), default Q1
+ *   - Print button emitting EXPORT_DATA audit log
+ *   - PrintBanner (print-only)
+ *   - Simpler BAS lodgement section: G1, 1A, 1B, W1, W2, T7
+ *   - Internal-only section (BAS only): G2, G3, G10, G11 — NOT lodged
+ *   - IAS section: W1, W2, W3, W4, W5, T7
+ *   - Anomaly badges
+ *   - Print footer (FOOTER_DISCLAIMER)
+ */
+import React, { useState, useMemo } from 'react';
+import type { Account, AuditAction, Entity, JournalEntry } from '../types';
+import type { Period, FyLabel } from '../lib/period';
+import { currentFy, today } from '../lib/period';
+import { computeBas } from '../lib/tax/returns/fy2026/bas';
+import { computeIas } from '../lib/tax/returns/fy2026/ias';
+import type { BasReturn } from '../lib/tax/returns/fy2026/bas';
+import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
+import { AnomalyBadge } from './AnomalyBadge';
+import type { Decimal } from '../lib/money';
+
+// ── Prop contract ─────────────────────────────────────────────────────────
+
+type AddLog = (action: AuditAction, details: string, entityId?: string) => void;
 
 interface BasIasAssistantProps {
+  /** Phase 5 (required for full compute). Omitted in Phase 2 legacy callers — treated as a generic GST-registered entity. */
+  entity?: Entity;
   accounts: Account[];
   entries: JournalEntry[];
+  addLog?: AddLog;
+  /** Override FY (defaults to currentFy()). */
+  fy?: FyLabel;
 }
 
-export const BasIasAssistant: React.FC<BasIasAssistantProps> = ({ accounts, entries }) => {
-  const basReturn = useMemo(() => {
-    const fy = currentFy();
-    return computeBas({ fy, entries, accounts, period: { type: 'fy', fy } });
-  }, [entries, accounts]);
+/** Default entity used when the `entity` prop is omitted (smoke test backward compat). */
+const DEFAULT_BAS_ENTITY: Entity = {
+  _v: 4,
+  id: 'default-bas',
+  name: 'Unknown Entity',
+  type: 'Company',
+  status: 'Active',
+  gstRegistered: true,
+};
 
-  const netPayment = Number(basReturn.netGst.value.toFixed(2)) + Number(basReturn.W2.value.toFixed(2));
+// ── LabelRow helper ───────────────────────────────────────────────────────
 
-  const renderRow = (label: string, description: string, value: number, isHighlight = false) => (
-    <div key={label} className={`flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 border ${isHighlight ? 'border-[var(--ink)] bg-gray-50' : 'border-[var(--line)]'} hover:border-[var(--ink)] transition-colors gap-2 sm:gap-4`}>
-      <div className="flex items-start sm:items-center gap-3">
-        <span className={`inline-block px-2 py-0.5 rounded text-xs font-mono font-bold shrink-0 ${isHighlight ? 'bg-[var(--ink)] text-white' : 'bg-gray-100 text-gray-700'}`}>
-          {label}
-        </span>
-        <span className={`text-sm ${isHighlight ? 'font-bold' : 'font-medium'}`}>{description}</span>
-      </div>
-      <div className={`text-lg data-value ${isHighlight ? 'font-bold' : ''} text-right sm:text-left`}>
-        ${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-      </div>
-    </div>
-  );
+interface LabelRowProps {
+  code: string;
+  plainEnglish: string;
+  value: Decimal | undefined;
+  highlight?: boolean;
+  muted?: boolean;
+}
+
+function LabelRow({ code, plainEnglish, value, highlight, muted }: LabelRowProps): React.JSX.Element {
+  const rowClass = [
+    'flex justify-between items-center py-2 px-3 border-b border-gray-100',
+    highlight ? 'bg-blue-50 font-bold' : '',
+    muted ? 'opacity-60' : '',
+  ].join(' ');
 
   return (
-    <div className="bg-white p-4 sm:p-6 shadow-sm border border-[var(--line-strong)]">
-      <div className="flex items-center gap-2 mb-6">
-        <FileSignature className="text-orange-600" />
-        <h2 className="text-xl font-medium">BAS & IAS Assistant</h2>
+    <div className={rowClass}>
+      <div className="flex items-center gap-3">
+        <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-mono font-bold w-10 text-center">
+          {code}
+        </span>
+        <span className="text-sm">{plainEnglish}</span>
       </div>
-
-      <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-8 flex gap-3">
-        <Info className="text-orange-600 shrink-0" size={20} />
-        <p className="text-sm text-orange-800">
-          This assistant calculates your Business Activity Statement (BAS) and Instalment Activity Statement (IAS) figures based on your posted journal entries and GST codes.
-        </p>
-      </div>
-
-      <div className="space-y-8">
-        <div>
-          <h3 className="col-header mb-4 border-b border-[var(--line-strong)] pb-2">GST Calculation</h3>
-          <div className="space-y-2">
-            {renderRow('G1', 'Total sales (including any GST)', Number(basReturn.G1.value.toFixed(2)))}
-            {renderRow('G2', 'Export sales', Number(basReturn.G2.value.toFixed(2)))}
-            {renderRow('G3', 'Other GST-free sales', Number(basReturn.G3.value.toFixed(2)))}
-            {renderRow('G10', 'Capital purchases', Number(basReturn.G10.value.toFixed(2)))}
-            {renderRow('G11', 'Non-capital purchases', Number(basReturn.G11.value.toFixed(2)))}
-            <div className="my-4 border-t border-[var(--line-strong)]"></div>
-            {renderRow('1A', 'GST on sales or GST instalment', Number(basReturn['1A'].value.toFixed(2)), true)}
-            {renderRow('1B', 'GST on purchases', Number(basReturn['1B'].value.toFixed(2)), true)}
-            {renderRow('9', 'Net GST amount', Number(basReturn.netGst.value.toFixed(2)), true)}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="col-header mb-4 border-b border-[var(--line-strong)] pb-2">PAYG Tax Withheld</h3>
-          <div className="space-y-2">
-            {renderRow('W1', 'Total salary, wages and other payments', Number(basReturn.W1.value.toFixed(2)))}
-            {renderRow('W2', 'Amounts withheld from payments shown at W1', Number(basReturn.W2.value.toFixed(2)), true)}
-          </div>
-        </div>
-
-        <div className="pt-6 border-t-2 border-[var(--ink)]">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h3 className="text-lg font-bold">Total Payment / (Refund)</h3>
-            <div className={`text-2xl font-bold data-value ${netPayment < 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${Math.abs(netPayment).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              <span className="text-sm ml-2 text-gray-500">{netPayment < 0 ? 'Refund' : 'Payment'}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <span className="font-mono text-sm">
+        ${(value ?? 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+      </span>
     </div>
   );
-};
+}
+
+// ── BasIasAssistant ───────────────────────────────────────────────────────
+
+export function BasIasAssistant({
+  entity: entityProp,
+  accounts,
+  entries,
+  addLog,
+  fy: fyProp,
+}: BasIasAssistantProps): React.JSX.Element {
+  const entity = entityProp ?? DEFAULT_BAS_ENTITY;
+  const fy = fyProp ?? currentFy();
+  const [periodChoice, setPeriodChoice] = useState<'fy' | 1 | 2 | 3 | 4>(1);
+
+  const period: Period = periodChoice === 'fy'
+    ? { type: 'fy', fy }
+    : { type: 'quarter', fy, q: periodChoice };
+
+  const shape = entity.gstRegistered === false ? 'IAS' : 'BAS';
+
+  const result = useMemo(
+    () => shape === 'IAS'
+      ? computeIas({ entity, accounts, entries, period })
+      : computeBas({ entity, accounts, entries, period }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [entity, accounts, entries, shape, periodChoice, fy],
+  );
+
+  const handlePrint = () => {
+    const quarterStr = periodChoice !== 'fy' ? `Q${periodChoice}` : undefined;
+    addLog?.(
+      'EXPORT_DATA',
+      JSON.stringify({
+        entityId: entity.id,
+        form: shape,
+        fy,
+        ...(quarterStr ? { quarter: quarterStr } : {}),
+        timestamp: today().toISOString(),
+      }),
+      entity.id,
+    );
+    window.print();
+  };
+
+  const scopeClass = shape === 'IAS' ? 'print-form-ias' : 'print-form-bas';
+
+  return (
+    <section className={`${scopeClass} p-4`}>
+      {/* PrintBanner — print-only */}
+      <PrintBanner
+        form={shape}
+        entityName={entity.name}
+        fy={fy}
+        locked={result.meta.locked}
+      />
+
+      {/* Screen header with period selector + print button */}
+      <header className="no-print flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 className="text-2xl font-bold">
+          {shape} — {entity.name} ({fy})
+        </h2>
+        <div className="flex flex-wrap gap-2 items-center">
+          <label className="text-sm font-medium">Period:</label>
+          <select
+            value={periodChoice as string | number}
+            onChange={(e) => {
+              const val = e.target.value;
+              setPeriodChoice(val === 'fy' ? 'fy' : (Number(val) as 1 | 2 | 3 | 4));
+            }}
+            className="border border-gray-300 rounded px-2 py-1 text-sm"
+          >
+            <option value="fy">Full FY</option>
+            <option value={1}>Q1 (Jul–Sep)</option>
+            <option value={2}>Q2 (Oct–Dec)</option>
+            <option value={3}>Q3 (Jan–Mar)</option>
+            <option value={4}>Q4 (Apr–Jun)</option>
+          </select>
+          <button
+            onClick={handlePrint}
+            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+          >
+            {result.meta.locked ? 'Print finalised return' : 'Print working paper'}
+          </button>
+        </div>
+      </header>
+
+      {/* ── BAS shape ── */}
+      {shape === 'BAS' && (
+        <>
+          {/* Simpler BAS lodgement labels */}
+          <section className="mb-6">
+            <h3 className="font-bold text-lg mb-3 border-b pb-2">
+              BAS Lodgement labels (Simpler BAS)
+            </h3>
+            <div>
+              <LabelRow
+                code="G1"
+                plainEnglish="Total sales (GST-inclusive)"
+                value={(result as BasReturn).labels.G1?.value}
+                highlight
+              />
+              <LabelRow
+                code="1A"
+                plainEnglish="GST on sales"
+                value={(result as BasReturn).labels['1A']?.value}
+              />
+              <LabelRow
+                code="1B"
+                plainEnglish="GST on purchases"
+                value={(result as BasReturn).labels['1B']?.value}
+              />
+              <LabelRow
+                code="W1"
+                plainEnglish="Total salary, wages and other payments"
+                value={(result as BasReturn).labels.W1?.value}
+              />
+              <LabelRow
+                code="W2"
+                plainEnglish="Amounts withheld from payments at W1"
+                value={(result as BasReturn).labels.W2?.value}
+              />
+              <LabelRow
+                code="T7"
+                plainEnglish="PAYG instalment amount"
+                value={(result as BasReturn).labels.T7?.value}
+              />
+            </div>
+          </section>
+
+          {/* Internal-only working-paper labels */}
+          <section className="mb-6 text-gray-500">
+            <h3 className="font-semibold mb-3 border-b pb-2">
+              Internal-only working-paper labels (NOT lodged under Simpler BAS)
+            </h3>
+            <div>
+              <LabelRow
+                code="G2*"
+                plainEnglish="Export sales (internal only)"
+                value={(result as BasReturn).labels.G2?.value}
+                muted
+              />
+              <LabelRow
+                code="G3*"
+                plainEnglish="Other GST-free sales (internal only)"
+                value={(result as BasReturn).labels.G3?.value}
+                muted
+              />
+              <LabelRow
+                code="G10*"
+                plainEnglish="Capital purchases (internal only)"
+                value={(result as BasReturn).labels.G10?.value}
+                muted
+              />
+              <LabelRow
+                code="G11*"
+                plainEnglish="Non-capital purchases (internal only)"
+                value={(result as BasReturn).labels.G11?.value}
+                muted
+              />
+            </div>
+            <p className="text-xs italic mt-2">
+              * Internal-only — not lodged under Simpler BAS
+            </p>
+          </section>
+        </>
+      )}
+
+      {/* ── IAS shape ── */}
+      {shape === 'IAS' && (
+        <section className="mb-6">
+          <h3 className="font-bold text-lg mb-3 border-b pb-2">
+            IAS Labels (PAYG only)
+          </h3>
+          <div>
+            <LabelRow
+              code="W1"
+              plainEnglish="Total salary, wages and other payments"
+              value={result.labels.W1?.value}
+            />
+            <LabelRow
+              code="W2"
+              plainEnglish="Amounts withheld from payments at W1"
+              value={result.labels.W2?.value}
+            />
+            <LabelRow
+              code="W3"
+              plainEnglish="Amounts withheld where no ABN quoted"
+              value={result.labels.W3?.value}
+            />
+            <LabelRow
+              code="W4"
+              plainEnglish="Amounts withheld from investment distributions"
+              value={result.labels.W4?.value}
+            />
+            <LabelRow
+              code="W5"
+              plainEnglish="Total withholding (W2 + W3 + W4)"
+              value={result.labels.W5?.value}
+              highlight
+            />
+            <LabelRow
+              code="T7"
+              plainEnglish="PAYG instalment amount"
+              value={result.labels.T7?.value}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* ── Anomalies ── */}
+      {result.meta.anomalies.length > 0 && (
+        <section className="mt-4 mb-6">
+          <h3 className="font-semibold mb-2">Anomalies</h3>
+          <ul className="space-y-1">
+            {result.meta.anomalies.map((a) => (
+              <li key={a.id}>
+                <span>
+                  <AnomalyBadge
+                    severity={a.severity}
+                    message={a.message}
+                    label={a.label}
+                  />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Print footer */}
+      <footer className="print-footer print-only">
+        {FOOTER_DISCLAIMER}
+      </footer>
+    </section>
+  );
+}

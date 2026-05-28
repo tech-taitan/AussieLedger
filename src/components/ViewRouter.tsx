@@ -20,6 +20,7 @@ import { TrialBalance } from './TrialBalance';
 import { TaxReturnAssistant } from './TaxReturnAssistant';
 import { CompanyTaxReturn } from './CompanyTaxReturn';
 import { TrustTaxReturn } from './TrustTaxReturn';
+import { PartnershipTaxReturn } from './PartnershipTaxReturn';
 import { BasIasAssistant } from './BasIasAssistant';
 import { ImportTB } from './ImportTB';
 import { EntityForm } from './EntityForm';
@@ -571,8 +572,20 @@ export function ViewRouter({
             />
           )}
 
-          {view === 'bas-ias' && (
-            <BasIasAssistant accounts={accounts} entries={journals.filteredEntries} />
+          {view === 'partnership-tax' && activeEntity && (
+            <PartnershipTaxReturn
+              entity={activeEntity}
+              accounts={accounts}
+              entries={journals.filteredEntries}
+            />
+          )}
+
+          {view === 'bas-ias' && activeEntity && (
+            <BasIasAssistant
+              entity={activeEntity}
+              accounts={accounts}
+              entries={journals.filteredEntries}
+            />
           )}
 
           {view === 'edit-entity' && (

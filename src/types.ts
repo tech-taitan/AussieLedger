@@ -14,6 +14,7 @@ export type View =
   | 'tax-return'
   | 'company-tax'
   | 'trust-tax'
+  | 'partnership-tax'
   | 'bas-ias'
   | 'import'
   | 'edit-entity'
