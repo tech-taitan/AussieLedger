@@ -16,7 +16,7 @@
 import React, { useMemo } from 'react';
 import type { Account, AuditAction, Entity, JournalEntry } from '../types';
 import type { Period, FyLabel } from '../lib/period';
-import { currentFy } from '../lib/period';
+import { currentFy, today } from '../lib/period';
 import { computePartnershipReturn } from '../lib/tax/returns/fy2026/partnership';
 import type { DistributedShare } from '../lib/tax/returns/fy2026/trust';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
@@ -84,7 +84,7 @@ export function PartnershipTaxReturn({
   const handlePrint = () => {
     addLog?.(
       'EXPORT_DATA',
-      JSON.stringify({ entityId: entity.id, form: 'P', fy, timestamp: new Date().toISOString() }),
+      JSON.stringify({ entityId: entity.id, form: 'P', fy, timestamp: today().toISOString() }),
       entity.id,
     );
     window.print();

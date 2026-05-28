@@ -17,7 +17,7 @@
 import React, { useMemo } from 'react';
 import type { Account, AuditAction, Entity, JournalEntry } from '../types';
 import type { Period, FyLabel } from '../lib/period';
-import { currentFy } from '../lib/period';
+import { currentFy, today } from '../lib/period';
 import { computeTrustReturn } from '../lib/tax/returns/fy2026/trust';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
 import { AnomalyBadge } from './AnomalyBadge';
@@ -84,7 +84,7 @@ export function TrustTaxReturn({
   const handlePrint = () => {
     addLog?.(
       'EXPORT_DATA',
-      JSON.stringify({ entityId: entity.id, form: 'T', fy, timestamp: new Date().toISOString() }),
+      JSON.stringify({ entityId: entity.id, form: 'T', fy, timestamp: today().toISOString() }),
       entity.id,
     );
     window.print();
