@@ -22,6 +22,8 @@ import { computeTrustReturn } from '../lib/tax/returns/fy2026/trust';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
 import { AnomalyBadge } from './AnomalyBadge';
 import { Decimal } from '../lib/money';
+import { TRUST_LABELS_FULL } from '../lib/tax/labels/fy2026';
+import { LabelTooltip } from './LabelTooltip';
 
 type AddLog = (action: AuditAction, details: string, entityId?: string) => void;
 
@@ -39,9 +41,11 @@ interface LabelRowProps {
   plainEnglish: string;
   value: Decimal;
   highlight?: boolean;
+  helpText?: string;
+  labelCode?: string;
 }
 
-function LabelRow({ code, plainEnglish, value, highlight }: LabelRowProps): React.JSX.Element {
+function LabelRow({ code, plainEnglish, value, highlight, helpText, labelCode }: LabelRowProps): React.JSX.Element {
   return (
     <div
       className={`flex justify-between items-center py-2 px-3 border-b border-gray-100 ${highlight ? 'bg-emerald-50 font-bold' : ''}`}
@@ -50,7 +54,10 @@ function LabelRow({ code, plainEnglish, value, highlight }: LabelRowProps): Reac
         <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-mono font-bold w-12 text-center">
           {code}
         </span>
-        <span className="text-sm">{plainEnglish}</span>
+        <span className="text-sm">
+          {plainEnglish}
+          {helpText && labelCode && <LabelTooltip helpText={helpText} labelCode={labelCode} />}
+        </span>
       </div>
       <span className={`text-sm font-mono ${highlight ? 'text-emerald-700 font-bold' : ''}`}>
         ${value.toFixed(2)}
@@ -131,6 +138,8 @@ export function TrustTaxReturn({
           plainEnglish="Net business income (5T)"
           value={labels['5T']?.value ?? zero}
           highlight
+          helpText={TRUST_LABELS_FULL['5T'].helpText}
+          labelCode="5T"
         />
       </section>
 
@@ -158,6 +167,8 @@ export function TrustTaxReturn({
           plainEnglish="Net income or loss (item 26)"
           value={labels['26']?.value ?? zero}
           highlight
+          helpText={TRUST_LABELS_FULL['26'].helpText}
+          labelCode="26"
         />
         <LabelRow
           code="56"

@@ -29,6 +29,8 @@ import type { BasReturn } from '../lib/tax/returns/fy2026/bas';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
 import { AnomalyBadge } from './AnomalyBadge';
 import type { Decimal } from '../lib/money';
+import { BAS_LABELS_FULL, IAS_LABELS_FULL } from '../lib/tax/labels/fy2026';
+import { LabelTooltip } from './LabelTooltip';
 
 // ── Prop contract ─────────────────────────────────────────────────────────
 
@@ -62,9 +64,11 @@ interface LabelRowProps {
   value: Decimal | undefined;
   highlight?: boolean;
   muted?: boolean;
+  helpText?: string;
+  labelCode?: string;
 }
 
-function LabelRow({ code, plainEnglish, value, highlight, muted }: LabelRowProps): React.JSX.Element {
+function LabelRow({ code, plainEnglish, value, highlight, muted, helpText, labelCode }: LabelRowProps): React.JSX.Element {
   const rowClass = [
     'flex justify-between items-center py-2 px-3 border-b border-gray-100',
     highlight ? 'bg-blue-50 font-bold' : '',
@@ -77,7 +81,10 @@ function LabelRow({ code, plainEnglish, value, highlight, muted }: LabelRowProps
         <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-mono font-bold w-10 text-center">
           {code}
         </span>
-        <span className="text-sm">{plainEnglish}</span>
+        <span className="text-sm">
+          {plainEnglish}
+          {helpText && labelCode && <LabelTooltip helpText={helpText} labelCode={labelCode} />}
+        </span>
       </div>
       <span className="font-mono text-sm">
         ${(value ?? 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
@@ -185,31 +192,43 @@ export function BasIasAssistant({
                 plainEnglish="Total sales (GST-inclusive)"
                 value={(result as BasReturn).labels.G1?.value}
                 highlight
+                helpText={BAS_LABELS_FULL['G1'].helpText}
+                labelCode="G1"
               />
               <LabelRow
                 code="1A"
                 plainEnglish="GST on sales"
                 value={(result as BasReturn).labels['1A']?.value}
+                helpText={BAS_LABELS_FULL['1A'].helpText}
+                labelCode="1A"
               />
               <LabelRow
                 code="1B"
                 plainEnglish="GST on purchases"
                 value={(result as BasReturn).labels['1B']?.value}
+                helpText={BAS_LABELS_FULL['1B'].helpText}
+                labelCode="1B"
               />
               <LabelRow
                 code="W1"
                 plainEnglish="Total salary, wages and other payments"
                 value={(result as BasReturn).labels.W1?.value}
+                helpText={BAS_LABELS_FULL['W1'].helpText}
+                labelCode="W1"
               />
               <LabelRow
                 code="W2"
                 plainEnglish="Amounts withheld from payments at W1"
                 value={(result as BasReturn).labels.W2?.value}
+                helpText={BAS_LABELS_FULL['W2'].helpText}
+                labelCode="W2"
               />
               <LabelRow
                 code="T7"
                 plainEnglish="PAYG instalment amount"
                 value={(result as BasReturn).labels.T7?.value}
+                helpText={BAS_LABELS_FULL['T7'].helpText}
+                labelCode="T7"
               />
             </div>
           </section>

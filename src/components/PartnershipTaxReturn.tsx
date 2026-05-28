@@ -22,6 +22,8 @@ import type { DistributedShare } from '../lib/tax/returns/fy2026/trust';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
 import { AnomalyBadge } from './AnomalyBadge';
 import { Decimal } from '../lib/money';
+import { PARTNERSHIP_LABELS_FULL } from '../lib/tax/labels/fy2026';
+import { LabelTooltip } from './LabelTooltip';
 
 type AddLog = (action: AuditAction, details: string, entityId?: string) => void;
 
@@ -39,9 +41,11 @@ interface LabelRowProps {
   plainEnglish: string;
   value: Decimal;
   highlight?: boolean;
+  helpText?: string;
+  labelCode?: string;
 }
 
-function LabelRow({ code, plainEnglish, value, highlight }: LabelRowProps): React.JSX.Element {
+function LabelRow({ code, plainEnglish, value, highlight, helpText, labelCode }: LabelRowProps): React.JSX.Element {
   return (
     <div
       className={`flex justify-between items-center py-2 px-3 border-b border-gray-100 ${highlight ? 'bg-emerald-50 font-bold' : ''}`}
@@ -50,7 +54,10 @@ function LabelRow({ code, plainEnglish, value, highlight }: LabelRowProps): Reac
         <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-mono font-bold w-12 text-center">
           {code}
         </span>
-        <span className="text-sm">{plainEnglish}</span>
+        <span className="text-sm">
+          {plainEnglish}
+          {helpText && labelCode && <LabelTooltip helpText={helpText} labelCode={labelCode} />}
+        </span>
       </div>
       <span className={`text-sm font-mono ${highlight ? 'text-emerald-700 font-bold' : ''}`}>
         ${value.toFixed(2)}
@@ -116,13 +123,15 @@ export function PartnershipTaxReturn({
         <h3 className="font-semibold text-sm uppercase text-gray-500 mb-2">
           Business income &amp; deductions
         </h3>
-        <LabelRow code="P1" plainEnglish="Gross income (P1)" value={labels['P1']?.value ?? zero} />
-        <LabelRow code="P2" plainEnglish="Total deductions (P2)" value={labels['P2']?.value ?? zero} />
+        <LabelRow code="P1" plainEnglish="Gross income (P1)" value={labels['P1']?.value ?? zero} helpText={PARTNERSHIP_LABELS_FULL['P1'].helpText} labelCode="P1" />
+        <LabelRow code="P2" plainEnglish="Total deductions (P2)" value={labels['P2']?.value ?? zero} helpText={PARTNERSHIP_LABELS_FULL['P2'].helpText} labelCode="P2" />
         <LabelRow
           code="P8"
           plainEnglish="Net income or loss (P8)"
           value={labels['P8']?.value ?? zero}
           highlight
+          helpText={PARTNERSHIP_LABELS_FULL['P8'].helpText}
+          labelCode="P8"
         />
       </section>
 

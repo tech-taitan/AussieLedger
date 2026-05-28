@@ -23,6 +23,7 @@ import { AnomalyBadge } from './AnomalyBadge';
 import { AssumptionsBlock } from './AssumptionsBlock';
 import { INDIVIDUAL_LABELS_FULL } from '../lib/tax/labels/fy2026';
 import type { IndividualLabel } from '../lib/tax/labels/fy2026';
+import { LabelTooltip } from './LabelTooltip';
 import type { Anomaly } from '../lib/tax/returns/fy2026/types';
 import type { Decimal } from '../lib/money';
 
@@ -49,15 +50,20 @@ interface LabelRowProps {
   value: Decimal | undefined;
   anomalies?: Anomaly[];
   highlight?: boolean;
+  helpText?: string;
+  labelCode?: string;
 }
 
-function LabelRow({ code, plainEnglish, value, anomalies, highlight }: LabelRowProps) {
+function LabelRow({ code, plainEnglish, value, anomalies, highlight, helpText, labelCode }: LabelRowProps) {
   return (
     <div
       className={`grid grid-cols-3 gap-2 py-1 border-b border-gray-100 ${highlight ? 'font-bold' : ''}`}
     >
       <span className="font-mono text-xs text-gray-500">{code}</span>
-      <span className="text-sm">{plainEnglish}</span>
+      <span className="text-sm">
+        {plainEnglish}
+        {helpText && labelCode && <LabelTooltip helpText={helpText} labelCode={labelCode} />}
+      </span>
       <span className="text-sm text-right font-mono">
         ${value?.toFixed(2) ?? '0.00'}
       </span>
@@ -200,12 +206,16 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({
           plainEnglish={getLabel('P1').plainEnglish}
           value={L.P1?.value}
           anomalies={inlineAnomaliesByLabel['P1']}
+          helpText={getLabel('P1').helpText}
+          labelCode="P1"
         />
         <LabelRow
           code="P2"
           plainEnglish={getLabel('P2').plainEnglish}
           value={L.P2?.value}
           anomalies={inlineAnomaliesByLabel['P2']}
+          helpText={getLabel('P2').helpText}
+          labelCode="P2"
         />
         <LabelRow
           code="P8"
@@ -213,6 +223,8 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({
           value={L.P8?.value}
           anomalies={inlineAnomaliesByLabel['P8']}
           highlight
+          helpText={getLabel('P8').helpText}
+          labelCode="P8"
         />
         <div className="ml-4 mt-1">
           {(['B', 'C', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'N'] as IndividualLabel[]).map((code) => {

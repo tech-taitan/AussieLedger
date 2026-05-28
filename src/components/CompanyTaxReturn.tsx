@@ -21,6 +21,7 @@ import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
 import { AnomalyBadge } from './AnomalyBadge';
 import { COMPANY_LABELS_FULL } from '../lib/tax/labels/fy2026';
 import type { CompanyLabel } from '../lib/tax/labels/fy2026';
+import { LabelTooltip } from './LabelTooltip';
 import type { Anomaly } from '../lib/tax/returns/fy2026/types';
 import type { Decimal } from '../lib/money';
 
@@ -47,15 +48,20 @@ interface LabelRowProps {
   value: Decimal | undefined;
   anomalies?: Anomaly[];
   highlight?: boolean;
+  helpText?: string;
+  labelCode?: string;
 }
 
-function LabelRow({ code, plainEnglish, value, anomalies, highlight }: LabelRowProps) {
+function LabelRow({ code, plainEnglish, value, anomalies, highlight, helpText, labelCode }: LabelRowProps) {
   return (
     <div
       className={`grid grid-cols-3 gap-2 py-1 border-b border-gray-100 ${highlight ? 'font-bold' : ''}`}
     >
       <span className="font-mono text-xs text-gray-500">{code}</span>
-      <span className="text-sm">{plainEnglish}</span>
+      <span className="text-sm">
+        {plainEnglish}
+        {helpText && labelCode && <LabelTooltip helpText={helpText} labelCode={labelCode} />}
+      </span>
       <span className="text-sm text-right font-mono">
         ${value?.toFixed(2) ?? '0.00'}
       </span>
@@ -151,7 +157,7 @@ export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({
       {/* Income labels */}
       <section className="mb-6">
         <h3 className="text-sm font-bold uppercase text-gray-500 mb-2">Income (NAT 0656)</h3>
-        <LabelRow code="6A" plainEnglish={getLabel('6A').plainEnglish} value={L['6A']?.value} />
+        <LabelRow code="6A" plainEnglish={getLabel('6A').plainEnglish} value={L['6A']?.value} helpText={getLabel('6A').helpText} labelCode="6A" />
         <LabelRow code="6F" plainEnglish={getLabel('6F').plainEnglish} value={L['6F']?.value} />
         <LabelRow code="6H" plainEnglish={getLabel('6H').plainEnglish} value={L['6H']?.value} />
         <LabelRow code="6T" plainEnglish={getLabel('6T').plainEnglish} value={L['6T']?.value} highlight />
@@ -163,13 +169,13 @@ export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({
         <LabelRow code="6C" plainEnglish={getLabel('6C').plainEnglish} value={L['6C']?.value} />
         <LabelRow code="6G" plainEnglish={getLabel('6G').plainEnglish} value={L['6G']?.value} />
         <LabelRow code="6X" plainEnglish={getLabel('6X').plainEnglish} value={L['6X']?.value} />
-        <LabelRow code="6S" plainEnglish={getLabel('6S').plainEnglish} value={L['6S']?.value} highlight />
+        <LabelRow code="6S" plainEnglish={getLabel('6S').plainEnglish} value={L['6S']?.value} highlight helpText={getLabel('6S').helpText} labelCode="6S" />
       </section>
 
       {/* Taxable income */}
       <section className="mb-6">
         <h3 className="text-sm font-bold uppercase text-gray-500 mb-2">Taxable Income</h3>
-        <LabelRow code="7T" plainEnglish={getLabel('7T').plainEnglish} value={L['7T']?.value} highlight />
+        <LabelRow code="7T" plainEnglish={getLabel('7T').plainEnglish} value={L['7T']?.value} highlight helpText={getLabel('7T').helpText} labelCode="7T" />
         <LabelRow code="CS_B" plainEnglish={getLabel('CS_B').plainEnglish} value={L['CS_B']?.value} highlight />
       </section>
 
