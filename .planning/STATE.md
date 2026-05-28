@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 6 — Personas, Wizard, and Deployment (not yet started — planning required)
-current_plan: "N/A — Phase 6 requires `/gsd:plan-phase 6` to generate plans"
-status: unknown
-last_updated: "2026-05-28T14:00:22.388Z"
+current_phase: Phase 6 — Personas, Wizard, and Deployment
+current_plan: "Plan 2 — 06-2-PLAN.md"
+status: in_progress
+last_updated: "2026-05-29T00:00:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 19
-  completed_plans: 19
+  total_plans: 23
+  completed_plans: 20
 ---
 
 # Project State: AussieLedger
@@ -34,16 +34,18 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 6 — Personas, Wizard, and Deployment (not yet started — planning required)
-**Current plan:** N/A — Phase 6 requires `/gsd:plan-phase 6` to generate plans
+**Current phase:** Phase 6 — Personas, Wizard, and Deployment
+**Current plan:** Plan 2 — 06-2-PLAN.md
+**Phase 6 status:** IN PROGRESS. **Wave 1 (06-1) COMPLETE 2026-05-29:** v4→v5 additive migration (Entity.returnStatusByFy + Entity.wizardState), Settings/persona module (SETTINGS_KEY='aussieledger:settings', getSettings/saveSettings/clearSettings/useSettings/finaliseEntity/unfinaliseEntity/advanceStep/getPrimaryEntityId), useAnomalyCounts hook (useMemo, tolerance 0.005), helpText widened across all 6 ATO label catalogues (94 entries, no deductibility language), IAS_LABELS_FULL new constant, LabelTooltip with Radix tooltip (no asChild on Content), PersonaModeModal + AiGateNote + YearEndWizard scaffolds, print.css label-help-text, LICENSE (Apache 2.0) + CONTRIBUTING.md + README rewrite + SPDX lint (84 files). 692 GREEN + 15 todo + 0 RED. tsc + build EXIT 0. Commits: 9da476b / b48dfaa / 4c000ce.
 **Phase 5 status:** COMPLETE. **Wave 0 (05-1) COMPLETE.** **Wave 2 (05-2) COMPLETE:** computeIndividualReturn (Form I + B&P + LITO + Medicare + IND-04 offset), computeCompanyReturn (Form C + BRE 25%/30% + franking account + FDT anomaly), TaxReturnAssistant refactored (Form I + Print + AssumptionsBlock + AnomalyBadges), CompanyTaxReturn refactored (Form C + BRE basis box + franking section + Print), EntityForm widened (aggregatedTurnover + paygInstalmentAmount). +29 GREEN tests. Success criteria #2 + #4 locked end-to-end. build EXIT 0. StorageAdapter untouched (Phase 3 FINAL). **Wave 2 (05-3) COMPLETE:** computeTrustReturn (Form T + distributeTrustIncome + STREAMING_DISCLAIMER), computePartnershipReturn (Form P + distributePartnershipNetIncome + loss warning), TrustTaxReturn refactored (Form T + distribution table + streaming disclaimer + print), PartnershipTaxReturn fleshed out (Form P + distribution table + print). +27 GREEN tests. Success criterion #3 locked: Trust $200k → Alice $120k / Bob $80k + streaming disclaimer visible. **Wave 3 (05-4) COMPLETE:** computeBas (Simpler BAS G1/1A/1B/W1/W2/T7 + G2/G3/G10/G11 internal-only), computeIas (PAYG-only delegation), BasIasAssistant refactor (period selector + lodgement/internal-only split + IAS shape + Print audit), ViewRouter Partnership route. +17 GREEN tests. Success criterion #1 locked: G1=$18,200/1A=$1,000/1B=$100 to-the-cent. **UAT APPROVED 2026-05-28** — all 12 UAT steps PASS; all 5 success criteria verified; all 20 Phase 5 requirements DELIVERED end-to-end. 526 SPA GREEN + 11 todo + 0 RED; 18 server GREEN. lint + build EXIT 0.
 **Phase status:** Phase 4 fully PLAN-COMPLETE. **Wave 0 (04-1):** v3 type widening + additive v2→v3 migration + 127-row AU SME default CoA + 4 per-type overlays + getDefaultCoaFor + pure-function ledger.ts + sha256 fingerprint + PapaParse/SheetJS CE wrappers + 12 hook/component test scaffolds. **Wave 2 (04-2 + 04-3 parallel):** useJournals lifecycle (postDraft/editPosted supersession/reversePosted/voidDraft/searchJournals) + JournalForm Edit+Reverse + EditJournalDiff + JournalSearch + TrialBalance period-filter + parent subtotals + AuditTrail widened (04-2); useAccounts (archiveAccount/setIsDefault/isAccountInUse) + useEntities (createEntity-seeds-CoA/tryDeleteEntity/beneficiary+partner writers) + CoaTreeView + AccountManager refactor + GST 'ITS'→'INP' typo fix + EntityForm AU-4 + register tabs + BeneficiaryRegister + PartnerRegister (04-3). **Wave 3 (04-4):** XlsxSheetPicker + ImportReviewPane + ImportTB refactor (634→520 lines) consuming Wave 0 wrappers + fingerprint Skip/Replace/Add-additional dialog + onReplace prop + useJournals.supersedeImport helper (closes the plan-checker-flagged TB-double-count risk) + ViewRouter wiring. **Task 3 UAT APPROVED 2026-05-13** — all 28 manual checks passed including step-18 Replace regression. Tests: 371 SPA GREEN + 11 todo + 0 RED; 18 server GREEN. lint + build + build:server + dev-full smoke all EXIT 0. StorageAdapter untouched (Phase 3 FINAL preserved). 23/23 Phase 4 requirements DELIVERED end-to-end.
-**Last session:** 2026-05-28T14:00:22.384Z
-**Overall progress:** Phases 1 + 2 + 3 + 4 + 5 complete — 19/19 plans delivered. Phase 6 not started.
+**Last session:** 2026-05-29T00:00:00.000Z
+**Stopped at:** Completed 06-1-PLAN.md
+**Overall progress:** Phases 1 + 2 + 3 + 4 + 5 complete — 19/19 plans delivered. Phase 6 in progress — 1/4 plans complete (06-1 Wave 1 foundations done).
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [  ----  ]
+[ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ 1/4.. ]
 ```
 
 ---
@@ -63,9 +65,9 @@ progress:
 
 ## Performance Metrics
 
-- Plans completed: 19 / Plans total: 19 (Phase 1: 3, Phase 2: 4, Phase 3: 4, Phase 4: 4, Phase 5: 4)
-- Phases complete: 5/6 (Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 done); Phase 6 not yet started
-- Requirements mapped: 70/70 — Phases 1-5 closed all assigned reqs; 20/20 Phase 5 reqs delivered; 11 Phase 6 reqs pending
+- Plans completed: 20 / Plans total: 23 (Phase 1: 3, Phase 2: 4, Phase 3: 4, Phase 4: 4, Phase 5: 4, Phase 6: 1/4)
+- Phases complete: 5/6 (Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 done); Phase 6 in progress (1/4 plans)
+- Requirements mapped: 70/70 — Phases 1-5 closed all assigned reqs; 06-1 delivered UX-03/UX-05/DEP-01/DEP-03/DEP-04 partial foundations; 11 Phase 6 reqs in progress
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
@@ -88,6 +90,7 @@ progress:
 | 05 | 05-2 | ~180 min | 3/3 | ~10 | 508 (+18 server) [Wave 2 individual+company complete 2026-05-28] |
 | 05 | 05-3 | ~30 min | 3/3 | ~10 | 498 (+18 server) [Wave 2 trust+partnership complete 2026-05-28] |
 | 05 | 05-4 | ~14 min | 3/3 | ~9 | 526 (+18 server) [Wave 3 complete 2026-05-28 — UAT APPROVED; Phase 5 CLOSED] |
+| 06 | 06-1 | ~45 min | 3/3 | +22 ~12 | 692 [Wave 1 foundations complete 2026-05-29 — v4→v5 + persona + tooltips + release artefacts] |
 
 ---
 
@@ -144,6 +147,10 @@ progress:
 | computeBas accepts Period (not fy+quarter separately) — isInPeriod handles all Period shapes (fy/quarter/custom) | Period type is the canonical period representation from period.ts; matches plan 05-4 must_haves | 05-4 |
 | BasIasAssistant entity? optional with DEFAULT_BAS_ENTITY — smoke test backward compat | Phase 2 smoke test calls without entity prop; matches TaxReturnAssistant DEFAULT_ENTITY pattern from 05-2 | 05-4 |
 | partnership-tax added to View union in types.ts | ViewRouter partnership-tax route required a valid View type; additive change, no existing views changed | 05-4 |
+| Settings stored in localStorage under 'aussieledger:settings' (StorageAdapter FINAL invariant preserved) | Phase 3 invariant: StorageAdapter interface is frozen; Settings are UI-layer ephemeral config, not bookkeeping data — localStorage is the correct target | 06-1 |
+| Radix Tooltip.Trigger uses asChild, Tooltip.Content does NOT (React 19 pitfall avoided) | React 19 throws when asChild is placed on Tooltip.Content; only Trigger wraps the button element with asChild | 06-1 |
+| IAS_LABELS_FULL created as new constant alongside existing IasLabel type | Plan required a full IAS label catalogue constant; adding it alongside existing type avoids breaking any IasLabel consumers | 06-1 |
+| SPDX headers added to src/lib/utils.ts and src/test/setup.ts (Rule 2 — pre-existing omissions fixed) | spdx-headers.test.ts lint caught 2 pre-existing files missing Apache-2.0 header; fixed immediately as critical structural requirement | 06-1 |
 
 ### Research Flags Pending
 

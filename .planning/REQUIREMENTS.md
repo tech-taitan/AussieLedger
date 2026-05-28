@@ -112,10 +112,10 @@ Quality-floor and credibility prerequisites — must clear these before any user
 
 ### Deployment / open-source (DEP)
 
-- [ ] **DEP-01**: A new user can clone the repository, run `npm install && npm run build`, and serve a working instance with no paid services configured
+- [x] **DEP-01**: A new user can clone the repository, run `npm install && npm run build`, and serve a working instance with no paid services configured
 - [ ] **DEP-02**: An optional Express + better-sqlite3 server can be started for shared/firm instances, with documented deployment steps
-- [ ] **DEP-03**: README documents both deployment shapes (single-user local, small-firm VPS), with step-by-step instructions
-- [ ] **DEP-04**: Repository has a permissive open-source licence (e.g. Apache 2.0, matching existing per-file SPDX headers) and a CONTRIBUTING.md with a hard rule about schema migrations
+- [x] **DEP-03**: README documents both deployment shapes (single-user local, small-firm VPS), with step-by-step instructions
+- [x] **DEP-04**: Repository has a permissive open-source licence (e.g. Apache 2.0, matching existing per-file SPDX headers) and a CONTRIBUTING.md with a hard rule about schema migrations
 - [x] **DEP-05**: CI (e.g. GitHub Actions) runs `npm run build`, `npm run lint`, and the test suite on every push
 
 ## v2 Requirements
@@ -241,10 +241,10 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | PERS-01 | Phase 6 | Pending |
 | PERS-02 | Phase 6 | Pending |
 | PERS-03 | Phase 6 | Pending |
-| DEP-01 | Phase 6 | Pending |
+| DEP-01 | Phase 6 Plan 06-1 | Delivered (06-1 2026-05-29; README quick-start + npm install && npm run build verified + no paid services) |
 | DEP-02 | Phase 3 | Pending |
-| DEP-03 | Phase 6 | Pending |
-| DEP-04 | Phase 6 | Pending |
+| DEP-03 | Phase 6 Plan 06-1 | Delivered (06-1 2026-05-29; README rewritten with Single-user local + Small-firm VPS deployment shapes) |
+| DEP-04 | Phase 6 Plan 06-1 | Delivered (06-1 2026-05-29; LICENSE Apache 2.0 + CONTRIBUTING.md with schema-migration hard rule + SPDX lint 84 files) |
 | DEP-05 | Phase 1 | Complete |
 
 **Coverage:**
