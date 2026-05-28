@@ -1,0 +1,71 @@
+/* AussieLedger print stylesheet — Phase 5 Plan 05-1
+ * Imported via src/index.css @import.
+ * Defines @media print rules, per-form class scoping, and footer positioning.
+ */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 25mm 12mm;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide all app chrome (sidebar, nav, action buttons, screen-mode UI) */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Show print-only elements (PrintBanner, etc.) */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Per-form scoping classes — prevent page breaks inside a single form block */
+  .print-form-i,
+  .print-form-c,
+  .print-form-t,
+  .print-form-p,
+  .print-form-bas,
+  .print-form-ias {
+    page-break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Footer disclaimer — fixed on every printed page */
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    font-size: 8pt;
+    border-top: 1pt solid #999;
+    padding: 4pt 8pt;
+    color: #555;
+    background: white;
+  }
+}
+
+/* Screen mode: hide print-only elements */
+@media screen {
+  .print-only {
+    display: none;
+  }
+}
