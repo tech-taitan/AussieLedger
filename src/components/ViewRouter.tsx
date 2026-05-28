@@ -511,7 +511,7 @@ export function ViewRouter({
   settings,
   setSettings,
   clearSettings,
-  addLog: _addLog,
+  addLog,
 }: ViewRouterProps) {
   const activeEntity = entities.find((e) => e.id === activeEntityId);
 
@@ -712,6 +712,7 @@ export function ViewRouter({
               entries={journals.filteredEntries}
               fy={currentFy(today())}
               onUpdateEntity={entityActions.updateEntity}
+              onAddLog={(log) => addLog(log.action, log.details ?? '', log.entityId)}
               onNavigateToAccount={() => setView('coa-manager')}
             />
           )}
