@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 5 — Tax Outputs (in progress)
-current_plan: 05-4 (Wave 3 BAS/IAS + UAT) — 05-2 complete + 05-3 complete
+current_plan: 05-4 (Wave 3 BAS/IAS + UAT) — Tasks 1+2 complete, Task 3 UAT human-verify checkpoint pending
 status: in-progress
 last_updated: "2026-05-28T21:20:00Z"
 progress:
@@ -35,11 +35,11 @@ progress:
 ## Current Position
 
 **Current phase:** Phase 5 — Tax Outputs (IN PROGRESS — 05-1 complete 2026-05-28, 05-2 complete 2026-05-28, 05-3 complete 2026-05-28)
-**Current plan:** 05-4 (Wave 3 BAS/IAS + UAT)
+**Current plan:** 05-4 (Wave 3 BAS/IAS + UAT) — Tasks 1+2 complete; Task 3 UAT checkpoint pending
 **Phase 5 status:** IN PROGRESS. **Wave 0 (05-1) COMPLETE.** **Wave 2 (05-2) COMPLETE:** computeIndividualReturn (Form I + B&P + LITO + Medicare + IND-04 offset), computeCompanyReturn (Form C + BRE 25%/30% + franking account + FDT anomaly), TaxReturnAssistant refactored (Form I + Print + AssumptionsBlock + AnomalyBadges), CompanyTaxReturn refactored (Form C + BRE basis box + franking section + Print), EntityForm widened (aggregatedTurnover + paygInstalmentAmount). +29 GREEN tests. Success criteria #2 + #4 locked end-to-end. 508 SPA GREEN + 28 todo, 1 RED (structural.test.ts — 05-3 new Date() issue, out of scope for 05-2). build EXIT 0. StorageAdapter untouched (Phase 3 FINAL). **Wave 2 (05-3) COMPLETE:** computeTrustReturn (Form T + distributeTrustIncome + STREAMING_DISCLAIMER), computePartnershipReturn (Form P + distributePartnershipNetIncome + loss warning), TrustTaxReturn refactored (Form T + distribution table + streaming disclaimer + print), PartnershipTaxReturn fleshed out (Form P + distribution table + print). +27 GREEN tests. Success criterion #3 locked: Trust $200k → Alice $120k / Bob $80k + streaming disclaimer visible.
 **Phase status:** Phase 4 fully PLAN-COMPLETE. **Wave 0 (04-1):** v3 type widening + additive v2→v3 migration + 127-row AU SME default CoA + 4 per-type overlays + getDefaultCoaFor + pure-function ledger.ts + sha256 fingerprint + PapaParse/SheetJS CE wrappers + 12 hook/component test scaffolds. **Wave 2 (04-2 + 04-3 parallel):** useJournals lifecycle (postDraft/editPosted supersession/reversePosted/voidDraft/searchJournals) + JournalForm Edit+Reverse + EditJournalDiff + JournalSearch + TrialBalance period-filter + parent subtotals + AuditTrail widened (04-2); useAccounts (archiveAccount/setIsDefault/isAccountInUse) + useEntities (createEntity-seeds-CoA/tryDeleteEntity/beneficiary+partner writers) + CoaTreeView + AccountManager refactor + GST 'ITS'→'INP' typo fix + EntityForm AU-4 + register tabs + BeneficiaryRegister + PartnerRegister (04-3). **Wave 3 (04-4):** XlsxSheetPicker + ImportReviewPane + ImportTB refactor (634→520 lines) consuming Wave 0 wrappers + fingerprint Skip/Replace/Add-additional dialog + onReplace prop + useJournals.supersedeImport helper (closes the plan-checker-flagged TB-double-count risk) + ViewRouter wiring. **Task 3 UAT APPROVED 2026-05-13** — all 28 manual checks passed including step-18 Replace regression. Tests: 371 SPA GREEN + 11 todo + 0 RED; 18 server GREEN. lint + build + build:server + dev-full smoke all EXIT 0. StorageAdapter untouched (Phase 3 FINAL preserved). 23/23 Phase 4 requirements DELIVERED end-to-end.
-**Last session:** 2026-05-28 (Phase 5 Wave 2 05-2 complete — all 3 tasks executed, +29 GREEN, 3 commits + 5 Rule 1/3 auto-fixes; success criteria #2 and #4 locked)
-**Overall progress:** Phases 1 + 2 + 3 + 4 complete + Phase 5 Wave 0 + Wave 2 (05-2 + 05-3) — 17/19 plans complete.
+**Last session:** 2026-05-28 (Phase 5 Wave 3 05-4 Tasks 1+2 complete — computeBas + computeIas + BasIasAssistant + ViewRouter; +17 GREEN (526 total), 2 commits; UAT checkpoint paused at Task 3)
+**Overall progress:** Phases 1 + 2 + 3 + 4 complete + Phase 5 Wave 0 + Wave 2 (05-2 + 05-3) + Wave 3 Tasks 1+2 — 17.5/19 plans in progress.
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -87,6 +87,7 @@ progress:
 | 05 | 05-1 | multi-session | 5/5 | +47 ~9 | 455 (+18 server) [Wave 0 complete 2026-05-28] |
 | 05 | 05-2 | ~180 min | 3/3 | ~10 | 508 (+18 server) [Wave 2 individual+company complete 2026-05-28] |
 | 05 | 05-3 | ~30 min | 3/3 | ~10 | 498 (+18 server) [Wave 2 trust+partnership complete 2026-05-28] |
+| 05 | 05-4 | ~14 min | 2/3 | ~9 | 526 (+18 server) [Wave 3 Tasks 1+2 complete 2026-05-28 — UAT pending] |
 
 ---
 
@@ -140,6 +141,9 @@ progress:
 | STREAMING_DISCLAIMER emitted as meta.streamingDisclaimer string (not anomaly) — mandatory metadata always present | It is a regulatory disclosure requirement, not an anomaly flag; rendered as red-bordered aside visible in screen + print | 05-3 |
 | 57_total omitted from TrustReturnLabels labels map; distributionTotal stored in meta instead | TrustLabel union does not include 57_total; using index signature hacks would weaken type safety; meta field is cleaner | 05-3 |
 | TrustTaxReturn interface changed from onUpdateAccount + no entity to entity-required + addLog optional | Phase 2 placeholder owned CoA editing in-component; Plan 05-3 delegates to compute layer; ViewRouter updated (Rule 3) | 05-3 |
+| computeBas accepts Period (not fy+quarter separately) — isInPeriod handles all Period shapes (fy/quarter/custom) | Period type is the canonical period representation from period.ts; matches plan 05-4 must_haves | 05-4 |
+| BasIasAssistant entity? optional with DEFAULT_BAS_ENTITY — smoke test backward compat | Phase 2 smoke test calls without entity prop; matches TaxReturnAssistant DEFAULT_ENTITY pattern from 05-2 | 05-4 |
+| partnership-tax added to View union in types.ts | ViewRouter partnership-tax route required a valid View type; additive change, no existing views changed | 05-4 |
 
 ### Research Flags Pending
 

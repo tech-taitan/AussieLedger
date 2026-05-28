@@ -162,7 +162,7 @@
 | 2. Decompose and Tax Engine | 4/4 | Complete   | 2026-05-10 |
 | 3. Durable Persistence | 3/4 (Plan 03-4 awaiting human-verify) | In progress | - |
 | 4. Bookkeeping Core | 1/4 | In progress (Wave 0 landed 2026-05-12; Wave 2 next) | - |
-| 5. Tax Outputs | 3/4 (05-1 + 05-2 + 05-3 complete; 05-4 next) | In progress | - |
+| 5. Tax Outputs | 3/4 (05-1 + 05-2 + 05-3 complete; 05-4 Tasks 1+2 done — UAT checkpoint) | In progress | - |
 | 6. Personas, Wizard, and Deployment | 0/? | Not started | - |
 
 ---
