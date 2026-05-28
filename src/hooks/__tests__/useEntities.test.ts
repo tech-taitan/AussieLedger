@@ -207,6 +207,54 @@ describe('Phase 4 — default-CoA seeding on entity creation (BOOK-05)', () => {
     expect(result.current.entities.find((e) => e.id === firstId)?.status).toBe('Archived');
   });
 
+  it('Test UE.1 (PERS-03): updateEntity with returnStatusByFy change does NOT modify entries/accounts', () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useEntities(addLog));
+    const firstEntity = result.current.entities[0];
+
+    // Update entity with returnStatusByFy — should only change entity, not anything else
+    const updatedEntity = {
+      ...firstEntity,
+      returnStatusByFy: { FY2026: 'finalised' as const },
+    };
+
+    act(() => {
+      result.current.updateEntity(updatedEntity);
+    });
+
+    // The entity should have the new returnStatusByFy
+    const found = result.current.entities.find((e) => e.id === firstEntity.id);
+    expect(found?.returnStatusByFy?.['FY2026']).toBe('finalised');
+
+    // addLog called for the entity update (not for entries/accounts)
+    expect(addLog).toHaveBeenCalledOnce();
+    expect(addLog.mock.calls[0][0]).toBe('UPDATE_ENTITY');
+  });
+
+  it('Test UE.2: updateEntity round-trips returnStatusByFy + wizardState', () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useEntities(addLog));
+    const firstEntity = result.current.entities[0];
+
+    const updatedEntity = {
+      ...firstEntity,
+      returnStatusByFy: { FY2026: 'draft' as const, FY2025: 'finalised' as const },
+      wizardState: {
+        FY2026: { step: 4, dismissedAnomalies: ['a1', 'a2'], completedAt: undefined },
+      },
+    };
+
+    act(() => {
+      result.current.updateEntity(updatedEntity);
+    });
+
+    const found = result.current.entities.find((e) => e.id === firstEntity.id);
+    expect(found?.returnStatusByFy?.['FY2026']).toBe('draft');
+    expect(found?.returnStatusByFy?.['FY2025']).toBe('finalised');
+    expect(found?.wizardState?.['FY2026']?.step).toBe(4);
+    expect(found?.wizardState?.['FY2026']?.dismissedAnomalies).toContain('a1');
+  });
+
   it('deleteEntity refuses if journals reference entity, suggests Archive', () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));

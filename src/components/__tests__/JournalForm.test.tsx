@@ -170,3 +170,65 @@ describe('JournalForm (BOOK-02 banner + diff)', () => {
     });
   });
 });
+
+describe('JournalForm — Phase 6 finalised-FY guard (UX-01)', () => {
+  it('Test JF.1: no lockedFy prop — Save button enabled when form is balanced', () => {
+    render(
+      <JournalForm
+        accounts={accounts}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    // The form is not pre-populated so no locked-fy-banner should appear
+    expect(screen.queryByTestId('locked-fy-banner')).not.toBeInTheDocument();
+  });
+
+  it('Test JF.2: lockedFy="FY2026" prop — banner with "FY is finalised" text is in the DOM', () => {
+    render(
+      <JournalForm
+        accounts={accounts}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+        lockedFy="FY2026"
+      />,
+    );
+    const banner = screen.getByTestId('locked-fy-banner');
+    expect(banner).toBeInTheDocument();
+    expect(banner.textContent).toMatch(/FY is finalised — use Reverse and Re-post/i);
+  });
+
+  it('Test JF.3: with lockedFy="FY2026", the Save button has the disabled attribute', () => {
+    render(
+      <JournalForm
+        accounts={accounts}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+        lockedFy="FY2026"
+      />,
+    );
+    // The post-journal-button should be disabled when locked
+    const saveBtn = screen.getByTestId('post-journal-button');
+    expect(saveBtn).toBeDisabled();
+  });
+
+  it('Test JF.4: with lockedFy="FY2026" and editingOriginal, the Reverse button remains enabled', () => {
+    const original = makePostedEntry();
+    const onReverse = vi.fn();
+    render(
+      <JournalForm
+        accounts={accounts}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+        lockedFy="FY2026"
+        editingOriginal={original}
+        onEdit={vi.fn()}
+        onReverse={onReverse}
+      />,
+    );
+    const reverseBtn = screen.getByTestId('reverse-button');
+    expect(reverseBtn).not.toBeDisabled();
+    fireEvent.click(reverseBtn);
+    expect(onReverse).toHaveBeenCalledWith(original);
+  });
+});

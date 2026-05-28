@@ -25,6 +25,8 @@ interface JournalFormProps {
   onReverse?: (original: JournalEntry) => void;
   /** Phase 4 (BOOK-04): void a draft (no-ops on posted entries — hook throws). */
   onVoidDraft?: (entry: JournalEntry) => void;
+  /** Phase 6 (UX-01): when set, the entry's FY is finalised — disable Save; banner directs user to Reverse-and-Re-post. */
+  lockedFy?: string;
 }
 
 export const JournalForm: React.FC<JournalFormProps> = ({
@@ -35,6 +37,7 @@ export const JournalForm: React.FC<JournalFormProps> = ({
   onEdit,
   onReverse,
   onVoidDraft,
+  lockedFy,
 }) => {
   const isEditMode = !!editingOriginal;
   const [date, setDate] = useState(
@@ -59,6 +62,7 @@ export const JournalForm: React.FC<JournalFormProps> = ({
   const totalDebits = lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0);
   const totalCredits = lines.reduce((sum, l) => sum + (Number(l.credit) || 0), 0);
   const isBalanced = Math.abs(totalDebits - totalCredits) < 0.001;
+  const isLocked = !!lockedFy;
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -196,6 +200,17 @@ export const JournalForm: React.FC<JournalFormProps> = ({
           <X size={20} />
         </button>
       </div>
+
+      {isLocked && (
+        <div
+          data-testid="locked-fy-banner"
+          className="bg-amber-50 border border-amber-300 p-3 mb-4 text-sm text-amber-900"
+        >
+          <strong>FY is finalised — use Reverse and Re-post to correct.</strong>{' '}
+          Post-finalise corrections must go through the Reverse workflow so the audit trail
+          remains intact. ({lockedFy})
+        </div>
+      )}
 
       {isEditMode && (
         <div
@@ -559,9 +574,10 @@ export const JournalForm: React.FC<JournalFormProps> = ({
           <button
             type="submit"
             data-testid={isEditMode ? 'save-edit-button' : 'post-journal-button'}
+            disabled={isLocked || (!isBalanced && !isEditMode)}
             className={cn(
               "w-full sm:w-auto px-6 py-3 sm:py-2 bg-[var(--ink)] text-white flex justify-center items-center gap-2 text-sm font-medium transition-opacity",
-              (!isBalanced || lines.some(l => !l.accountId) || Object.values(lineErrors).some(e => Object.keys(e).length > 0)) ? "opacity-50" : "hover:opacity-90"
+              (isLocked || !isBalanced || lines.some(l => !l.accountId) || Object.values(lineErrors).some(e => Object.keys(e).length > 0)) ? "opacity-50" : "hover:opacity-90"
             )}
           >
             <Save size={18} /> {isEditMode ? 'Save Edit' : 'Post Journal'}
