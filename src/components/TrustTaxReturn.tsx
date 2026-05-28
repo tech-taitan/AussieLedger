@@ -1,207 +1,261 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * TrustTaxReturn — Form T renderer.
+ * Plan 05-3: full implementation replacing Phase 2 placeholder.
+ *
+ * Renders:
+ *  - PrintBanner (print-only)
+ *  - Form T labels (5B / 5E / 5F / 5L / 5M / 5N / 5S / 5T / 11J / 26 / 56)
+ *  - Item 57 — per-beneficiary distribution table
+ *  - Mandatory streaming disclaimer (always visible, screen + print)
+ *  - Print button (no-print) emitting EXPORT_DATA audit
+ *  - Anomaly badges
+ *  - Print footer
  */
-
-import React, { useMemo, useState } from 'react';
-import { Account, JournalEntry } from '../types';
-import { TRUST_LABELS } from '../lib/tax/labels/fy2026';
-import { computeTrust } from '../lib/tax/trust';
+import React, { useMemo } from 'react';
+import type { Account, AuditAction, Entity, JournalEntry } from '../types';
+import type { Period, FyLabel } from '../lib/period';
 import { currentFy } from '../lib/period';
-import { Landmark, Info, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { computeTrustReturn } from '../lib/tax/returns/fy2026/trust';
+import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
+import { AnomalyBadge } from './AnomalyBadge';
+import { Decimal } from '../lib/money';
+
+type AddLog = (action: AuditAction, details: string, entityId?: string) => void;
 
 interface TrustTaxReturnProps {
+  entity: Entity;
   accounts: Account[];
   entries: JournalEntry[];
-  onUpdateAccount: (account: Account) => void;
+  period?: Period;
+  addLog?: AddLog;
+  fy?: FyLabel;
 }
 
-export const TrustTaxReturn: React.FC<TrustTaxReturnProps> = ({ accounts, entries, onUpdateAccount }) => {
-  const [expandedLabels, setExpandedLabels] = useState<string[]>([]);
-  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+interface LabelRowProps {
+  code: string;
+  plainEnglish: string;
+  value: Decimal;
+  highlight?: boolean;
+}
 
-  const toggleLabel = (label: string) => {
-    setExpandedLabels(prev =>
-      prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
-    );
-  };
-
-  const taxReturn = useMemo(() => {
-    const fy = currentFy();
-    return computeTrust({ fy, entries, accounts, period: { type: 'fy', fy } });
-  }, [entries, accounts]);
-
-  const getAccountsForLabel = (label: string) => {
-    return accounts.filter(a => a.trustTaxLabel === label);
-  };
-
-  // Build section-specific label subsets from TRUST_LABELS
-  const INCOME_KEYS = ['5B', '11J', '5T'] as const;
-  const EXPENSE_KEYS = ['5E', '5F', '5L', '5M', '5N', '5S'] as const;
-  const RECON_KEYS = ['26'] as const;
-
-  const incomeLabels = Object.fromEntries(INCOME_KEYS.map(k => [k, TRUST_LABELS[k]]));
-  const expenseLabels = Object.fromEntries(EXPENSE_KEYS.map(k => [k, TRUST_LABELS[k]]));
-  const reconLabels = Object.fromEntries(RECON_KEYS.map(k => [k, TRUST_LABELS[k]]));
-
-  const renderSection = (title: string, labels: Record<string, { title: string; description: string }>, highlightKeys: string[] = []) => (
-    <div className="mb-8">
-      <h3 className="col-header mb-4 border-b border-[var(--line-strong)] pb-2">{title}</h3>
-      <div className="space-y-3">
-        {Object.entries(labels).map(([label, info]) => {
-          const value = Number(taxReturn[label as keyof typeof taxReturn]?.value.toFixed(2)) || 0;
-          const isHighlight = highlightKeys.includes(label);
-          const isExpanded = expandedLabels.includes(label);
-          const labelAccounts = getAccountsForLabel(label);
-          const isCalculated = ['5T', '5S', '26'].includes(label);
-
-          return (
-            <div key={label} className={cn(
-              "border transition-all overflow-hidden",
-              isHighlight ? "border-[var(--ink)] ring-1 ring-[var(--ink)]" : "border-[var(--line)]",
-              isExpanded && "shadow-md"
-            )}>
-              <div
-                className={cn(
-                  "flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 cursor-pointer transition-colors",
-                  isHighlight ? "bg-gray-50" : "bg-white",
-                  !isCalculated && "hover:bg-emerald-50/30"
-                )}
-                onClick={() => !isCalculated && toggleLabel(label)}
-              >
-                <div className="flex items-start gap-4 flex-1">
-                  <span className={cn(
-                    "px-2 py-1 rounded text-[10px] font-mono font-bold shrink-0 w-16 text-center",
-                    isHighlight ? "bg-[var(--ink)] text-white" : "bg-gray-100 text-gray-700"
-                  )}>
-                    {label}
-                  </span>
-                  <div>
-                    <div className={cn("text-sm", isHighlight ? "font-bold" : "font-bold")}>{info.title}</div>
-                    <div className="text-xs text-gray-500 mt-0.5 max-w-md">{info.description}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-6 mt-3 sm:mt-0">
-                  <div className={cn("text-lg data-value", isHighlight ? "font-bold text-emerald-600" : "font-bold")}>
-                    ${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </div>
-                  {!isCalculated && (
-                    <div className="text-gray-300">
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {isExpanded && !isCalculated && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
-                    exit={{ height: 0 }}
-                    className="overflow-hidden bg-white border-t border-[var(--line)]"
-                  >
-                    <div className="p-4 bg-gray-50/50">
-                      <div className="text-[10px] font-bold uppercase text-gray-400 mb-3 tracking-widest flex justify-between items-center">
-                        Contributing Accounts
-                        <span className="bg-white px-1.5 py-0.5 border border-gray-200 rounded">{labelAccounts.length}</span>
-                      </div>
-                      <div className="space-y-2">
-                        {labelAccounts.length === 0 ? (
-                          <div className="text-sm text-gray-400 italic py-2">No accounts mapped.</div>
-                        ) : (
-                          labelAccounts.map(account => (
-                            <div key={account.id} className="flex justify-between items-center bg-white p-2 border border-[var(--line)] text-sm group">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-[10px] text-gray-400">{account.code}</span>
-                                <span>{account.name}</span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                {editingAccountId === account.id ? (
-                                  <select
-                                    className="text-xs border border-[var(--line)] p-1 bg-white"
-                                    value={account.trustTaxLabel || ''}
-                                    onChange={(e) => {
-                                      onUpdateAccount({ ...account, trustTaxLabel: e.target.value });
-                                      setEditingAccountId(null);
-                                    }}
-                                    onBlur={() => setEditingAccountId(null)}
-                                    autoFocus
-                                  >
-                                    <option value="">Unmapped</option>
-                                    {INCOME_KEYS.filter(k => k !== '5T').map(k => (
-                                      <option key={k} value={k}>Income: {TRUST_LABELS[k].title}</option>
-                                    ))}
-                                    {EXPENSE_KEYS.filter(k => k !== '5S').map(k => (
-                                      <option key={k} value={k}>Expense: {TRUST_LABELS[k].title}</option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <button onClick={() => setEditingAccountId(account.id)} className="opacity-0 group-hover:opacity-100 p-1 text-blue-600">
-                                    <Edit3 size={14} />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))
-                        )}
-                        <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
-                          <select
-                            className="w-full text-xs p-2 bg-white border border-[var(--line)]"
-                            value=""
-                            onChange={(e) => {
-                              const acc = accounts.find(a => a.id === e.target.value);
-                              if (acc) onUpdateAccount({ ...acc, trustTaxLabel: label });
-                            }}
-                          >
-                            <option value="">Map additional account to {label}...</option>
-                            {accounts
-                              .filter(a => a.trustTaxLabel !== label && (a.type === 'Revenue' || a.type === 'Expense'))
-                              .map(a => <option key={a.id} value={a.id}>{a.code} - {a.name}</option>)
-                            }
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
+function LabelRow({ code, plainEnglish, value, highlight }: LabelRowProps): React.JSX.Element {
+  return (
+    <div
+      className={`flex justify-between items-center py-2 px-3 border-b border-gray-100 ${highlight ? 'bg-emerald-50 font-bold' : ''}`}
+    >
+      <div className="flex items-center gap-3">
+        <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-mono font-bold w-12 text-center">
+          {code}
+        </span>
+        <span className="text-sm">{plainEnglish}</span>
       </div>
+      <span className={`text-sm font-mono ${highlight ? 'text-emerald-700 font-bold' : ''}`}>
+        ${value.toFixed(2)}
+      </span>
     </div>
   );
+}
+
+/**
+ * Form T — Trust Tax Return renderer.
+ *
+ * Wraps all content in `.print-form-t` so print.css class-targeting works.
+ * The mandatory streaming disclaimer is rendered in both screen and print modes.
+ */
+export function TrustTaxReturn({
+  entity,
+  accounts,
+  entries,
+  period,
+  addLog,
+  fy: fyProp,
+}: TrustTaxReturnProps): React.JSX.Element {
+  const fy: FyLabel = fyProp ?? (period?.type === 'fy' ? period.fy : currentFy());
+
+  const result = useMemo(
+    () => computeTrustReturn({ entity, accounts, entries, fy }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [entity, accounts, entries, fy],
+  );
+
+  const handlePrint = () => {
+    addLog?.(
+      'EXPORT_DATA',
+      JSON.stringify({ entityId: entity.id, form: 'T', fy, timestamp: new Date().toISOString() }),
+      entity.id,
+    );
+    window.print();
+  };
+
+  const zero = new Decimal(0);
+
+  const labels = result.labels;
 
   return (
-    <div className="bg-white p-4 sm:p-6 shadow-sm border border-[var(--line-strong)]">
-      <div className="flex items-center gap-2 mb-6">
-        <Landmark className="text-emerald-600" />
-        <h2 className="text-xl font-medium">Trust Tax Return</h2>
-      </div>
+    <section className="print-form-t p-4">
+      <PrintBanner form="T" entityName={entity.name} fy={fy} locked={result.meta.locked} />
 
-      <div className="bg-emerald-50 border-l-4 border-emerald-400 p-4 mb-8 flex gap-3">
-        <Info className="text-emerald-600 shrink-0" size={20} />
-        <p className="text-sm text-emerald-800">
-          This assistant maps your Chart of Accounts to standard ATO Trust Tax Return labels (Items 5, 11, and 26).
-          Values are calculated based on your posted journal entries. Click a label to view contributing accounts and edit mappings.
-        </p>
-      </div>
+      {/* Screen-mode header + print button */}
+      <header className="no-print flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">
+          Form T — {entity.name} ({fy})
+        </h2>
+        <button
+          onClick={handlePrint}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+        >
+          {result.meta.locked ? 'Print finalised return' : 'Print working paper'}
+        </button>
+      </header>
 
-      <div className="space-y-4">
-        {renderSection('Item 5 & 11: Business Income and Interest', incomeLabels, ['5T'])}
-        {renderSection('Item 5: Business Expenses', expenseLabels, ['5S'])}
-        {renderSection('Item 26: Total net income or loss', reconLabels, ['26'])}
-      </div>
+      {/* Mandatory streaming disclaimer — ALWAYS visible (screen + print) */}
+      <aside
+        className="streaming-disclaimer border-2 border-red-400 p-4 my-4 bg-red-50 rounded"
+        data-testid="streaming-disclaimer"
+      >
+        <p className="text-sm text-red-800">{result.meta.streamingDisclaimer}</p>
+      </aside>
 
-      <div className="mt-8 pt-6 border-t border-[var(--line)]">
-        <h3 className="col-header mb-4">Accountant's Reconciliation</h3>
-        <div className="text-xs text-gray-500 italic">
-          * Note: These figures are pre-tax and exclude GST. Ensure all distributions to beneficiaries are correctly calculated from the net income at Item 26.
+      {/* Form T Income labels */}
+      <section className="mb-6">
+        <h3 className="font-semibold text-sm uppercase text-gray-500 mb-2">
+          Business income &amp; interest
+        </h3>
+        <LabelRow code="5B" plainEnglish="Gross payments (5B)" value={labels['5B']?.value ?? zero} />
+        <LabelRow code="11J" plainEnglish="Gross interest (11J)" value={labels['11J']?.value ?? zero} />
+        <LabelRow
+          code="5T"
+          plainEnglish="Net business income (5T)"
+          value={labels['5T']?.value ?? zero}
+          highlight
+        />
+      </section>
+
+      {/* Form T Expense labels */}
+      <section className="mb-6">
+        <h3 className="font-semibold text-sm uppercase text-gray-500 mb-2">Business expenses</h3>
+        <LabelRow code="5E" plainEnglish="Cost of sales (5E)" value={labels['5E']?.value ?? zero} />
+        <LabelRow code="5F" plainEnglish="Rent (5F)" value={labels['5F']?.value ?? zero} />
+        <LabelRow code="5L" plainEnglish="Superannuation (5L)" value={labels['5L']?.value ?? zero} />
+        <LabelRow code="5M" plainEnglish="Salaries and wages (5M)" value={labels['5M']?.value ?? zero} />
+        <LabelRow code="5N" plainEnglish="All other expenses (5N)" value={labels['5N']?.value ?? zero} />
+        <LabelRow
+          code="5S"
+          plainEnglish="Total expenses (5S)"
+          value={labels['5S']?.value ?? zero}
+          highlight
+        />
+      </section>
+
+      {/* Net income */}
+      <section className="mb-6">
+        <h3 className="font-semibold text-sm uppercase text-gray-500 mb-2">Net income</h3>
+        <LabelRow
+          code="26"
+          plainEnglish="Net income or loss (item 26)"
+          value={labels['26']?.value ?? zero}
+          highlight
+        />
+        <LabelRow
+          code="56"
+          plainEnglish="Total trust net income (item 56)"
+          value={labels['56']?.value ?? zero}
+          highlight
+        />
+      </section>
+
+      {/* Item 57 — Statement of Distribution */}
+      <section className="mt-6 mb-6">
+        <h3 className="font-semibold text-sm uppercase text-gray-500 mb-2">
+          Item 57 — Statement of Distribution
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="text-left px-3 py-2 border border-gray-200">Beneficiary</th>
+                <th className="text-right px-3 py-2 border border-gray-200">Share %</th>
+                <th className="text-right px-3 py-2 border border-gray-200">Total share</th>
+                <th className="text-right px-3 py-2 border border-gray-200">Ordinary</th>
+                <th className="text-right px-3 py-2 border border-gray-200">Interest</th>
+                <th className="text-right px-3 py-2 border border-gray-200">Dividend</th>
+                <th className="text-right px-3 py-2 border border-gray-200">Capital gain</th>
+                <th className="text-right px-3 py-2 border border-gray-200">Foreign</th>
+                <th className="text-right px-3 py-2 border border-gray-200">Other</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.meta.distribution.map((d) => {
+                const beneficiary = entity.beneficiaries?.find((b) => b.id === d.beneficiaryId);
+                return (
+                  <tr key={d.beneficiaryId} className="border-b border-gray-100">
+                    <td className="px-3 py-2 border border-gray-200">{d.name}</td>
+                    <td className="text-right px-3 py-2 border border-gray-200">
+                      {beneficiary?.sharePercent ?? '—'}%
+                    </td>
+                    <td className="text-right px-3 py-2 border border-gray-200 font-mono">
+                      ${d.totalShare.toFixed(2)}
+                    </td>
+                    <td className="text-right px-3 py-2 border border-gray-200 font-mono">
+                      ${d.components.ordinary.toFixed(2)}
+                    </td>
+                    <td className="text-right px-3 py-2 border border-gray-200 font-mono">
+                      ${d.components.interest.toFixed(2)}
+                    </td>
+                    <td className="text-right px-3 py-2 border border-gray-200 font-mono">
+                      ${d.components.dividend.toFixed(2)}
+                    </td>
+                    <td className="text-right px-3 py-2 border border-gray-200 font-mono">
+                      ${d.components.capitalGain.toFixed(2)}
+                    </td>
+                    <td className="text-right px-3 py-2 border border-gray-200 font-mono">
+                      ${d.components.foreign.toFixed(2)}
+                    </td>
+                    <td className="text-right px-3 py-2 border border-gray-200 font-mono">
+                      ${d.components.other.toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
+              {result.meta.distribution.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="px-3 py-2 text-gray-400 italic text-center">
+                    No beneficiaries registered for this trust.
+                  </td>
+                </tr>
+              )}
+              <tr className="bg-gray-50 font-bold">
+                <td colSpan={2} className="px-3 py-2 border border-gray-200">
+                  <strong>Total</strong>
+                </td>
+                <td className="text-right px-3 py-2 border border-gray-200 font-mono">
+                  <strong>${result.meta.distributionTotal.toFixed(2)}</strong>
+                </td>
+                <td colSpan={6} className="px-3 py-2 border border-gray-200" />
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* Anomalies */}
+      {result.meta.anomalies.length > 0 && (
+        <section className="mt-4 mb-4">
+          <h3 className="font-semibold text-sm uppercase text-gray-500 mb-2">Anomalies</h3>
+          <ul className="space-y-2">
+            {result.meta.anomalies.map((a) => (
+              <li key={a.id}>
+                <AnomalyBadge severity={a.severity} message={a.message} label={a.label} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <footer className="print-footer print-only">{FOOTER_DISCLAIMER}</footer>
+    </section>
   );
-};
+}
