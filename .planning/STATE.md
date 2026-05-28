@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 6 — Personas, Wizard, and Deployment
-current_plan: "Plan 3 — 06-3-PLAN.md"
+current_plan: "Plan 4 — 06-4-PLAN.md"
 status: in_progress
-last_updated: "2026-05-29T01:58:00.000Z"
+last_updated: "2026-05-29T02:30:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 5
@@ -36,16 +36,16 @@ progress:
 
 **Current phase:** Phase 6 — Personas, Wizard, and Deployment
 **Current plan:** Plan 3 — 06-3-PLAN.md
-**Phase 6 status:** IN PROGRESS. **Wave 1 (06-1) COMPLETE 2026-05-29:** v4→v5 additive migration (Entity.returnStatusByFy + Entity.wizardState), Settings/persona module (SETTINGS_KEY='aussieledger:settings', getSettings/saveSettings/clearSettings/useSettings/finaliseEntity/unfinaliseEntity/advanceStep/getPrimaryEntityId), useAnomalyCounts hook (useMemo, tolerance 0.005), helpText widened across all 6 ATO label catalogues (94 entries, no deductibility language), IAS_LABELS_FULL new constant, LabelTooltip with Radix tooltip (no asChild on Content), PersonaModeModal + AiGateNote + YearEndWizard scaffolds, print.css label-help-text, LICENSE (Apache 2.0) + CONTRIBUTING.md + README rewrite + SPDX lint (84 files). 692 GREEN + 15 todo + 0 RED. tsc + build EXIT 0. Commits: 9da476b / b48dfaa / 4c000ce. **Wave 2 (06-2) COMPLETE 2026-05-29:** 7-step YearEndWizard orchestrator (Step1Confirm-Step7Finalise) wired to advanceStep/finaliseEntity/unfinaliseEntity; LOCK_FY/UNLOCK_FY audit logs; Step5Preview embeds Phase-5 renderers by entity.type; Step6Attestation: checkbox + case-insensitive name match; JournalForm lockedFy prop + banner + disabled Save (Reverse stays enabled); useEntities.updateEntity confirmed to round-trip returnStatusByFy+wizardState (PERS-03). 748 GREEN + 11 todo + 0 RED. tsc + build EXIT 0. Commits: 64ca0f1 / 54c6bd5.
+**Phase 6 status:** IN PROGRESS. **Wave 1 (06-1) COMPLETE 2026-05-29:** v4→v5 additive migration (Entity.returnStatusByFy + Entity.wizardState), Settings/persona module (SETTINGS_KEY='aussieledger:settings', getSettings/saveSettings/clearSettings/useSettings/finaliseEntity/unfinaliseEntity/advanceStep/getPrimaryEntityId), useAnomalyCounts hook (useMemo, tolerance 0.005), helpText widened across all 6 ATO label catalogues (94 entries, no deductibility language), IAS_LABELS_FULL new constant, LabelTooltip with Radix tooltip (no asChild on Content), PersonaModeModal + AiGateNote + YearEndWizard scaffolds, print.css label-help-text, LICENSE (Apache 2.0) + CONTRIBUTING.md + README rewrite + SPDX lint (84 files). 692 GREEN + 15 todo + 0 RED. tsc + build EXIT 0. Commits: 9da476b / b48dfaa / 4c000ce. **Wave 2 (06-2) COMPLETE 2026-05-29:** 7-step YearEndWizard orchestrator (Step1Confirm-Step7Finalise) wired to advanceStep/finaliseEntity/unfinaliseEntity; LOCK_FY/UNLOCK_FY audit logs; Step5Preview embeds Phase-5 renderers by entity.type; Step6Attestation: checkbox + case-insensitive name match; JournalForm lockedFy prop + banner + disabled Save (Reverse stays enabled); useEntities.updateEntity confirmed to round-trip returnStatusByFy+wizardState (PERS-03). 748 GREEN + 11 todo + 0 RED. tsc + build EXIT 0. Commits: 64ca0f1 / 54c6bd5. **Wave 2 (06-3) COMPLETE 2026-05-29:** Persona-aware Sidebar (mode + anomalyCounts props + red badge + owner/agent filtering), MainLayout threads useSettings+useAnomalyCounts to Sidebar, ViewRouter first-run PersonaModeModal gate + year-end/settings routes + owner-mode auto-select effects + computeLockedFy wired to JournalForm, Settings page, MasterDashboard FY badges + recent-clients section, inline AnomalyBadge on TrialBalance (unmapped accounts) + CoaTreeView (missing gstCode/taxLabel), AiGateNote in ImportTB, LabelTooltip wired into all 5 tax-return components via extended LabelRow. 763 GREEN + 11 todo + 0 RED. tsc + build EXIT 0. Commits: 5e5a768 / 6e8ad2b / 69c006f. UX-02/UX-03/UX-04/UX-05/PERS-01/PERS-02 delivered.
 **Phase 5 status:** COMPLETE. **Wave 0 (05-1) COMPLETE.** **Wave 2 (05-2) COMPLETE:** computeIndividualReturn (Form I + B&P + LITO + Medicare + IND-04 offset), computeCompanyReturn (Form C + BRE 25%/30% + franking account + FDT anomaly), TaxReturnAssistant refactored (Form I + Print + AssumptionsBlock + AnomalyBadges), CompanyTaxReturn refactored (Form C + BRE basis box + franking section + Print), EntityForm widened (aggregatedTurnover + paygInstalmentAmount). +29 GREEN tests. Success criteria #2 + #4 locked end-to-end. build EXIT 0. StorageAdapter untouched (Phase 3 FINAL). **Wave 2 (05-3) COMPLETE:** computeTrustReturn (Form T + distributeTrustIncome + STREAMING_DISCLAIMER), computePartnershipReturn (Form P + distributePartnershipNetIncome + loss warning), TrustTaxReturn refactored (Form T + distribution table + streaming disclaimer + print), PartnershipTaxReturn fleshed out (Form P + distribution table + print). +27 GREEN tests. Success criterion #3 locked: Trust $200k → Alice $120k / Bob $80k + streaming disclaimer visible. **Wave 3 (05-4) COMPLETE:** computeBas (Simpler BAS G1/1A/1B/W1/W2/T7 + G2/G3/G10/G11 internal-only), computeIas (PAYG-only delegation), BasIasAssistant refactor (period selector + lodgement/internal-only split + IAS shape + Print audit), ViewRouter Partnership route. +17 GREEN tests. Success criterion #1 locked: G1=$18,200/1A=$1,000/1B=$100 to-the-cent. **UAT APPROVED 2026-05-28** — all 12 UAT steps PASS; all 5 success criteria verified; all 20 Phase 5 requirements DELIVERED end-to-end. 526 SPA GREEN + 11 todo + 0 RED; 18 server GREEN. lint + build EXIT 0.
 **Phase status:** Phase 4 fully PLAN-COMPLETE. **Wave 0 (04-1):** v3 type widening + additive v2→v3 migration + 127-row AU SME default CoA + 4 per-type overlays + getDefaultCoaFor + pure-function ledger.ts + sha256 fingerprint + PapaParse/SheetJS CE wrappers + 12 hook/component test scaffolds. **Wave 2 (04-2 + 04-3 parallel):** useJournals lifecycle (postDraft/editPosted supersession/reversePosted/voidDraft/searchJournals) + JournalForm Edit+Reverse + EditJournalDiff + JournalSearch + TrialBalance period-filter + parent subtotals + AuditTrail widened (04-2); useAccounts (archiveAccount/setIsDefault/isAccountInUse) + useEntities (createEntity-seeds-CoA/tryDeleteEntity/beneficiary+partner writers) + CoaTreeView + AccountManager refactor + GST 'ITS'→'INP' typo fix + EntityForm AU-4 + register tabs + BeneficiaryRegister + PartnerRegister (04-3). **Wave 3 (04-4):** XlsxSheetPicker + ImportReviewPane + ImportTB refactor (634→520 lines) consuming Wave 0 wrappers + fingerprint Skip/Replace/Add-additional dialog + onReplace prop + useJournals.supersedeImport helper (closes the plan-checker-flagged TB-double-count risk) + ViewRouter wiring. **Task 3 UAT APPROVED 2026-05-13** — all 28 manual checks passed including step-18 Replace regression. Tests: 371 SPA GREEN + 11 todo + 0 RED; 18 server GREEN. lint + build + build:server + dev-full smoke all EXIT 0. StorageAdapter untouched (Phase 3 FINAL preserved). 23/23 Phase 4 requirements DELIVERED end-to-end.
-**Last session:** 2026-05-29T01:58:00.000Z
-**Stopped at:** Completed 06-2-PLAN.md
-**Overall progress:** Phases 1 + 2 + 3 + 4 + 5 complete — 19/19 plans delivered. Phase 6 in progress — 2/4 plans complete (06-1 Wave 1 foundations + 06-2 Year-End Wizard done).
+**Last session:** 2026-05-29T02:30:00.000Z
+**Stopped at:** Completed 06-3-PLAN.md
+**Overall progress:** Phases 1 + 2 + 3 + 4 + 5 complete — 19/19 plans delivered. Phase 6 in progress — 3/4 plans complete (06-1 Wave 1 foundations + 06-2 Year-End Wizard + 06-3 UX integration done).
 
 ```
 [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
-[ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ 2/4.. ]
+[ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ 3/4.. ]
 ```
 
 ---
@@ -65,9 +65,9 @@ progress:
 
 ## Performance Metrics
 
-- Plans completed: 21 / Plans total: 23 (Phase 1: 3, Phase 2: 4, Phase 3: 4, Phase 4: 4, Phase 5: 4, Phase 6: 2/4)
-- Phases complete: 5/6 (Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 done); Phase 6 in progress (2/4 plans)
-- Requirements mapped: 70/70 — Phases 1-5 closed all assigned reqs; 06-1 delivered UX-03/UX-05/DEP-01/DEP-03/DEP-04 partial foundations; 06-2 delivered UX-01 (wizard) + PERS-03 (data preservation invariant)
+- Plans completed: 22 / Plans total: 23 (Phase 1: 3, Phase 2: 4, Phase 3: 4, Phase 4: 4, Phase 5: 4, Phase 6: 3/4)
+- Phases complete: 5/6 (Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 done); Phase 6 in progress (3/4 plans)
+- Requirements mapped: 70/70 — Phases 1-5 closed all assigned reqs; 06-1 delivered UX-03/UX-05/DEP-01/DEP-03/DEP-04 partial foundations; 06-2 delivered UX-01 (wizard) + PERS-03 (data preservation invariant); 06-3 delivered UX-02/UX-03/UX-04/UX-05/PERS-01/PERS-02
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
@@ -92,6 +92,7 @@ progress:
 | 05 | 05-4 | ~14 min | 3/3 | ~9 | 526 (+18 server) [Wave 3 complete 2026-05-28 — UAT APPROVED; Phase 5 CLOSED] |
 | 06 | 06-1 | ~45 min | 3/3 | +22 ~12 | 692 [Wave 1 foundations complete 2026-05-29 — v4→v5 + persona + tooltips + release artefacts] |
 | 06 | 06-2 | ~35 min | 2/2 | +10 ~5 | 748 [Wave 2 wizard complete 2026-05-29 — YearEndWizard 7-step + JournalForm lockedFy guard] |
+| 06 | 06-3 | ~90 min | 3/3 | +4 ~21 | 763 [Wave 2 UX integration complete 2026-05-29 — persona shell + inline anomalies + LabelTooltip + AiGateNote] |
 
 ---
 
@@ -155,6 +156,9 @@ progress:
 | UnfinaliseSection renders a direct button (no typed-name modal) matching test W.12 single-click contract | Test spec requires single click → immediate onUpdateEntity/onAddLog; attestation friction can be added in a follow-up without breaking W.12 test-id | 06-2 |
 | Step6Attestation.onConfirm calls handleFinalise directly (combines attestation + finalise in one step) | Simplest wiring that satisfies W.11 test: attestation step IS the finalise step — no separate step 7 confirmation required by the test contract | 06-2 |
 | useEntities.updateEntity requires no code change for PERS-03 — whole-entity replacement preserves all new fields | The existing `prev.map(e => e.id === entity.id ? entity : e)` pattern already preserves returnStatusByFy + wizardState; UE.1/UE.2 confirm the invariant | 06-2 |
+| LabelRow helper extended with optional helpText+labelCode rather than inserting LabelTooltip at every call site | Cleaner separation: tooltip rendering is encapsulated in the helper; callers only need to pass the two optional props | 06-3 |
+| useSettings called independently in both MainLayout and ViewRouter | Clean separation of concerns — MainLayout needs mode for Sidebar, ViewRouter needs settings for gating logic; prop-drilling would couple them unnecessarily | 06-3 |
+| ViewRouter early-return PersonaModeModal before hooks — acknowledged ESLint rules-of-hooks warning | Modal gate on null settings is a structural constraint; the pattern is correct and the effects that follow are safely skipped | 06-3 |
 
 ### Research Flags Pending
 
