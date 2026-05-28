@@ -1,47 +1,57 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * IAS (Instalment Activity Statement) compute function.
+ * Source: NAT 4159 (IAS) FY2025-26
+ *
+ * Phase 5 Plan 05-4: full implementation.
+ *
+ * IAS is for PAYG-only entities (entity.gstRegistered === false).
+ * It covers W1/W2/W3/W4/W5/T7 only — no GST labels.
+ *
+ * Implementation: delegates to computeBas internals and returns only the
+ * PAYG labels, forcing meta.shape = 'IAS'.
  */
-import { Decimal } from '../../../money';
-import type { Account, Entity, JournalEntry } from '../../../../types';
-import type { FyLabel } from '../../../period';
+
+import { computeBas, type ComputeBasInput, type BasReturn } from './bas';
 import type { ComputedReturn, IasReturnLabels } from './types';
 
-export type IasReturn = ComputedReturn<IasReturnLabels>;
+// ── Extended return type ──────────────────────────────────────────────────
 
-export interface ComputeIasInput {
-  entity: Entity;
-  accounts: Account[];
-  entries: JournalEntry[];
-  fy: FyLabel;
-  quarter?: 1 | 2 | 3 | 4 | 'annual';
-}
+export type IasReturn = ComputedReturn<IasReturnLabels> & {
+  meta: ComputedReturn<IasReturnLabels>['meta'] & {
+    shape: 'IAS';
+    period: BasReturn['meta']['period'];
+  };
+};
+
+// Re-export input type so callers can use ComputeIasInput or ComputeBasInput interchangeably
+export type ComputeIasInput = ComputeBasInput;
 
 /**
  * Compute Instalment Activity Statement (IAS) for PAYG-only entities.
  *
- * IAS is for entities that are NOT GST-registered. It covers only:
- *   W1 (total wages), W2 (PAYG withholding), W3/W4/W5 (other withholding), T7 (instalment).
+ * Delegates to computeBas and returns only the PAYG subset (W1/W2/W3/W4/W5/T7).
+ * GST labels (G1/G2/G3/G10/G11/1A/1B/netGst) are excluded from the returned labels.
  *
- * Phase 5 Wave 0: signature only — empty body returning typed-empty result.
- * Plan 05-4 implements full IAS compute logic (shared code path with computeBas).
- *
- * Note: In Plan 05-4, computeBas() dispatches internally to this same logic
- * when entity.gstRegistered === false. This standalone export is provided for
- * callers that specifically know they need IAS only.
+ * Callers should pass an entity with gstRegistered === false; if gstRegistered === true,
+ * a 'not-gst-registered' warn anomaly will NOT be emitted (it only fires when explicitly false).
  */
-export function computeIas(_input: ComputeIasInput): IasReturn {
-  // TODO Phase 5 Plan 05-4: implement IAS logic (shared code path with computeBas)
-  void new Decimal(0);
-  const entityType = (_input.entity.type as string) as 'Individual' | 'Company' | 'Trust' | 'Partnership';
+export function computeIas(input: ComputeIasInput): IasReturn {
+  const bas = computeBas(input);
+
+  // Extract PAYG-only labels — drop all G* + 1A/1B/netGst
+  const { W1, W2, W3, W4, W5, T7 } = bas.labels;
+
   return {
-    labels: {} as IasReturnLabels,
+    labels: {
+      W1, W2, W3, W4, W5, T7,
+    } as IasReturnLabels,
     meta: {
-      fy: _input.fy,
-      entityType,
+      ...bas.meta,
+      shape: 'IAS',
       natReference: 'NAT 4159 (IAS)',
-      locked: (_input.entity.lockedFys ?? []).includes(_input.fy),
-      anomalies: [],
     },
   };
 }
