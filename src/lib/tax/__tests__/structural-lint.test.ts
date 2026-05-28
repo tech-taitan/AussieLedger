@@ -6,8 +6,12 @@ const TAX_LIB_DIR = join(process.cwd(), 'src', 'lib', 'tax');
 const SRC_DIR = join(process.cwd(), 'src');
 
 function stripCommentsAndStrings(line: string): string {
+  // Strip full-line block comment rows (e.g. " * comment text" in JSDoc)
+  const trimmed = line.trimStart();
+  if (trimmed.startsWith('*') || trimmed.startsWith('/*')) return '';
   return line
     .replace(/\/\/.*$/, '')
+    .replace(/\/\*.*?\*\//g, '')
     .replace(/'[^']*'/g, "''")
     .replace(/"[^"]*"/g, '""')
     .replace(/`[^`]*`/g, '``');
