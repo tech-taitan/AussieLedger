@@ -52,6 +52,9 @@ export const EntitySchema = z.object({
   lockedFys: z.array(z.string()).optional(),
   beneficiaries: z.array(BeneficiaryRowSchema).optional(),
   partners: z.array(PartnerRowSchema).optional(),
+  // v4 additions
+  aggregatedTurnover: z.string().optional(),
+  paygInstalmentAmount: z.string().optional(),
 });
 
 export const AccountSchema = z.object({

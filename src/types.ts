@@ -46,6 +46,11 @@ export interface Entity {
   beneficiaries?: BeneficiaryRow[];
   /** Partnership partner register (ENT-08). */
   partners?: PartnerRow[];
+  // _v:4 additions
+  /** Aggregated turnover for s.328-115 BRE / small-biz-offset tests. Optional decimal string; auto-default from Revenue accounts via computeAggregatedTurnover. */
+  aggregatedTurnover?: string;
+  /** PAYG instalment Method-1 amount from ATO portal. Optional decimal string. */
+  paygInstalmentAmount?: string;
 }
 
 export interface BeneficiaryRow {

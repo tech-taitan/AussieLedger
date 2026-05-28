@@ -5,6 +5,7 @@
 
 import { migrateV1ToV2 } from './v1-to-v2.js';
 import { migrateV2ToV3 } from './v2-to-v3.js';
+import { migrateV3ToV4 } from './v3-to-v4.js';
 
 /**
  * Root shape of all persisted state. The `_v` field is the schema version.
@@ -39,9 +40,11 @@ const MIGRATIONS: Record<number, MigrationFn> = {
   //         Entity.gstRegistered/accountingMethod/fyEndDate/lockedFys,
   //         AuditLog.action enum widening).
   2: migrateV2ToV3,
+  // 3 → 4: additive Phase 5 Wave 0 widening (Entity.aggregatedTurnover + paygInstalmentAmount).
+  3: migrateV3ToV4,
 };
 
-export const CURRENT_VERSION = 3;
+export const CURRENT_VERSION = 4;
 
 /**
  * Run all pending migrations on the given state.

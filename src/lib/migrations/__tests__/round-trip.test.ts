@@ -43,7 +43,7 @@ describe('Migration round-trip (success criterion #5)', () => {
     expect(exported.auditLogs).toEqual(migrated.auditLogs ?? []);
   });
 
-  it('v0 to v3 round-trip', () => {
+  it('v0 to v4 round-trip', () => {
     // Hand-built _v:0 blob (no _v field at all — pre-versioning prototype shape)
     const v0blob = {
       entities: [{ id: 'e1', name: 'Old Co', type: 'Company', status: 'Active' }],
@@ -60,7 +60,7 @@ describe('Migration round-trip (success criterion #5)', () => {
       auditLogs: [],
     };
     const out = migrate(v0blob);
-    expect(out._v).toBe(3);
+    expect(out._v).toBe(4);
     // All original fields preserved
     expect((out.entities as Array<{ name: string }>)[0].name).toBe('Old Co');
     expect((out.accounts as unknown[]).length).toBe(2);
@@ -71,5 +71,8 @@ describe('Migration round-trip (success criterion #5)', () => {
     expect(((out.allEntries as Record<string, Array<{ status?: string }>>).e1)[0].status).toBe('posted');
     expect((out.entities as Array<{ lockedFys?: string[] }>)[0].lockedFys).toEqual([]);
     expect((out.entities as Array<{ fyEndDate?: string }>)[0].fyEndDate).toBe('06-30');
+    // v3→v4 new fields are undefined (not present)
+    expect((out.entities as Array<{ aggregatedTurnover?: string }>)[0].aggregatedTurnover).toBeUndefined();
+    expect((out.entities as Array<{ paygInstalmentAmount?: string }>)[0].paygInstalmentAmount).toBeUndefined();
   });
 });
