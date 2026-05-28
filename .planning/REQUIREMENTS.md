@@ -66,23 +66,23 @@ Quality-floor and credibility prerequisites — must clear these before any user
 ### Income tax returns — shared (TAX)
 
 - [x] **TAX-01**: Tax-rate and threshold constants are centralised in a single FY-versioned module (no magic numbers in components)
-- [ ] **TAX-02**: User can produce a print-ready tax return PDF (or print-CSS browser print) for any entity type
+- [~] **TAX-02**: User can produce a print-ready tax return PDF (or print-CSS browser print) for any entity type — Form I + Form C CSS scoping complete (05-2); Trust + Partnership (05-3); full UAT in 05-4
 - [x] **TAX-03**: Each account in the default CoA is pre-mapped to the correct ATO labels for every relevant entity type (individual, company, trust, partnership) on first install
 - [ ] **TAX-04**: User can override the auto-mapping for any account in the CoA editor
 - [x] **TAX-05**: All tax-output components consume a single shared "tax engine" library of pure functions (no duplicated rollup logic across components)
 
 ### Individual tax return (IND)
 
-- [ ] **IND-01**: User can produce a Form I (individual) return with the Business and Professional Items schedule populated from the entity's GL
-- [ ] **IND-02**: Return covers the business-schedule labels: item P1 (business income), P2 (deductions), P8 (net small business income), and item 15 (net business income flow-through)
-- [ ] **IND-03**: Return calculates net taxable income from business and shows individual marginal-rate tax payable using FY-versioned brackets (including LITO and Medicare levy)
-- [ ] **IND-04**: User can apply the small business income tax offset where eligible — 16% × tax payable on net small business income, capped at $1,000, for individuals with aggregated turnover < $5M; item 7D on Form I (re-scoped from the original COY-04 which was mis-attributed to companies — see 05-CONTEXT.md decisions)
+- [x] **IND-01**: User can produce a Form I (individual) return with the Business and Professional Items schedule populated from the entity's GL
+- [x] **IND-02**: Return covers the business-schedule labels: item P1 (business income), P2 (deductions), P8 (net small business income), and item 15 (net business income flow-through)
+- [x] **IND-03**: Return calculates net taxable income from business and shows individual marginal-rate tax payable using FY-versioned brackets (including LITO and Medicare levy)
+- [x] **IND-04**: User can apply the small business income tax offset where eligible — 16% × tax payable on net small business income, capped at $1,000, for individuals with aggregated turnover < $5M; item 7D on Form I (re-scoped from the original COY-04 which was mis-attributed to companies — see 05-CONTEXT.md decisions)
 
 ### Company tax return (COY)
 
-- [ ] **COY-01**: User can produce a Form C (company) return covering core labels for a small Pty Ltd: gross sales (item 6), total expenses (item 7), taxable income (item 7S)
-- [ ] **COY-02**: Tax payable is calculated using the Base Rate Entity test: 25% if aggregated turnover < $50M and ≤ 80% passive income, otherwise 30%
-- [ ] **COY-03**: Return records franking-account opening balance and movements (credits / debits) so the year-end balance can be carried forward
+- [x] **COY-01**: User can produce a Form C (company) return covering core labels for a small Pty Ltd: gross sales (item 6), total expenses (item 7), taxable income (item 7S)
+- [x] **COY-02**: Tax payable is calculated using the Base Rate Entity test: 25% if aggregated turnover < $50M and ≤ 80% passive income, otherwise 30%
+- [x] **COY-03**: Return records franking-account opening balance and movements (credits / debits) so the year-end balance can be carried forward
 - [~] **COY-04**: ~~User can apply the small business tax offset where eligible (item 7D)~~ — **OBSOLETE / re-scoped to IND-04** in 05-CONTEXT. Item 7D is on Form I (Individual sole-traders), not Form C (Company). Companies get the BRE 25%/30% derived rate via COY-02 with no separate small-business offset.
 
 ### Trust tax return (TRT)
@@ -216,17 +216,17 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | BAS-05 | Phase 5 | Pending |
 | BAS-06 | Phase 5 | Pending |
 | TAX-01 | Phase 2 | Complete |
-| TAX-02 | Phase 5 | Pending |
+| TAX-02 | Phase 5 | Partial (CSS scoping done 05-2/05-3; UAT in 05-4) |
 | TAX-03 | Phase 2 | Complete |
 | TAX-04 | Phase 2 | Pending |
 | TAX-05 | Phase 2 | Complete |
-| IND-01 | Phase 5 | Pending |
-| IND-02 | Phase 5 | Pending |
-| IND-03 | Phase 5 | Pending |
-| IND-04 | Phase 5 | Pending (re-scoped from COY-04 in 05-CONTEXT) |
-| COY-01 | Phase 5 | Pending |
-| COY-02 | Phase 5 | Pending |
-| COY-03 | Phase 5 | Pending |
+| IND-01 | Phase 5 | Delivered (05-2 2026-05-28) |
+| IND-02 | Phase 5 | Delivered (05-2 2026-05-28) |
+| IND-03 | Phase 5 | Delivered (05-2 2026-05-28) |
+| IND-04 | Phase 5 | Delivered (05-2 2026-05-28; re-scoped from COY-04 in 05-CONTEXT) |
+| COY-01 | Phase 5 | Delivered (05-2 2026-05-28) |
+| COY-02 | Phase 5 | Delivered (05-2 2026-05-28) |
+| COY-03 | Phase 5 | Delivered (05-2 2026-05-28) |
 | COY-04 | Phase 5 | Obsolete (mis-scoped; see IND-04) |
 | TRT-01 | Phase 5 Plan 05-3 | Delivered (computeTrustReturn Form T labels 5B/5E/5F/5L/5M/5N/5S/5T/11J/26/56 + TrustTaxReturn renderer) |
 | TRT-02 | Phase 5 Plan 05-3 | Delivered (distributeTrustIncome + Item 57 distribution table + mandatory streaming disclaimer always visible) |
