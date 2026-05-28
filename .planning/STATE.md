@@ -1,35 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-current_phase: Phase 6 — Personas, Wizard, and Deployment (COMPLETE)
-current_plan: COMPLETE — all 23 plans delivered
-status: unknown
-stopped_at: 06-4-PLAN.md ALL TASKS COMPLETE — UAT APPROVED — Phase 6 CLOSED — v1 milestone COMPLETE
-last_updated: "2026-05-28T21:45:06.252Z"
+milestone: pending-next
+milestone_name: TBD
+current_phase: null
+current_plan: null
+status: milestone-archived
+stopped_at: v1.0 SHIPPED 2026-05-29 — awaiting /gsd:new-milestone for v1.1 or v2.0
+last_updated: "2026-05-29T08:30:00.000Z"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 23
-  completed_plans: 23
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
-**Last updated:** 2026-05-10
+**Last updated:** 2026-05-29 (post v1.0 milestone)
 
 ---
 
 ## Project Reference
 
+See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution).
+
 **Core value:** A non-accountant business owner can take their trial balance, record their year's adjustments and journals in plain English, and walk away with a print-ready tax return — without paying for software.
 
-**One-line description:** Free, self-hosted, open-source Australian bookkeeping-to-tax-return tool for all four AU entity types (Company, Trust, Sole Trader, Partnership).
-
-**Stack:** React 19 + TypeScript 5.8 + Vite 6 + Tailwind v4 + motion + lucide + recharts. Adding: Vitest, decimal.js, idb (IndexedDB), Express + better-sqlite3.
-
-**Distribution:** Open-source, self-hosted. No paid services in the critical path.
+**Current focus:** Planning next milestone (v1.1 polish-and-CSV vs v2.0 standalone desktop app). Run `/gsd:new-milestone` to lock direction.
 
 ---
 

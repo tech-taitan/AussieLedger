@@ -1,10 +1,25 @@
 # AussieLedger
 
+## Current State
+
+**v1.0 shipped 2026-05-29.** 6 phases, 23 plans, ~27k LOC TypeScript, 763 SPA + 18 server tests GREEN. Audit verdict: `tech_debt` (no critical blockers; FND-02 CSV per-report export consciously deferred to v2).
+
+The brownfield prototype that existed at project init is now a real tool: the StorageAdapter hides IndexedDB (single-user) and SQLite (small-firm VPS), the tax engine produces print-ready returns for all four AU entity types, the year-end wizard walks a non-accountant from "I have a TB" to "I have a finalised working paper", and the project ships under Apache 2.0 with a clone-and-run install.
+
+## Next Milestone Goals
+
+**Not yet locked.** Two candidate directions surfaced during v1.0:
+
+1. **v1.1 — Polish + CSV (the small bump)** — close FND-02 (CSV per-report export), retro-fix Nyquist frontmatter on Phases 1/2/6, clean cosmetic debt (`App.tsx:114` dead string), add anomaly fix-it deep-links, family-Medicare-levy threshold engine.
+2. **v2.0 — Standalone desktop app (the big bump)** — see `.planning/todos/pending/2026-05-28-package-as-standalone-desktop-app-with-local-backend.md`. Package the SPA + local backend as a Tauri/Electron desktop app so the target audience (non-accountant business owners) can install with a double-click instead of `npm install`. The Phase 3 StorageAdapter abstraction was designed precisely for this swap; the cost depends on whether persistence moves to Tauri IPC or keeps Express as a sidecar.
+
+Run `/gsd:new-milestone` to lock direction and start questioning → research → requirements → roadmap.
+
 ## What This Is
 
 A free, open-source, self-hosted Australian accounting tool that takes someone from "I have a trial balance" to "I can lodge a tax return." It's aimed at small-business owners (running a company, trust, partnership, or as a sole trader) who can't afford Xero/MYOB/QuickBooks, and at tax agents who want a no-cost workspace for their smaller clients. The product is opinionated about being non-intimidating: guided wizards and smart defaults stand in for the accounting literacy a typical SaaS assumes.
 
-The current codebase (React 19 + Vite + TypeScript) is a well-styled prototype with credible bones — multi-entity ledger, journal-entry form, trial balance, BAS/IAS, individual/company/trust tax assistants, CSV TB import — but most depth is demo-grade and several existing features are off-mission. This phase of work redirects the prototype toward the vision above.
+After v1.0: the prototype's visual shell is preserved; the depth is real (127-row default CoA, decimal tax math, audit-logged finalise lifecycle, print-CSS-scoped working papers per form, persona-mode-aware navigation).
 
 ## Core Value
 
@@ -12,124 +27,115 @@ A non-accountant business owner can take their trial balance, record their year'
 
 ## Requirements
 
-### Validated
+### Validated (shipped v1.0)
 
-<!-- Inferred from existing codebase — features that exist and broadly work in the prototype. -->
+**Foundation (FND)**
+- ✓ FND-01 — Durable persistence (browser cache survives) — v1.0
+- ~ FND-02 — JSON export/import shipped; CSV per-report **partial, deferred to v2** — v1.0
+- ✓ FND-03 — JSON import round-trip — v1.0
+- ✓ FND-04 — Self-hostable without paid API keys — v1.0
+- ✓ FND-05 — No misleading "ATO Connected" theatre — v1.0
+- ✓ FND-06 — Always-visible "not tax advice" disclaimer — v1.0
+- ✓ FND-07 — Vitest + golden tests per return type — v1.0
+- ✓ FND-08 — Decimal arithmetic (decimal.js) end-to-end — v1.0
+- ✓ FND-09 — Schema version + migration runner (v0→v5 chain) — v1.0
 
-- ✓ Multi-entity ledger with localStorage persistence — `src/App.tsx`
-- ✓ Multi-line journal entry form with debit/credit balance enforcement and GST auto-calc — `src/components/JournalForm.tsx`
-- ✓ Trial balance report with date filtering — `src/components/TrialBalance.tsx`
-- ✓ Chart of Accounts manager (CRUD, GST code, tax-label mapping for individual/company/trust) — `src/components/AccountManager.tsx`
-- ✓ Entity create/edit form with field validation — `src/components/EntityForm.tsx`
-- ✓ Master dashboard (entity grid, bulk select/archive/deactivate/delete) — `src/App.tsx`
-- ✓ Audit trail viewer (concept; needs real depth) — `src/components/AuditTrail.tsx`
-- ✓ Responsive shell: collapsible sidebar (desktop) + bottom-nav (mobile) — `src/App.tsx`
-- ✓ Visual design system: Tailwind v4, custom CSS variables, Inter + JetBrains Mono, lucide icons, motion animations — `src/index.css`, components
+**Bookkeeping (BOOK)**
+- ✓ BOOK-01..12 — All shipped v1.0 (journal lifecycle, CoA hierarchy, GST codes, period model, audit trail, search) — v1.0
 
-These are kept and built upon. Quality varies — see `.planning/codebase/CONCERNS.md` for the honest read on each.
+**Entities (ENT)**
+- ✓ ENT-01..08 — All four AU entity types + ABN/TFN validation + beneficiary/partner registers — v1.0
+
+**Trial Balance Import (IMP)**
+- ✓ IMP-01..06 — CSV/XLSX import + column-mapping UI + fuzzy match + AI gate + fingerprint dedup — v1.0
+
+**Tax shared + per-form (TAX, IND, COY, TRT, PSP, BAS)**
+- ✓ TAX-01..05 (TAX-04 stale-checkbox-only; work delivered Phase 2) — v1.0
+- ✓ IND-01..04, COY-01..03 (COY-04 obsoleted → IND-04), TRT-01..03, PSP-01..02, BAS-01..06 — v1.0
+
+**UX, Personas, Deployment**
+- ✓ UX-01..05 — Year-end wizard + inline anomalies + tooltips + mobile responsive + persona toggle — v1.0
+- ✓ PERS-01..03 — Owner/agent landing + per-instance setting — v1.0
+- ✓ DEP-01, DEP-02, DEP-03, DEP-04, DEP-05 — Clone-and-run + dual-shape + Apache 2.0 + CONTRIBUTING + CI — v1.0
 
 ### Active
 
-<!-- v1 scope. All hypotheses until shipped. -->
-
-**Foundation**
-- [ ] Open-source self-hostable distribution: anyone can clone, run `npm install && npm run dev`, and have a working instance on their own machine or VPS — no paid services required in the critical path
-- [ ] Replace browser `localStorage` with durable, exportable persistence so users don't lose books on a cache clear (mechanism TBD — local file / SQLite / IndexedDB-with-export)
-- [ ] Move the Gemini API key off the client. Either remove AI features from the critical path or proxy them through an optional self-hostable backend
-- [ ] Strip the off-mission demo content: `"Pearson Specter Litt / US Big Law Firm"` seed, `"ATO Connected (Simulated)"` indicator, hard-coded `+12% / -5% vs last month` trend strings
-
-**Bookkeeping core**
-- [ ] Hybrid workflow: import opening TB (CSV / Excel) → record journals throughout the year → produce closing TB and tax outputs at year-end
-- [ ] Robust trial balance import: deterministic CSV parser with column-mapping UI; AI-assisted account matching becomes optional, not the only path; idempotent re-imports
-- [ ] Expanded chart of accounts (current 16 entries → a credible AU SME default of 80–150 accounts) with sensible GST codes and tax-label pre-mapping
-- [ ] Bank-style account hierarchy (parent/child) so users can group accounts under headings (e.g. "Operating Expenses" → individual lines)
-- [ ] Edit / reverse posted journal entries (currently post-only) with full audit-log trace
-- [ ] Period model: financial year, quarters, custom date ranges — applied consistently to TB, dashboard, BAS, tax return
-
-**Tax outputs (print-ready)**
-- [ ] Individual tax return with business schedule (Form I + Business and Professional Items)
-- [ ] Company tax return (Form C) — covers the common labels for a small Pty Ltd: gross sales, deductions, taxable income, base-rate-entity tax, franking
-- [ ] Trust tax return (Form T) including beneficiary distribution statements
-- [ ] Partnership tax return (Form P) including partner distributions
-- [ ] BAS calculation (G1, G2, G3, G10, G11, 1A, 1B, W1, W2, T7) and IAS for PAYG-only periods
-- [ ] Print/PDF export of any return as a labelled summary the user can transcribe into myGov or hand to a tax agent
-
-**Guidance for non-accountants**
-- [ ] Year-end preparation wizard: a guided sequence (e.g. "review unreconciled items → confirm CoA mappings → preview return → finalise") that walks a non-accountant through the work in order
-- [ ] Smart account-to-tax-label defaults: every account in the default CoA arrives pre-mapped to the right ATO labels for each entity type
-- [ ] Anomaly flagging: out-of-balance entries, missing periods, GST mismatches, unmapped accounts surfaced in-context (not buried in reports)
-- [ ] In-context plain-English help on every label and field — what it means, what to put there, common mistakes
-
-**Two personas, one app**
-- [ ] Consumer/owner mode: single-entity focus, simplified nav, wizard-first workflow
-- [ ] Tax-agent mode: multi-client workspace, fast switching between entities, no hand-holding required
-- [ ] Mode is a setting on the self-hosted instance, not an account-tier paywall
-
-**Quality floor (so it can actually be trusted with tax data)**
-- [ ] Tests for tax math: BAS aggregation, individual/company/trust label rollups, trial balance, GST calculations
-- [ ] Reproducible builds, basic CI (`npm run build`, `npm run lint`, tests) so contributors and self-hosters get a green signal before deploying
-- [ ] Clear, prominent disclaimer that this is software, not tax advice; users / agents are responsible for the final return
+(Empty pending next-milestone questioning.)
 
 ### Out of Scope
 
-<!-- Explicit boundaries. Each has a reason so they don't sneak back in. -->
+<!-- Reviewed 2026-05-29; reasoning still valid. -->
 
-- **Direct ATO lodgement via SBR (Standard Business Reporting)** — Requires ATO software-developer registration, ongoing certification, AUSkey/RAM credential handling, and conformance with the SBR taxonomy. Multi-month compliance project before any user value. Print-ready output gets the same user from A to B without it.
-- **Bank feeds / Open Banking integration** — Paid APIs (Basiq, Yodlee), commercial agreements, security/PCI considerations. Conflicts with the open-source self-hosted ethos and "free in the critical path" constraint.
-- **Bank statement CSV parsing / transaction reconciliation** — Adjacent product surface (the "Xero replacement" path). Could be a later milestone but pulls in scope (categorisation, rules engine, splits, transfers) that isn't on the year-end-tax critical path.
-- **AI chatbot / conversational assistant** — User explicitly chose wizards + smart defaults over a chatbot. Avoids the "talk-to-your-books" demoware trap and the API-key-in-client problem the prototype already had.
-- **Hosted multi-tenant SaaS / managed cloud offering** — Distribution is open-source self-hosted. No central hosting, no billing, no per-user accounts on a shared server. (Anyone can fork and host commercially if they want.)
-- **Client billing, invoicing, accounts receivable / payable, inventory, payroll** — These are general-ledger features that don't sit on the path from TB → tax return. Out for v1.
-- **Foreign-entity support (US LLC, etc.)** — The current demo includes a "US Big Law Firm" seed entity. AU-only in v1. Removed.
-- **Slide generator** — Off-mission decorative feature in the current prototype. Removed unless explicit user demand surfaces.
-- **FBT, LCT, fuel-tax credits, R&D, Division 7A loans, CGT events, rental schedules** — Specialist tax surfaces. Document as gaps; out of v1 unless a specific Active requirement adds them.
+- **Direct ATO lodgement via SBR (Standard Business Reporting)** — Multi-month compliance project; print-ready output gets the same user from A to B without it.
+- **Bank feeds / Open Banking integration** — Paid APIs conflict with the open-source self-hosted ethos.
+- **Bank statement CSV parsing / transaction reconciliation** — Adjacent product surface (the "Xero replacement" path) pulls in too much scope.
+- **AI chatbot / conversational assistant** — User chose wizards + smart defaults. Avoids API-key-in-client problem.
+- **Hosted multi-tenant SaaS / managed cloud offering** — Distribution is open-source self-hosted.
+- **Client billing, invoicing, AR/AP, inventory, payroll** — Off the TB → tax return path.
+- **Foreign-entity support (US LLC etc.)** — AU-only.
+- **Slide generator** — Removed Phase 1.
+- **FBT, LCT, fuel-tax credits, R&D, Division 7A loans, CGT events, rental schedules** — Specialist tax surfaces; out unless explicit demand.
 
 ## Context
 
-**Existing codebase state.** Brownfield. Detailed map at `.planning/codebase/` (STACK.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, INTEGRATIONS.md, CONCERNS.md). Two-line summary:
+**Codebase state (after v1.0):** ~27,041 LOC TypeScript across `src/` + `server/`. 92 test files. Stack: React 19 + TypeScript 5.8 + Vite 6 + Tailwind v4 + motion + lucide + recharts + decimal.js + idb + Express + better-sqlite3 + Zod + papaparse + sheetjs-ce + Radix tooltip. Apache 2.0 licensed. Both deployment shapes (`npm run dev` IDB-only, `npm run dev:full` Express+SQLite) work.
 
-- **Strong:** the visual shell, journal-entry form, multi-entity model, dashboard.
-- **Weak:** depth in every tax surface (5–10 labels each, real returns have 50+); chart of accounts has only 16 entries; persistence is `localStorage` only; no tests; Gemini API key is in the client bundle; tax math is duplicated across 4 components rather than centralised.
+**Audit findings carried forward:** v1.0 audit (`milestones/v1.0-MILESTONE-AUDIT.md`) is `tech_debt` verdict — 5/5 E2E flows wire end-to-end, 69/70 requirements satisfied, FND-02 CSV consciously deferred. No user feedback themes yet (pre-public-release).
 
-**User landscape.** Australian SME owners and tax agents who currently use spreadsheets or whose accounting tool subscription has lapsed. The closest commercial competitors (Xero, MYOB, QuickBooks Online, Reckon) all charge $30–$80/month per company. Free alternatives (GnuCash, Manager.io free tier) exist but are either UK/US-flavoured or weak on AU tax labels.
-
-**Tax-domain landscape.** Australian tax returns are label-driven (each form is a list of labelled fields filled with aggregated GL data). Print-ready output that maps GL accounts to labels is genuinely useful — it's the same artefact a tax agent produces internally before final lodgement. ATO publishes label specs (NAT 0660, 0656, 0659, 0976) annually; currency matters.
-
-**Audit-and-correctness posture.** This is software handling tax data. The bar for math correctness, reproducibility, and audit traceability is materially higher than the current prototype meets. Tests, schema versioning, and an actual immutable audit log are quality-floor requirements, not niceties.
+**Known issues / technical debt:**
+- FND-02 CSV per-report export (roll into next milestone)
+- VALIDATION.md `nyquist_compliant: false` on Phases 1/2/6 frontmatter despite tests GREEN (cosmetic)
+- `App.tsx:114` dead string literal `'US Big Law Firm'`
 
 ## Constraints
 
-- **Tech stack**: React 19 + TypeScript (~5.8) + Vite 6 + Tailwind v4 + motion + lucide + recharts — keep the existing stack to preserve the visual work and the running prototype. New dependencies should be open-source and run locally.
-- **Distribution**: Open-source, self-hosted. Implies no required paid services in the core flow, no managed-cloud assumptions, no telemetry by default. A hosted demo for evaluation is fine; a hosted production tier is out.
-- **Tax domain**: Australian only. Forms, labels, GST rules, PAYG mechanics, financial-year cadence (1 July – 30 June). Currency of label specs needs a reproducible refresh path.
-- **Free**: No paid APIs in the critical path. AI features (if retained) must be optional and must not break a self-hosted instance that has no API key.
-- **Audience parity**: Both consumer-owner and tax-agent personas must be first-class. Pick neither as second-class.
-- **Compliance disclaimer**: Always-visible disclaimer that the product produces working papers / draft returns, not tax advice; the user/agent retains responsibility for the lodged return.
-- **Persistence**: Must survive a browser cache clear. `localStorage`-only is not acceptable for v1.
+- **Tech stack:** React 19 + TypeScript 5.8 + Vite 6 + Tailwind v4 + motion + lucide + recharts. New dependencies must be open-source and run locally.
+- **Distribution:** Open-source, self-hosted. No required paid services in the core flow. No managed-cloud assumptions. No telemetry by default.
+- **Tax domain:** Australian only. Forms, labels, GST rules, PAYG mechanics, FY 1 July – 30 June.
+- **Free:** No paid APIs in the critical path. AI features must be optional and gated.
+- **Audience parity:** Both consumer-owner and tax-agent personas must be first-class.
+- **Compliance disclaimer:** Always-visible "not tax advice" disclaimer. Help text never states deductibility.
+- **Persistence:** Must survive browser cache clear. StorageAdapter interface is FINAL — additive entity-data widening only; non-entity config goes via `localStorage` under `aussieledger:settings` (Phase 6 pattern).
+- **Schema migrations:** Additive only + reversible round-trip + migration test required. Encoded in CONTRIBUTING.md.
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
+| Decision | Rationale | Outcome (post-v1.0) |
 |---|---|---|
-| Print-ready output, not direct ATO/SBR lodgement, in v1 | SBR is a multi-month compliance project before delivering any user value. Print-ready returns get the user from TB → ATO via myGov or via their agent — same outcome. | — Pending |
-| Open-source, self-hosted distribution | Sustainability without ongoing hosting cost; aligns with "free" promise; sidesteps multi-tenant auth complexity in v1. | — Pending |
-| All four entity types (Company, Trust, Sole trader/Individual, Partnership) in v1 | Every common AU SME structure should be served from day one; missing any one excludes a meaningful audience. | — Pending |
-| Both consumer and tax-agent personas as first-class | The user explicitly chose this. It roughly doubles the v1 UX surface; we accept the cost in exchange for serving both audiences honestly. | ⚠️ Revisit — may need to re-scope after early phases prove the doubled cost |
-| Hybrid workflow (opening TB + ongoing journals) | Realistic — most users will arrive with some books somewhere; pure "annual TB-in/return-out" misses the year; pure "ongoing GL" assumes too much upfront commitment. | — Pending |
-| Guided wizards + smart defaults as the guidance model (not chatbot, not just tooltips) | Wizards are deterministic and inspectable; smart defaults reduce the work; an AI chatbot pulls in API-key, hallucination, and offline-self-host problems. | — Pending |
-| Strip Gemini API key from client; AI features become optional | Critical security issue today; conflicts with self-hosted-without-paid-services constraint. | — Pending |
-| Remove "Pearson Specter Litt / US Big Law Firm" seed and "ATO Connected (Simulated)" theatre | Off-mission and actively misleading for AU users. | — Pending |
-| Keep React 19 + Vite + Tailwind v4 stack | The visual shell is already strong; rewriting wastes the existing leverage. | ✓ Good |
+| Print-ready output, not direct ATO/SBR lodgement, in v1 | SBR is multi-month compliance; print-ready gets the same user outcome. | ✓ Good — v1.0 ships; user can transcribe to myGov or hand to agent |
+| Open-source, self-hosted distribution | Sustainability without ongoing hosting cost; sidesteps multi-tenant auth in v1. | ✓ Good — Apache 2.0 LICENSE + dual-shape docs verified |
+| All four entity types in v1 | Every common AU SME structure served day one. | ✓ Good — 4/4 forms shipped with golden tests; BAS+IAS too |
+| Both consumer + tax-agent personas as first-class | User explicitly chose this; doubles UX surface, accepted cost. | ✓ Good — Phase 6 delivered both modes with PERS-03 invariant verified |
+| Hybrid workflow (opening TB + ongoing journals) | Realistic; pure annual or pure GL miss audiences. | ✓ Good — Phase 4 ImportTB + Phase 4 journal lifecycle ship together |
+| Guided wizards + smart defaults as the guidance model | Wizards deterministic + inspectable; chatbot pulls in API-key and hallucination problems. | ✓ Good — YearEndWizard 7-step + smart CoA defaults shipped |
+| Strip Gemini API key from client; AI optional | Critical security issue + conflicts with self-hosted-without-paid-services. | ✓ Good — Phase 2 removed; Phase 6 added visible AiGateNote affordance |
+| Remove "Pearson Specter Litt / US Big Law Firm" + "ATO Connected (Simulated)" theatre | Off-mission, actively misleading. | ✓ Good (Phase 1) — except `App.tsx:114` dead string still present; cleanup candidate |
+| Keep React 19 + Vite + Tailwind v4 stack | Visual shell strong; rewriting wastes leverage. | ✓ Good — stack preserved end-to-end |
+| StorageAdapter as FINAL interface (Phase 3 invariant) | Hides backend; lets persistence shape change without touching components. | ✓ Good — Phase 6 added Settings via localStorage WITHOUT touching adapter; pays off for v2 standalone app idea |
+| `decimal.js` over native floats | GST rounding correctness; tax-data trust floor. | ✓ Good — BAS to-the-cent on mixed fixture; no float artefacts surfaced |
+| Schema migration as additive + reversible round-trip rule | Deployed instances may be offline for months; non-additive corrupts user books. | ✓ Good — encoded in CONTRIBUTING.md; v0→v5 chain GREEN |
+| Tax-rate / label catalogues per-FY (`fy2026.ts` module pattern) | Annual ATO refresh; per-FY isolation. | ✓ Good — Phase 5 pattern documented in CONTRIBUTING.md "Adding a new FY" |
+| No new PDF library — `window.print()` + `@media print` CSS | Avoids React 19 compat risk; simpler distribution. | ✓ Good — UAT confirmed print works across all 5 forms |
+| Radix tooltip (no `asChild` on `Tooltip.Content`) for ATO label help | React 19 compat; documented pitfall avoided. | ✓ Good — UX-03 shipped without runtime errors |
+| Anomaly visual language single-source (`AnomalyBadge` yellow pill) | Same severity language across tax-output AND non-tax screens. | ✓ Good — JournalForm hot-fixed during Phase 6 to use AnomalyBadge instead of plain red div |
 
-## Open Questions (To Resolve in Later Phases)
+## Open Questions (To Resolve in Next Milestone)
 
-- **Auth on a self-hosted instance** — none, simple password, or full multi-user with roles? Likely "none for single-user instance, optional simple-password gate for shared instance" but worth a phase-level decision before building.
-- **BAS/IAS treatment** — when the user said "lodge a tax return," does that include BAS lodgement workpapers? Current app has BAS calc; v1 should probably keep it print-ready as well.
-- **Multi-client workspace shape for tax agents** — single instance with a client list, or one instance per client with a switcher? Affects data model and persistence design.
-- **Tax-year currency mechanism** — how do label specs and rates get refreshed each financial year? Manual edit of constants is OK for v1; a documented refresh process needs to exist.
-- **Persistence mechanism** — local file via File System Access API, SQLite via WASM, IndexedDB with mandatory export, or a self-hosted SQLite-backed Node server? Trade-off between "single-page-app simplicity" and "real durability".
-- **PDF export library** — Vite-compatible, open-source, AU date/currency-friendly. Candidates worth evaluating: jsPDF, pdf-lib, react-pdf.
-- **Test framework** — likely Vitest + React Testing Library given the stack; lock this in early so tests can land alongside features.
+- **Direction of next milestone:** v1.1 polish-and-CSV, or v2.0 standalone desktop app?
+- **PDF export library** — re-visit only if v2 standalone app needs richer offline output than `window.print()`. Tauri's native print + offline-PDF capability may make this moot.
+- **Auth on a self-hosted instance** — none, simple password, or multi-user with roles? Open since v1 (single-user assumed). Becomes relevant when small-firm VPS shape gets real users.
+- **Tax-year currency mechanism** — manual edit of constants is fine for one FY; v1.1 should document the refresh process more concretely.
+- **CSV per-report shape** — when FND-02 closes: column conventions for TB CSV vs Form-I CSV vs BAS labels CSV.
+- **Anomaly fix-it deep-links** — clicking a Sidebar count badge should auto-scroll to the offending row. Not shipped v1.0; nice-to-have for v1.1.
+- **Family Medicare levy threshold engine** — Phase 5 left this on a flat-2%-with-warning; v1.1 or v2 wizard.
+- **Standalone packaging stack** — Tauri vs Electron vs one-click installer that bundles existing stack. See `.planning/todos/pending/2026-05-28-package-as-standalone-desktop-app-with-local-backend.md`.
+
+<details>
+<summary>v1.0 active requirements (archived 2026-05-29)</summary>
+
+The full v1 requirement list (Active + Validated as of v1.0 ship) is archived at [`.planning/milestones/v1.0-REQUIREMENTS.md`](./milestones/v1.0-REQUIREMENTS.md).
+
+</details>
 
 ---
-*Last updated: 2026-05-09 after initialization*
+*Last updated: 2026-05-29 after v1.0 milestone*
