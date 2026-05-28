@@ -12,7 +12,7 @@
 - [x] **Phase 2: Decompose and Tax Engine** — Break up the monolithic App.tsx, extract pure tax functions into a shared lib, remove AI key from client bundle, introduce period model (completed 2026-05-10)
 - [x] **Phase 3: Durable Persistence** — Replace localStorage with a StorageAdapter backed by IndexedDB (no-server) and SQLite (server); add export/import (completed 2026-05-12; FND-02 CSV per-report exports deferred to Phases 4 + 5 per 03-UAT.md)
 - [x] **Phase 4: Bookkeeping Core** — Full 80–150 account CoA with GST codes and tax-label pre-mapping, complete journal CRUD, TB import, entity management with AU-specific fields (completed 2026-05-13; 23/23 requirements delivered + 28-step UAT all pass + goal-backward PASS per 04-UAT.md)
-- [ ] **Phase 5: Tax Outputs** — All four AU return types (Individual, Company, Trust, Partnership), BAS/IAS, and print-ready working-paper output
+- [x] **Phase 5: Tax Outputs** — All four AU return types (Individual, Company, Trust, Partnership), BAS/IAS, and print-ready working-paper output (completed 2026-05-28; 20/20 requirements; 526 SPA + 18 server GREEN; UAT all 12 steps PASS)
 - [ ] **Phase 6: Personas, Wizard, and Deployment** — Dual consumer/agent modes, year-end preparation wizard, anomaly flags, in-context help, and open-source deployment polish
 
 ---
@@ -131,7 +131,7 @@
 - [x] 05-1-PLAN.md — Wave 0: v3→v4 additive migration (Entity.aggregatedTurnover + paygInstalmentAmount); FY2026 rate helpers (marginal post-Stage-3 / LITO / Medicare / BRE / smallBizOffset for IND-04); 3 in-repo corrections (NAT comments + BRE legislative cite + REQUIREMENTS verification); shared print primitives (PrintBanner / AnomalyBadge / AssumptionsBlock / print.css); 26 test scaffolds (5 tasks) [COMPLETE 2026-05-28; 455 SPA GREEN, +84 new GREEN, 80 todos, 0 RED; lint + build EXIT 0]
 - [x] 05-2-PLAN.md — Wave 2 (parallel with 05-3): computeIndividualReturn (Form I + B&P + LITO + Medicare + IND-04) + computeCompanyReturn (Form C + BRE 25%/30% + franking) + TaxReturnAssistant refactor + CompanyTaxReturn refactor + EntityForm widening (3 tasks) [COMPLETE 2026-05-28; +29 GREEN (7 individual + 7 company + 6 TaxReturnAssistant + 7 CompanyTaxReturn + 2 EntityForm); success criteria #2 + #4 locked; lint + build EXIT 0]
 - [x] 05-3-PLAN.md — Wave 2 (parallel with 05-2): computeTrustReturn (Form T + per-beneficiary distribution + mandatory streaming disclaimer) + computePartnershipReturn (Form P + per-partner distribution) + TrustTaxReturn refactor + PartnershipTaxReturn new (3 tasks) [COMPLETE 2026-05-28; +27 GREEN (10 trust + 7 partnership + 6 TrustTaxReturn + 4 PartnershipTaxReturn); success criterion #3 locked; lint + build EXIT 0]
-- [ ] 05-4-PLAN.md — Wave 3: computeBas (Simpler BAS with G1/1A/1B/W1/W2/T7 lodgement + G2/G3/G10/G11 internal-only) + computeIas + BasIasAssistant refactor + ViewRouter wiring + Print-button audit; manual UAT checkpoint covering all 5 success criteria + 19 working reqs (2 auto tasks + 1 human-verify)
+- [x] 05-4-PLAN.md — Wave 3: computeBas (Simpler BAS with G1/1A/1B/W1/W2/T7 lodgement + G2/G3/G10/G11 internal-only) + computeIas + BasIasAssistant refactor + ViewRouter wiring + Print-button audit; manual UAT checkpoint covering all 5 success criteria + 19 working reqs (2 auto tasks + 1 human-verify) [COMPLETE 2026-05-28; +17 GREEN (526 total); UAT APPROVED; Phase 5 CLOSED]
 
 ---
 
@@ -160,9 +160,9 @@
 |-------|----------------|--------|-----------|
 | 1. Safety Net | 3/3 | Complete    | 2026-05-10 |
 | 2. Decompose and Tax Engine | 4/4 | Complete   | 2026-05-10 |
-| 3. Durable Persistence | 3/4 (Plan 03-4 awaiting human-verify) | In progress | - |
-| 4. Bookkeeping Core | 1/4 | In progress (Wave 0 landed 2026-05-12; Wave 2 next) | - |
-| 5. Tax Outputs | 3/4 (05-1 + 05-2 + 05-3 complete; 05-4 Tasks 1+2 done — UAT checkpoint) | In progress | - |
+| 3. Durable Persistence | 4/4 | Complete | 2026-05-12 |
+| 4. Bookkeeping Core | 4/4 | Complete | 2026-05-13 |
+| 5. Tax Outputs | 4/4 | Complete | 2026-05-28 |
 | 6. Personas, Wizard, and Deployment | 0/? | Not started | - |
 
 ---

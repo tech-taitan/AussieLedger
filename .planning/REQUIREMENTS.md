@@ -56,17 +56,17 @@ Quality-floor and credibility prerequisites — must clear these before any user
 
 ### BAS / IAS (BAS)
 
-- [ ] **BAS-01**: User can produce a BAS for a selected period (monthly or quarterly) with all GST labels: G1 (total sales), G2 (export sales), G3 (other GST-free sales), G10 (capital purchases), G11 (non-capital purchases), 1A (GST on sales), 1B (GST on purchases)
-- [ ] **BAS-02**: BAS GST calculation follows the ATO worksheet method using GST codes on accounts and decimal arithmetic (not float)
-- [ ] **BAS-03**: User can produce the PAYG withholding section: W1 (total wages and salaries), W2 (amounts withheld from W1)
-- [ ] **BAS-04**: User can produce the PAYG instalment section (T7) using either the income × rate method or a pre-calculated ATO instalment amount
-- [ ] **BAS-05**: User can produce an IAS (instalment activity statement) for entities not registered for GST, covering PAYG only
-- [ ] **BAS-06**: User can export a print-ready BAS / IAS summary with ATO field codes for transcription into myGov
+- [x] **BAS-01**: User can produce a BAS for a selected period (monthly or quarterly) with all GST labels: G1 (total sales), G2 (export sales), G3 (other GST-free sales), G10 (capital purchases), G11 (non-capital purchases), 1A (GST on sales), 1B (GST on purchases)
+- [x] **BAS-02**: BAS GST calculation follows the ATO worksheet method using GST codes on accounts and decimal arithmetic (not float)
+- [x] **BAS-03**: User can produce the PAYG withholding section: W1 (total wages and salaries), W2 (amounts withheld from W1)
+- [x] **BAS-04**: User can produce the PAYG instalment section (T7) using either the income × rate method or a pre-calculated ATO instalment amount
+- [x] **BAS-05**: User can produce an IAS (instalment activity statement) for entities not registered for GST, covering PAYG only
+- [x] **BAS-06**: User can export a print-ready BAS / IAS summary with ATO field codes for transcription into myGov
 
 ### Income tax returns — shared (TAX)
 
 - [x] **TAX-01**: Tax-rate and threshold constants are centralised in a single FY-versioned module (no magic numbers in components)
-- [~] **TAX-02**: User can produce a print-ready tax return PDF (or print-CSS browser print) for any entity type — Form I + Form C CSS scoping complete (05-2); Trust + Partnership (05-3); full UAT in 05-4
+- [x] **TAX-02**: User can produce a print-ready tax return PDF (or print-CSS browser print) for any entity type — all 5 form types (Form I/C/T/P/BAS+IAS) verified via UAT 2026-05-28; ATO codes + disclaimer + no UI chrome confirmed on all forms
 - [x] **TAX-03**: Each account in the default CoA is pre-mapped to the correct ATO labels for every relevant entity type (individual, company, trust, partnership) on first install
 - [ ] **TAX-04**: User can override the auto-mapping for any account in the CoA editor
 - [x] **TAX-05**: All tax-output components consume a single shared "tax engine" library of pure functions (no duplicated rollup logic across components)
@@ -209,14 +209,14 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | IMP-04 | Phase 4 | Pending |
 | IMP-05 | Phase 4 | Pending |
 | IMP-06 | Phase 4 | Pending |
-| BAS-01 | Phase 5 | Pending |
-| BAS-02 | Phase 5 | Pending |
-| BAS-03 | Phase 5 | Pending |
-| BAS-04 | Phase 5 | Pending |
-| BAS-05 | Phase 5 | Pending |
-| BAS-06 | Phase 5 | Pending |
+| BAS-01 | Phase 5 | Delivered (05-4 2026-05-28; computeBas G1/G2/G3/G10/G11/1A/1B + BasIasAssistant Simpler BAS renderer) |
+| BAS-02 | Phase 5 | Delivered (05-4 2026-05-28; ATO worksheet method — per-line gst() 1A/1B, ROUND_HALF_UP G1, ROUND_DOWN W2) |
+| BAS-03 | Phase 5 | Delivered (05-4 2026-05-28; W1 wages, W2 PAYG withholding from GL) |
+| BAS-04 | Phase 5 | Delivered (05-4 2026-05-28; T7 = entity.paygInstalmentAmount Method 1; PAYG instalment displayed) |
+| BAS-05 | Phase 5 | Delivered (05-4 2026-05-28; computeIas PAYG-only delegation; BasIasAssistant IAS shape dispatch on gstRegistered=false) |
+| BAS-06 | Phase 5 | Delivered (05-4 2026-05-28; Print button + @media print CSS + ATO codes + FOOTER_DISCLAIMER; UAT STEP 6+7 PASS) |
 | TAX-01 | Phase 2 | Complete |
-| TAX-02 | Phase 5 | Partial (CSS scoping done 05-2/05-3; UAT in 05-4) |
+| TAX-02 | Phase 5 | Delivered (05-4 2026-05-28; all 5 form types verified via UAT — Form I/C/T/P/BAS+IAS; ATO codes + disclaimer + no UI chrome) |
 | TAX-03 | Phase 2 | Complete |
 | TAX-04 | Phase 2 | Pending |
 | TAX-05 | Phase 2 | Complete |

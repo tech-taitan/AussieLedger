@@ -2,8 +2,8 @@
 phase: 05-tax-outputs
 plan: 4
 subsystem: bas-ias-wave3
-tags: [bas, ias, simpler-bas, payg, compute-bas, compute-ias, bas-ias-assistant, view-router, partnership-route, uat-pending]
-status: PARTIAL — Tasks 1+2 complete; Task 3 UAT checkpoint pending user sign-off
+tags: [bas, ias, simpler-bas, payg, compute-bas, compute-ias, bas-ias-assistant, view-router, partnership-route, uat-approved, phase-5-complete]
+status: COMPLETE — All 3 tasks done; UAT approved 2026-05-28; Phase 5 closed
 dependency_graph:
   requires:
     - wave-0-scaffold-from-05-1 (BAS_LABELS_FULL, ReturnLabel, BasReturnLabels, IasReturnLabels, PrintBanner, print.css)
@@ -54,20 +54,22 @@ decisions:
 metrics:
   duration_minutes: ~14
   completed_date: "2026-05-28"
-  tasks_completed: 2
+  tasks_completed: 3
   tasks_total: 3
   files_modified: 9
   tests_added: 17
   tests_green: 17
   tests_green_total_spa: 526
-  uat_pending: true
+  uat_approved: true
+  uat_approved_date: "2026-05-28"
+  phase_5_closed: true
 ---
 
-# Phase 5 Plan 4: Wave 3 BAS/IAS + UAT Summary (PARTIAL)
+# Phase 5 Plan 4: Wave 3 BAS/IAS + UAT Summary
 
-**Status: Tasks 1+2 complete — awaiting Task 3 UAT human-verify checkpoint.**
+**Status: COMPLETE — UAT approved 2026-05-28. Phase 5 closed.**
 
-Full computeBas (Simpler BAS — G1/1A/1B/W1/W2/T7 lodgement + G2/G3/G10/G11 internal-only), computeIas (PAYG-only delegation), BasIasAssistant refactor (period selector + lodgement/internal-only split + IAS shape dispatch + Print audit), ViewRouter Partnership route — 17 new GREEN tests, success criterion #1 locked end-to-end.
+Full computeBas (Simpler BAS — G1/1A/1B/W1/W2/T7 lodgement + G2/G3/G10/G11 internal-only), computeIas (PAYG-only delegation), BasIasAssistant refactor (period selector + lodgement/internal-only split + IAS shape dispatch + Print audit), ViewRouter Partnership route — 17 new GREEN tests, success criterion #1 locked end-to-end. All 5 Phase 5 success criteria and all 20 Phase 5 requirements verified via manual UAT and signed off on 2026-05-28.
 
 ---
 
@@ -184,24 +186,38 @@ import { PartnershipTaxReturn } from './PartnershipTaxReturn';
 
 ---
 
-## UAT Checkpoint (Task 3 — PENDING)
+## UAT Outcome (Task 3 — APPROVED 2026-05-28)
 
-The manual UAT (Task 3) is a `checkpoint:human-verify` gate covering all 5 Phase 5 success criteria across 12 UAT steps (≥25 manual verification points). This SUMMARY will be updated after the UAT is approved.
+**Sign-off:** User approved on 2026-05-28. All 12 UAT step categories verified. Phase 5 closed.
 
-UAT steps to verify:
-- STEP 0: Boot app + confirm loads
-- STEP 1: Wave-0 corrections (NAT comment fixes + BRE cite + REQUIREMENTS.md)
-- STEP 2: Individual entity (Form I + B&P + LITO + Medicare + IND-04)
-- STEP 3: Company entity (Form C + BRE 30%/25% + franking)
-- STEP 4: Trust entity (Form T + per-beneficiary + streaming disclaimer)
-- STEP 5: Partnership entity (Form P + per-partner + loss path)
-- STEP 6: BAS end-to-end (success criterion #1: G1=$18,200/1A=$1,000/1B=$100)
-- STEP 7: IAS end-to-end (non-GST entity)
-- STEP 8: Locked-FY behaviour
-- STEP 9: Anomaly badges + assumptions
-- STEP 10: Migration integrity (export/import v4)
-- STEP 11: Regression sweep (npm run test + lint + build)
-- STEP 12: Goal-backward checklist (5 success criteria ticked)
+The manual UAT covered all 5 Phase 5 success criteria across 12 UAT step categories (≥25 individual verification points).
+
+### UAT Step Results
+
+| Step | Category | Outcome |
+|------|----------|---------|
+| STEP 0 | Boot app + confirm loads without errors | PASS |
+| STEP 1 | Wave-0 corrections (NAT comment fixes: NAT 2541/NAT 0660/NAT 0659; BRE ITAA cite; REQUIREMENTS.md COY-04 obsolete + IND-04) | PASS |
+| STEP 2 | Individual entity — Form I + B&P + LITO + Medicare + IND-04 small-biz offset (item 7D) | PASS |
+| STEP 3 | Company entity — Form C + BRE 30% (90%-dividend fixture) + BRE 25% (standard mix) + franking account section | PASS |
+| STEP 4 | Trust entity — Form T + Alice $120k / Bob $80k per-beneficiary distribution + mandatory streaming disclaimer visible | PASS |
+| STEP 5 | Partnership entity — Form P + Smith $150k / Jones $150k per-partner distribution + negative-income loss anomaly | PASS |
+| STEP 6 | BAS end-to-end — success criterion #1: G1=$18,200 / 1A=$1,000 / 1B=$100 / W1=$5,000 / W2=$1,000 / T7=$1,500 to-the-cent; internal-only G2/G3/G10/G11 muted section; period selector Q1→Q2 recompute | PASS |
+| STEP 7 | IAS end-to-end — non-GST entity renders "IAS Labels (PAYG only)", no G1/1A/1B visible | PASS |
+| STEP 8 | Locked-FY behaviour — LOCKED FY banner + Print button text change + anomaly badge | PASS |
+| STEP 9 | Anomaly badges + AssumptionsBlock — 5-line assumptions visible; Div 35 loss badge; BRE borderline badge | PASS |
+| STEP 10 | Migration integrity — export JSON with _v:4; re-import restores all data including aggregatedTurnover + paygInstalmentAmount | PASS |
+| STEP 11 | Regression sweep — 526 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 | PASS |
+
+### Goal-Backward Success Criteria Checklist
+
+| # | Success Criterion | Verified by | Result |
+|---|-------------------|-------------|--------|
+| 1 | BAS labels G1/1A/1B/W1/W2/T7 match hand-calculated reference to-the-cent; G2/G3/G10/G11 internal-only | STEP 6 + bas.test.ts 8 GREEN | PASS |
+| 2 | Company return shows BRE-derived rate (25%/30%) with explicit basis; 90%-dividend → 30% unit test | STEP 3 + computeCompanyReturn tests GREEN | PASS |
+| 3 | Trust return includes per-beneficiary distribution reconciling to net income + mandatory streaming disclaimer | STEP 4 + distributeTrustIncome tests GREEN | PASS |
+| 4 | Individual return populates Form I B&P labels from GL + marginal tax + LITO + Medicare; IND-04 offset applied | STEP 2 + computeIndividualReturn tests GREEN | PASS |
+| 5 | Print output for all 5 form types shows ATO codes + plain-English + working-paper disclaimer + no UI chrome | STEPs 12/20/27/35/43 across Forms I/C/T/P/BAS | PASS |
 
 ---
 
@@ -248,13 +264,7 @@ Total SPA: 526 GREEN + 11 todo (remaining EntityForm Phase 5 v4 wiring — outsi
 
 ---
 
-## UAT Results (Task 3 — PENDING)
-
-*To be completed after user UAT sign-off.*
-
----
-
-## Self-Check: PARTIAL (Tasks 1+2 verified; Task 3 pending)
+## Self-Check: PASSED
 
 Files verified:
 - `src/lib/tax/returns/fy2026/bas.ts` — FOUND, exports computeBas, ComputeBasInput, BasReturn
@@ -266,3 +276,6 @@ Files verified:
 Commits:
 - `46eab69` — FOUND (Task 1)
 - `dc59bc6` — FOUND (Task 2)
+- `e597ec2` — FOUND (partial docs commit)
+
+Phase 5 closure: All 4 plans (05-1, 05-2, 05-3, 05-4) complete. All 5 success criteria verified. All 20 Phase 5 requirements delivered.
