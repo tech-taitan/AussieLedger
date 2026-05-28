@@ -52,6 +52,11 @@ export interface Entity {
   aggregatedTurnover?: string;
   /** PAYG instalment Method-1 amount from ATO portal. Optional decimal string. */
   paygInstalmentAmount?: string;
+  // _v:5 additions (Phase 6)
+  /** Per-FY return lifecycle. 'draft' = working paper; 'finalised' = locked. */
+  returnStatusByFy?: Record<string, 'draft' | 'finalised'>;
+  /** Per-FY wizard resume state. */
+  wizardState?: Record<string, WizardStateFy>;
 }
 
 export interface BeneficiaryRow {
@@ -166,4 +171,12 @@ export interface AuditLog {
   action: AuditAction;
   entityId?: string;
   details: string;
+}
+
+/** _v:5 — Per-FY wizard resume state. Step 1–7. */
+export interface WizardStateFy {
+  _v?: number;
+  step: number;
+  dismissedAnomalies: string[];
+  completedAt?: string; // ISO timestamp when finalised
 }

@@ -43,7 +43,7 @@ describe('Migration round-trip (success criterion #5)', () => {
     expect(exported.auditLogs).toEqual(migrated.auditLogs ?? []);
   });
 
-  it('v0 to v4 round-trip', () => {
+  it('v0 to v5 round-trip (Test 2.1 — Phase 6 extension)', () => {
     // Hand-built _v:0 blob (no _v field at all — pre-versioning prototype shape)
     const v0blob = {
       entities: [{ id: 'e1', name: 'Old Co', type: 'Company', status: 'Active' }],
@@ -60,7 +60,7 @@ describe('Migration round-trip (success criterion #5)', () => {
       auditLogs: [],
     };
     const out = migrate(v0blob);
-    expect(out._v).toBe(4);
+    expect(out._v).toBe(CURRENT_VERSION); // now 5
     // All original fields preserved
     expect((out.entities as Array<{ name: string }>)[0].name).toBe('Old Co');
     expect((out.accounts as unknown[]).length).toBe(2);
@@ -74,5 +74,13 @@ describe('Migration round-trip (success criterion #5)', () => {
     // v3→v4 new fields are undefined (not present)
     expect((out.entities as Array<{ aggregatedTurnover?: string }>)[0].aggregatedTurnover).toBeUndefined();
     expect((out.entities as Array<{ paygInstalmentAmount?: string }>)[0].paygInstalmentAmount).toBeUndefined();
+    // v4→v5 new fields are undefined (not present)
+    expect((out.entities as Array<{ returnStatusByFy?: unknown }>)[0].returnStatusByFy).toBeUndefined();
+    expect((out.entities as Array<{ wizardState?: unknown }>)[0].wizardState).toBeUndefined();
+  });
+
+  it('Test 2.2: migrate rejects data newer than CURRENT_VERSION (refuse downgrade)', () => {
+    const newerBlob = { _v: CURRENT_VERSION + 1 };
+    expect(() => migrate(newerBlob)).toThrow('newer than');
   });
 });

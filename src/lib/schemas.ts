@@ -55,6 +55,14 @@ export const EntitySchema = z.object({
   // v4 additions
   aggregatedTurnover: z.string().optional(),
   paygInstalmentAmount: z.string().optional(),
+  // v5 additions (Phase 6)
+  returnStatusByFy: z.record(z.string(), z.enum(['draft', 'finalised'])).optional(),
+  wizardState: z.record(z.string(), z.object({
+    _v: z.number().optional(),
+    step: z.number(),
+    dismissedAnomalies: z.array(z.string()),
+    completedAt: z.string().optional(),
+  })).optional(),
 });
 
 export const AccountSchema = z.object({

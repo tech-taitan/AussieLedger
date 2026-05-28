@@ -33,7 +33,7 @@ describe('migrate()', () => {
     expect(() => migrate({ _v: 999 })).toThrow();
   });
 
-  it('CURRENT_VERSION is 4 after Phase 5 Wave 0', () => {
-    expect(CURRENT_VERSION).toBe(4);
+  it('CURRENT_VERSION is 5 after Phase 6 migration (v4→v5)', () => {
+    expect(CURRENT_VERSION).toBe(5);
   });
 });
