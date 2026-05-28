@@ -69,3 +69,14 @@
     display: none;
   }
 }
+
+/* Phase 6: ATO label tooltip help — shown inline under each label on print */
+@media print {
+  .label-help-text {
+    display: block;
+    font-size: 8pt;
+    color: #666;
+    font-style: italic;
+    margin-top: 2pt;
+  }
+}
