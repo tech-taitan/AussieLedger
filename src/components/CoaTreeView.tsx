@@ -11,6 +11,7 @@
 import React, { useMemo } from 'react';
 import type { Account } from '../types';
 import { cn } from '../lib/utils';
+import { AnomalyBadge } from './AnomalyBadge';
 
 interface CoaTreeViewProps {
   accounts: Account[];
@@ -96,6 +97,15 @@ export const CoaTreeView: React.FC<CoaTreeViewProps> = ({
             <span className="font-mono text-xs w-12">{a.code}</span>
             <span className={cn(hasChildren && 'font-semibold')}>{a.name}</span>
             <span className="text-xs opacity-60">({a.type})</span>
+            {(!a.gstCode || !a.taxLabel) && (
+              <span className="ml-1">
+                <AnomalyBadge
+                  severity="warn"
+                  message={!a.gstCode ? 'Missing GST code' : 'Missing tax label'}
+                  label={a.code}
+                />
+              </span>
+            )}
             {a.isDefault && (
               <span
                 className="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded uppercase tracking-wider"

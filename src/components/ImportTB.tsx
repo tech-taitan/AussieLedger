@@ -27,6 +27,7 @@ import {
 } from '../lib/import/fingerprint';
 import { XlsxSheetPicker } from './XlsxSheetPicker';
 import { ImportReviewPane, type ReviewRow } from './ImportReviewPane';
+import { AiGateNote } from './AiGateNote';
 import { today } from '../lib/period';
 
 interface ImportTBProps {
@@ -509,7 +510,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({
                 {importedRows.length} rows parsed; review matches below.
               </span>
             </div>
-            {isAiEnabled() && (
+            {isAiEnabled() ? (
               <button
                 type="button"
                 onClick={runAIMapping}
@@ -524,6 +525,8 @@ export const ImportTB: React.FC<ImportTBProps> = ({
                 )}
                 Enhance with AI
               </button>
+            ) : (
+              <AiGateNote />
             )}
           </div>
           <ImportReviewPane

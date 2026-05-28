@@ -475,5 +475,69 @@ describe('ImportTB', () => {
       expect(screen.queryByText(/Upload Trial Balance/i)).not.toBeNull();
       expect(mockFn).not.toHaveBeenCalled();
     });
+
+    // ── Plan 06-3: IT.1–IT.2 (DEP-01 AiGateNote wiring) ──────────────────
+
+    it('IT.1: isAiEnabled()=false → AiGateNote visible; no "AI re-match" button', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      vi.doMock('../../lib/import/match', () => ({
+        fuzzyMatch: vi.fn().mockReturnValue({ confidence: 0, candidates: [] }),
+        HIGH_CONFIDENCE_THRESHOLD: 0.85,
+        TOP_N_CANDIDATES: 3,
+      }));
+      const { ImportTB } = await import('../ImportTB');
+
+      // Need to upload to reach the reviewing state where AiGateNote renders
+      render(<ImportTB accounts={FIXTURE_ACCOUNTS} onImport={vi.fn()} />);
+
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [makeCsvFile()] } });
+      });
+      // Column mapping step
+      await waitFor(() => screen.getByTestId('confirm-mapping'));
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-mapping'));
+      });
+      // Now in reviewing state — AiGateNote should be visible
+      await waitFor(() => {
+        const gateNote = screen.queryByTestId('ai-gate-note');
+        expect(gateNote).toBeTruthy();
+      });
+      // "AI re-match" button should NOT be present
+      expect(screen.queryByTestId('ai-rematch')).toBeNull();
+    });
+
+    it('IT.2: isAiEnabled()=true → AI re-match button visible; no AiGateNote', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => true,
+        IS_AI_ENABLED: true,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      vi.doMock('../../lib/import/match', () => ({
+        fuzzyMatch: vi.fn().mockReturnValue({ confidence: 0, candidates: [] }),
+        HIGH_CONFIDENCE_THRESHOLD: 0.85,
+        TOP_N_CANDIDATES: 3,
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      render(<ImportTB accounts={FIXTURE_ACCOUNTS} onImport={vi.fn()} />);
+
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [makeCsvFile()] } });
+      });
+      await waitFor(() => screen.getByTestId('confirm-mapping'));
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-mapping'));
+      });
+      await waitFor(() => {
+        expect(screen.queryByTestId('ai-rematch')).toBeTruthy();
+      });
+      expect(screen.queryByTestId('ai-gate-note')).toBeNull();
+    });
   });
 });

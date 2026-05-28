@@ -221,3 +221,75 @@ describe('TrialBalance Phase 4 refactor (BOOK-07, BOOK-09)', () => {
     expect(screen.getByTestId('tb-balance-flag').textContent).toMatch(/Balanced/);
   });
 });
+
+// ── Plan 06-3: TB.1–TB.3 (UX-02 + UX-04) ────────────────────────────────
+
+/** Account with no taxLabel — appears as unmapped. */
+function makeUnmappedAccount(id: string, code: string): Account {
+  return {
+    _v: 3,
+    id,
+    code,
+    name: `Unmapped ${code}`,
+    type: 'Expense',
+    gstCode: 'N-T',
+    // taxLabel intentionally absent
+  };
+}
+
+describe('TrialBalance — Plan 06-3 AnomalyBadge + overflow-x-auto (UX-02 + UX-04)', () => {
+  it('TB.1: account with no taxLabel referenced in posted entry shows anomaly-badge', () => {
+    const unmapped = makeUnmappedAccount('um-1', '6099');
+    const cash = makeAccount('a-cash', '1000', 'Cash', 'Asset');
+    const entry = makeEntry('e1', '2026-01-15', [
+      makeLine('um-1', 100, 0),
+      makeLine('a-cash', 0, 100),
+    ]);
+    render(
+      <TrialBalance
+        accounts={[unmapped, cash]}
+        entries={[entry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    const badges = document.querySelectorAll('[data-testid="anomaly-badge"]');
+    expect(badges.length).toBeGreaterThan(0);
+  });
+
+  it('TB.2: all accounts mapped — no anomaly badges', () => {
+    const mapped: Account = {
+      _v: 3, id: 'mapped-1', code: '6010', name: 'Rent', type: 'Expense',
+      gstCode: 'N-T', taxLabel: 'E',
+    };
+    // Cash account with taxLabel set — no anomaly expected
+    const cash: Account = {
+      _v: 3, id: 'a-cash', code: '1000', name: 'Cash', type: 'Asset',
+      gstCode: 'N-T', taxLabel: '1A',
+    };
+    const entry = makeEntry('e1', '2026-01-15', [
+      makeLine('mapped-1', 100, 0),
+      makeLine('a-cash', 0, 100),
+    ]);
+    render(
+      <TrialBalance
+        accounts={[mapped, cash]}
+        entries={[entry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    const badges = document.querySelectorAll('[data-testid="anomaly-badge"]');
+    expect(badges.length).toBe(0);
+  });
+
+  it('TB.3: TrialBalance table container has overflow-x-auto class', () => {
+    render(
+      <TrialBalance
+        accounts={[makeAccount('a1', '1000', 'Cash', 'Asset')]}
+        entries={[]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    const wrapper = document.querySelector('.overflow-x-auto');
+    expect(wrapper).toBeTruthy();
+  });
+});

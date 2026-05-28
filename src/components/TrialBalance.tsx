@@ -15,6 +15,7 @@
 import React, { useMemo, useState } from 'react';
 import type { Account, JournalEntry, TrialBalanceRow } from '../types';
 import { isInPeriod, currentFy, type Period } from '../lib/period';
+import { AnomalyBadge } from './AnomalyBadge';
 
 interface TrialBalanceProps {
   accounts: Account[];
@@ -113,6 +114,18 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
     // Keep rows with activity OR parent headers (parents still render at zero)
     return enriched.filter((r) => r.debit !== 0 || r.credit !== 0 || r.isParent);
   }, [accounts, entries, period]);
+
+  // Compute IDs of accounts referenced in posted entries (for anomaly badge)
+  const referencedAccountIds = useMemo(() => {
+    const ids = new Set<string>();
+    entries.forEach((e) => {
+      const isPostedEntry = e.status === 'posted' || (e.status === undefined && e.isPosted);
+      if (isPostedEntry) {
+        e.lines.forEach((l) => ids.add(l.accountId));
+      }
+    });
+    return ids;
+  }, [entries]);
 
   // Totals exclude parent rows to avoid double-counting
   const totalDebits = tbData
@@ -216,8 +229,19 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
                     {row.account.code}
                   </td>
                   <td className="py-3 px-4 whitespace-nowrap">
-                    {row.account.name}
-                    {row.isParent && ' (subtotal)'}
+                    <span>{row.account.name}</span>
+                    {row.isParent && <span> (subtotal)</span>}
+                    {!row.isParent &&
+                      referencedAccountIds.has(row.account.id) &&
+                      (!row.account.taxLabel || row.account.taxLabel === '') && (
+                        <span className="ml-2 inline-block">
+                          <AnomalyBadge
+                            severity="warn"
+                            message="No tax label mapping"
+                            label={row.account.code}
+                          />
+                        </span>
+                      )}
                   </td>
                   <td className="py-3 px-4 text-xs opacity-60 hidden md:table-cell whitespace-nowrap">
                     {row.account.type}
