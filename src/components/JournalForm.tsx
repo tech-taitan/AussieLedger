@@ -9,6 +9,7 @@ import { Account, JournalEntry, JournalLine } from '../types';
 import { cn } from '../lib/utils';
 import { today } from '../lib/period';
 import { EditJournalDiff } from './EditJournalDiff';
+import { AnomalyBadge } from './AnomalyBadge';
 
 interface JournalFormProps {
   accounts: Account[];
@@ -533,8 +534,12 @@ export const JournalForm: React.FC<JournalFormProps> = ({
         </div>
 
         {!isBalanced && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm italic text-center rounded-sm">
-            Out of balance by <strong>${Math.abs(totalDebits - totalCredits).toFixed(2)}</strong>. Journals must balance before posting.
+          <div className="p-3 bg-red-50 border border-red-200 text-center rounded-sm flex justify-center">
+            <AnomalyBadge
+              severity="warn"
+              label="Unbalanced"
+              message={`Out of balance by $${Math.abs(totalDebits - totalCredits).toFixed(2)}. Journals must balance before posting.`}
+            />
           </div>
         )}
 
