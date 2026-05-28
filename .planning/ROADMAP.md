@@ -150,9 +150,9 @@
 4. Every ATO label and field in tax output has a tooltip or side-panel showing a plain-English explanation of what it means and what data populates it; the help text never states whether an expense is deductible
 5. A new user can clone the repository, run `npm install && npm run build`, serve the built output, and have a fully working instance with no paid services configured; the README documents both single-user local and small-firm VPS deployment shapes; a CONTRIBUTING.md states the schema-migration rule
 
-**Plans:** 4 plans (Wave 1 + 2 + 2 + 3) — planned 2026-05-29
+**Plans:** 4 plans (Wave 1 + 2 + 2 + 3) — planned 2026-05-29 — 2/4 complete
 - [x] 06-1-PLAN.md — Wave 1: v4→v5 additive migration + Settings/persona module + useAnomalyCounts + LabelTooltip + PersonaModeModal + AiGateNote + YearEndWizard scaffold + helpText widening on all 6 label catalogues + LICENSE + CONTRIBUTING.md + README rewrite + SPDX-headers lint + Radix tooltip install (3 tasks) [COMPLETE 2026-05-29; 692 SPA GREEN +166 new; 3 commits: 9da476b/b48dfaa/4c000ce]
-- [ ] 06-2-PLAN.md — Wave 2 (parallel with 06-3): YearEndWizard orchestrator + 7 step components + Step5Preview embedding Phase-5 renderers + JournalForm lockedFy finalise guard + useEntities round-trip (2 tasks)
+- [x] 06-2-PLAN.md — Wave 2 (parallel with 06-3): YearEndWizard orchestrator + 7 step components + Step5Preview embedding Phase-5 renderers + JournalForm lockedFy finalise guard + useEntities round-trip (2 tasks) [COMPLETE 2026-05-29; 748 SPA GREEN +56 new; 2 commits: 64ca0f1/54c6bd5]
 - [ ] 06-3-PLAN.md — Wave 2 (parallel with 06-2): persona-aware Sidebar + ViewRouter mode-gated landing + Settings page + MasterDashboard agent badges + inline AnomalyBadge on Journal/TB/CoA + Sidebar count badges + mobile responsive classes + AiGateNote in ImportTB + LabelTooltip in 5 tax-return components (3 tasks)
 - [ ] 06-4-PLAN.md — Wave 3: full automated pre-UAT + 12-step manual UAT covering all 5 success criteria + phase closure (STATE/ROADMAP/REQUIREMENTS updates) (3 tasks)
 

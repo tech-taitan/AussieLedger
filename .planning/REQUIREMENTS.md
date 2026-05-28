@@ -98,7 +98,7 @@ Quality-floor and credibility prerequisites — must clear these before any user
 
 ### Guidance / UX (UX)
 
-- [ ] **UX-01**: A "Year-End Preparation" wizard walks the user through a sequenced flow: review unreconciled accounts → confirm CoA → check unmapped accounts → preview tax output → finalise
+- [x] **UX-01**: A "Year-End Preparation" wizard walks the user through a sequenced flow: review unreconciled accounts → confirm CoA → check unmapped accounts → preview tax output → finalise
 - [ ] **UX-02**: Anomaly flags surface in-context (not in a separate report) for: unbalanced journal entries, unmapped accounts referenced in posted entries, GST code mismatches, accounts missing tax-label mappings
 - [ ] **UX-03**: Every ATO label and field in tax outputs has plain-English in-context help (tooltip or panel) explaining what it means and what data populates it
 - [ ] **UX-04**: User can navigate the app on mobile (responsive layout); core flows (journal entry, TB review, return preview) work on a 375px-wide viewport
@@ -108,7 +108,7 @@ Quality-floor and credibility prerequisites — must clear these before any user
 
 - [ ] **PERS-01**: In owner mode, the default landing surface is the user's single primary entity dashboard with the year-end wizard one click away
 - [ ] **PERS-02**: In agent mode, the default landing surface is a client list with fast switching between entities and bulk operations on entities
-- [ ] **PERS-03**: Mode is a per-instance setting; switching modes does not require re-creating data
+- [x] **PERS-03**: Mode is a per-instance setting; switching modes does not require re-creating data
 
 ### Deployment / open-source (DEP)
 
@@ -233,14 +233,14 @@ Each requirement maps to exactly one phase. Updated by the gsd-roadmapper 2026-0
 | TRT-03 | Phase 5 Plan 05-3 | Delivered (distributeTrustIncome reads entity.beneficiaries; 60/40 split → $120k/$80k reconciles to-the-cent) |
 | PSP-01 | Phase 5 Plan 05-3 | Delivered (computePartnershipReturn Form P labels P1/P2/P8 + PartnershipTaxReturn renderer) |
 | PSP-02 | Phase 5 Plan 05-3 | Delivered (distributePartnershipNetIncome reads entity.partners; Item 54 per-partner distribution table) |
-| UX-01 | Phase 6 | Pending |
+| UX-01 | Phase 6 Plan 06-2 | Delivered (06-2 2026-05-29; 7-step YearEndWizard with unmapped-accounts hard-block + attestation + LOCK_FY/UNLOCK_FY audit + Step5Preview embeds Phase-5 renderers; 26 wizard tests GREEN) |
 | UX-02 | Phase 6 | Pending |
 | UX-03 | Phase 6 | Pending |
 | UX-04 | Phase 6 | Pending |
 | UX-05 | Phase 6 | Pending |
 | PERS-01 | Phase 6 | Pending |
 | PERS-02 | Phase 6 | Pending |
-| PERS-03 | Phase 6 | Pending |
+| PERS-03 | Phase 6 Plan 06-2 | Delivered (06-2 2026-05-29; useEntities.updateEntity round-trips returnStatusByFy+wizardState without touching entries/accounts; UE.1/UE.2 confirm PERS-03 invariant) |
 | DEP-01 | Phase 6 Plan 06-1 | Delivered (06-1 2026-05-29; README quick-start + npm install && npm run build verified + no paid services) |
 | DEP-02 | Phase 3 | Pending |
 | DEP-03 | Phase 6 Plan 06-1 | Delivered (06-1 2026-05-29; README rewritten with Single-user local + Small-firm VPS deployment shapes) |
