@@ -1,200 +1,256 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * TaxReturnAssistant — Phase 5 Plan 05-2 refactor.
+ * Form I (NAT 2541) + B&P schedule (NAT 2543) renderer with:
+ *   - Print button + EXPORT_DATA audit emission
+ *   - Assumptions block
+ *   - Inline + consolidated AnomalyBadges
+ *   - IND-04 small-biz offset line (item7D)
+ *   - print-form-i CSS scope
+ *
+ * Prop contract backward-compatible with Phase 2 (entity/accounts/entries/period/addLog).
+ * Phase 5 adds optional `fy?: FyLabel` and `entity` (required for compute).
  */
+import React, { useMemo } from 'react';
+import type { Account, Entity, JournalEntry, AuditAction } from '../types';
+import type { FyLabel, Period } from '../lib/period';
+import { currentFy, today } from '../lib/period';
+import { computeIndividualReturn } from '../lib/tax/returns/fy2026/individual';
+import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
+import { AnomalyBadge } from './AnomalyBadge';
+import { AssumptionsBlock } from './AssumptionsBlock';
+import { INDIVIDUAL_LABELS_FULL } from '../lib/tax/labels/fy2026';
+import type { IndividualLabel } from '../lib/tax/labels/fy2026';
+import type { Anomaly } from '../lib/tax/returns/fy2026/types';
+import type { Decimal } from '../lib/money';
 
-import React, { useMemo, useState } from 'react';
-import { Account, JournalEntry } from '../types';
-import { INDIVIDUAL_LABELS } from '../lib/tax/labels/fy2026';
-import { computeIndividual } from '../lib/tax/individual';
-import { currentFy } from '../lib/period';
-import { FileText, Info, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+// ── Prop contract ──────────────────────────────────────────────────────────
 
 interface TaxReturnAssistantProps {
+  /** Phase 5 (required for compute). Omitted in Phase 2 legacy callers — treated as an unknown Individual. */
+  entity?: Entity;
   accounts: Account[];
   entries: JournalEntry[];
-  onUpdateAccount: (account: Account) => void;
+  period?: Period;
+  addLog?: (action: AuditAction, details: string, entityId?: string) => void;
+  /** Phase 5 addition (additive). Defaults to currentFy() if not supplied. */
+  fy?: FyLabel;
+  /** Phase 2 legacy prop — kept for smoke test compatibility, ignored by Phase 5 logic. */
+  onUpdateAccount?: (account: Account) => void;
 }
 
-export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({ accounts, entries, onUpdateAccount }) => {
-  const [expandedLabels, setExpandedLabels] = useState<string[]>([]);
-  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+// ── LabelRow helper ───────────────────────────────────────────────────────
 
-  const toggleLabel = (label: string) => {
-    setExpandedLabels(prev =>
-      prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
+interface LabelRowProps {
+  code: string;
+  plainEnglish: string;
+  value: Decimal | undefined;
+  anomalies?: Anomaly[];
+  highlight?: boolean;
+}
+
+function LabelRow({ code, plainEnglish, value, anomalies, highlight }: LabelRowProps) {
+  return (
+    <div
+      className={`grid grid-cols-3 gap-2 py-1 border-b border-gray-100 ${highlight ? 'font-bold' : ''}`}
+    >
+      <span className="font-mono text-xs text-gray-500">{code}</span>
+      <span className="text-sm">{plainEnglish}</span>
+      <span className="text-sm text-right font-mono">
+        ${value?.toFixed(2) ?? '0.00'}
+      </span>
+      {anomalies && anomalies.length > 0 && (
+        <div className="col-span-3 flex flex-wrap gap-1 mt-1">
+          {anomalies.map((a) => (
+            <span key={a.id}>
+              <AnomalyBadge severity={a.severity} message={a.message} label={a.label} />
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────
+
+/** Default placeholder entity for legacy callers that don't supply entity */
+const DEFAULT_ENTITY: Entity = {
+  _v: 4,
+  id: 'unknown',
+  name: 'Unknown Entity',
+  type: 'Individual',
+  status: 'Active',
+};
+
+export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({
+  entity: entityProp,
+  accounts,
+  entries,
+  period,
+  addLog,
+  fy,
+}) => {
+  const entity: Entity = entityProp ?? DEFAULT_ENTITY;
+  const effectiveFy: FyLabel = fy ?? (
+    period?.type === 'fy' ? period.fy : currentFy()
+  );
+
+  const result = useMemo(
+    () => computeIndividualReturn({ entity, accounts, entries, fy: effectiveFy }),
+    [entity, accounts, entries, effectiveFy],
+  );
+
+  const isLocked = result.meta.locked;
+
+  const handlePrint = () => {
+    addLog?.(
+      'EXPORT_DATA',
+      JSON.stringify({ entityId: entity.id, form: 'I', fy: effectiveFy, timestamp: today().toISOString() }),
+      entity.id,
     );
+    window.print();
   };
 
-  const taxReturn = useMemo(() => {
-    const fy = currentFy();
-    return computeIndividual({ fy, entries, accounts, period: { type: 'fy', fy } });
-  }, [entries, accounts]);
+  // Build inline anomalies map by label code
+  const inlineAnomaliesByLabel: Record<string, Anomaly[]> = {};
+  for (const a of result.meta.anomalies) {
+    if (a.label) {
+      (inlineAnomaliesByLabel[a.label] ??= []).push(a);
+    }
+  }
 
-  const getAccountsForLabel = (label: string) => {
-    return accounts.filter(a => a.taxLabel === label);
-  };
+  const getLabel = (code: IndividualLabel) => INDIVIDUAL_LABELS_FULL[code];
+  const L = result.labels;
 
   return (
-    <div className="bg-white p-6 shadow-sm border border-[var(--line-strong)]">
-      <div className="flex items-center gap-2 mb-6">
-        <FileText className="text-blue-600" />
-        <h2 className="text-xl font-medium">AU Income Tax Return Assistant</h2>
-      </div>
+    <section className="print-form-i p-4">
+      {/* Print-only banner — hidden on screen */}
+      <PrintBanner form="I" entityName={entity.name} fy={effectiveFy} locked={isLocked} />
 
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 flex gap-3">
-        <Info className="text-blue-500 shrink-0" size={20} />
-        <p className="text-sm text-blue-800">
-          This assistant maps your Chart of Accounts to standard ATO Income Tax Return labels.
-          Values are calculated based on your posted journal entries. You can directly edit mappings by expanding a label.
-        </p>
-      </div>
+      {/* Screen header — hidden on print */}
+      <header className="no-print flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Form I — {entity.name} ({effectiveFy})</h2>
+        <button
+          onClick={handlePrint}
+          className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+        >
+          {isLocked ? 'Print finalised return' : 'Print working paper'}
+        </button>
+      </header>
 
-      <div className="space-y-4">
-        {Object.entries(INDIVIDUAL_LABELS).map(([label, info]) => {
-          const value = Number(taxReturn[label as keyof typeof taxReturn]?.value.toFixed(2)) || 0;
-          const isExpanded = expandedLabels.includes(label);
-          const labelAccounts = getAccountsForLabel(label);
+      {/* Main Return — Item 15 flow-through */}
+      <section className="mb-6">
+        <h3 className="text-sm font-bold uppercase text-gray-500 mb-2">Main Return (NAT 2541)</h3>
+        <LabelRow
+          code="Item 15"
+          plainEnglish={getLabel('item15').plainEnglish}
+          value={L.item15?.value}
+          anomalies={inlineAnomaliesByLabel['item15']}
+          highlight
+        />
 
-          return (
-            <div key={label} className="border border-[var(--line)] overflow-hidden">
-              <div
-                className={cn(
-                  "flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 transition-colors",
-                  isExpanded && "bg-gray-50 border-b border-[var(--line)]"
-                )}
-                onClick={() => toggleLabel(label)}
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="bg-[var(--ink)] text-white px-2 py-1 rounded text-xs font-mono font-bold w-16 text-center">
-                    {label}
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900">{info.title}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{info.description}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-6">
-                  <div className="text-lg font-bold data-value">
-                    ${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </div>
-                  {isExpanded ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
-                    exit={{ height: 0 }}
-                    className="overflow-hidden bg-gray-50/50"
-                  >
-                    <div className="p-4 pt-2">
-                      <div className="text-[10px] font-bold uppercase text-gray-400 mb-3 tracking-widest flex justify-between items-center">
-                        Mapped Accounts
-                        <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">{labelAccounts.length} accounts</span>
-                      </div>
-
-                      <div className="space-y-2">
-                        {labelAccounts.length === 0 ? (
-                          <div className="text-sm text-gray-400 italic py-2">No accounts mapped to this label.</div>
-                        ) : (
-                          labelAccounts.map(account => (
-                            <div key={account.id} className="flex justify-between items-center bg-white p-2 border border-[var(--line)] text-sm shadow-sm group">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs text-gray-400">{account.code}</span>
-                                <span className="font-medium">{account.name}</span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                {editingAccountId === account.id ? (
-                                  <select
-                                    className="text-xs border border-[var(--line)] p-1 bg-white outline-none focus:border-[var(--ink)]"
-                                    value={account.taxLabel || ''}
-                                    onChange={(e) => {
-                                      onUpdateAccount({ ...account, taxLabel: e.target.value });
-                                      setEditingAccountId(null);
-                                    }}
-                                    onBlur={() => setEditingAccountId(null)}
-                                    autoFocus
-                                  >
-                                    <option value="">Unmapped</option>
-                                    {Object.keys(INDIVIDUAL_LABELS).map(l => (
-                                      <option key={l} value={l}>Label {l}</option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <button
-                                    onClick={() => setEditingAccountId(account.id)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded text-blue-600"
-                                    title="Edit mapping"
-                                  >
-                                    <Edit3 size={14} />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))
-                        )}
-
-                        <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
-                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-2">Add mapping from Chart of Accounts</label>
-                          <select
-                            className="w-full text-xs border border-[var(--line)] p-2 bg-white outline-none focus:border-[var(--ink)]"
-                            value=""
-                            onChange={(e) => {
-                              const acc = accounts.find(a => a.id === e.target.value);
-                              if (acc) onUpdateAccount({ ...acc, taxLabel: label });
-                            }}
-                          >
-                            <option value="" disabled>Select account to map to {label}...</option>
-                            {accounts
-                              .filter(a => a.taxLabel !== label && (a.type === 'Revenue' || a.type === 'Expense'))
-                              .sort((a,b) => a.code.localeCompare(b.code))
-                              .map(a => (
-                                <option key={a.id} value={a.id}>
-                                  {a.code} - {a.name} (Current: {a.taxLabel || 'N/A'})
-                                </option>
-                              ))
-                            }
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-
-        {/* Total Taxable Income Summary Row */}
-        <div className="border-2 border-[var(--ink)] overflow-hidden shadow-sm mt-8">
-          <div className="flex justify-between items-center p-4 bg-gray-900 text-white">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="bg-white text-black px-2 py-1 rounded text-xs font-mono font-bold w-16 text-center">
-                7T
-              </div>
-              <div>
-                <div className="text-sm font-bold">Total Taxable Income</div>
-                <div className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wider font-bold">Calculated Reconciliation Item</div>
-              </div>
-            </div>
-            <div className="text-xl font-bold font-mono">
-              ${Number(taxReturn['7T'].value.toFixed(2)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </div>
-          </div>
+        {/* Tax computation rows */}
+        <div className="mt-2">
+          <h4 className="text-xs font-bold uppercase text-gray-400 mb-1">Tax Calculation</h4>
+          <LabelRow
+            code="Marginal tax"
+            plainEnglish="Tax before offsets"
+            value={result.meta.taxBeforeOffsets as Decimal}
+          />
+          <LabelRow
+            code={getLabel('T1').natReference?.split(' ').pop() ?? 'T1'}
+            plainEnglish={getLabel('T1').plainEnglish}
+            value={L.T1?.value}
+          />
+          <LabelRow
+            code={getLabel('M1').natReference?.split(' ').pop() ?? 'M1'}
+            plainEnglish={getLabel('M1').plainEnglish}
+            value={L.M1?.value}
+          />
+          <LabelRow
+            code={getLabel('M2').natReference?.split(' ').pop() ?? 'M2'}
+            plainEnglish={getLabel('M2').plainEnglish}
+            value={L.M2?.value}
+          />
+          <LabelRow
+            code="item7D"
+            plainEnglish={getLabel('item7D').plainEnglish}
+            value={L.item7D?.value}
+            anomalies={inlineAnomaliesByLabel['item7D']}
+          />
+          <LabelRow
+            code="Tax payable"
+            plainEnglish="Estimated tax payable (after offsets)"
+            value={result.meta.taxAfterOffsets as Decimal}
+            highlight
+          />
         </div>
-      </div>
+      </section>
 
-      <div className="mt-8 pt-6 border-t border-[var(--line)]">
-        <h3 className="col-header mb-4">Accountant's Reconciliation</h3>
-        <div className="text-xs text-gray-500 italic">
-          * Note: These figures are pre-tax and exclude GST. Ensure all BAS reconciliations are complete before finalising the return.
+      {/* B&P Schedule */}
+      <section className="mb-6">
+        <h3 className="text-sm font-bold uppercase text-gray-500 mb-2">
+          Business &amp; Professional Items Schedule (NAT 2543)
+        </h3>
+        <LabelRow
+          code="P1"
+          plainEnglish={getLabel('P1').plainEnglish}
+          value={L.P1?.value}
+          anomalies={inlineAnomaliesByLabel['P1']}
+        />
+        <LabelRow
+          code="P2"
+          plainEnglish={getLabel('P2').plainEnglish}
+          value={L.P2?.value}
+          anomalies={inlineAnomaliesByLabel['P2']}
+        />
+        <LabelRow
+          code="P8"
+          plainEnglish={getLabel('P8').plainEnglish}
+          value={L.P8?.value}
+          anomalies={inlineAnomaliesByLabel['P8']}
+          highlight
+        />
+        <div className="ml-4 mt-1">
+          {(['B', 'C', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'N'] as IndividualLabel[]).map((code) => {
+            const labelEntry = L[code];
+            if (!labelEntry?.value.greaterThan(0)) return null;
+            return (
+              <div key={code}>
+                <LabelRow
+                  code={code}
+                  plainEnglish={getLabel(code).plainEnglish}
+                  value={labelEntry.value}
+                  anomalies={inlineAnomaliesByLabel[code]}
+                />
+              </div>
+            );
+          })}
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* Assumptions block — always shown for Individual */}
+      <AssumptionsBlock />
+
+      {/* Consolidated Anomalies section */}
+      {result.meta.anomalies.length > 0 && (
+        <section className="mt-4 border border-gray-200 p-3 rounded">
+          <h3 className="text-sm font-bold mb-2">Notices &amp; Anomalies</h3>
+          <ul className="space-y-1">
+            {result.meta.anomalies.map((a) => (
+              <li key={a.id}>
+                <AnomalyBadge severity={a.severity} message={a.message} label={a.label} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Print-only footer */}
+      <footer className="print-footer print-only">{FOOTER_DISCLAIMER}</footer>
+    </section>
   );
 };
