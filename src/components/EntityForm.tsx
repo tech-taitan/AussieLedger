@@ -435,6 +435,60 @@ export const EntityForm: React.FC<EntityFormProps> = ({
           </div>
         </div>
 
+        {/* Phase 5 — v4 AU tax fields */}
+        <div className="pt-6 border-t border-[var(--line)]">
+          <h4 className="text-sm font-bold uppercase text-[var(--ink)] mb-4">
+            Tax calculation settings
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label
+                htmlFor="entity-aggregated-turnover"
+                className="text-xs font-bold uppercase text-gray-500 tracking-wider block"
+              >
+                Aggregated turnover ($)
+              </label>
+              <input
+                id="entity-aggregated-turnover"
+                type="text"
+                aria-label="Aggregated turnover ($)"
+                value={formData.aggregatedTurnover ?? ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, aggregatedTurnover: e.target.value })
+                }
+                placeholder="e.g. 4500000.00"
+                className="w-full p-2 border border-[var(--line)] focus:ring-1 focus:ring-[var(--ink)] outline-none font-mono transition-colors"
+              />
+              <p className="text-xs text-gray-500">
+                Includes connected entities + affiliates per s.328-115. Default shown is this entity&apos;s own GL revenue only — override if you have connected entities outside AussieLedger.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="entity-payg-instalment"
+                className="text-xs font-bold uppercase text-gray-500 tracking-wider block"
+              >
+                PAYG instalment amount (T7, Method 1)
+              </label>
+              <input
+                id="entity-payg-instalment"
+                type="text"
+                aria-label="PAYG instalment amount (T7, Method 1)"
+                value={formData.paygInstalmentAmount ?? ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, paygInstalmentAmount: e.target.value })
+                }
+                placeholder="0.00"
+                className="w-full p-2 border border-[var(--line)] focus:ring-1 focus:ring-[var(--ink)] outline-none font-mono transition-colors"
+              />
+              <p className="text-xs text-gray-500">
+                Method 1: enter the pre-calculated instalment amount from your ATO portal. The BAS T7 label reads this value.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="pt-6 border-t border-[var(--line)]">
           <label className="text-xs font-bold uppercase text-gray-500 tracking-wider block mb-2">Entity Notes</label>
           <textarea

@@ -1,207 +1,215 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * CompanyTaxReturn — Phase 5 Plan 05-2 refactor.
+ * Form C (NAT 0656) renderer with:
+ *   - Print button + EXPORT_DATA audit emission
+ *   - BRE rate selection with explicit basis text
+ *   - Franking account section (opening/movements/closing)
+ *   - Inline + consolidated AnomalyBadges
+ *   - print-form-c CSS scope
+ *
+ * Prop contract backward-compatible: entity? optional for smoke-test compat.
  */
+import React, { useMemo } from 'react';
+import type { Account, Entity, JournalEntry, AuditAction } from '../types';
+import type { FyLabel, Period } from '../lib/period';
+import { currentFy, today } from '../lib/period';
+import { computeCompanyReturn } from '../lib/tax/returns/fy2026/company';
+import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
+import { AnomalyBadge } from './AnomalyBadge';
+import { COMPANY_LABELS_FULL } from '../lib/tax/labels/fy2026';
+import type { CompanyLabel } from '../lib/tax/labels/fy2026';
+import type { Anomaly } from '../lib/tax/returns/fy2026/types';
+import type { Decimal } from '../lib/money';
 
-import React, { useMemo, useState } from 'react';
-import { Account, JournalEntry } from '../types';
-import { COMPANY_LABELS } from '../lib/tax/labels/fy2026';
-import { computeCompany } from '../lib/tax/company';
-import { currentFy } from '../lib/period';
-import { Building2, Info, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+// ── Prop contract ──────────────────────────────────────────────────────────
 
 interface CompanyTaxReturnProps {
+  /** Phase 5 (required for compute). Optional for legacy callers. */
+  entity?: Entity;
   accounts: Account[];
   entries: JournalEntry[];
-  onUpdateAccount: (account: Account) => void;
+  period?: Period;
+  addLog?: (action: AuditAction, details: string, entityId?: string) => void;
+  /** Phase 5 addition. Defaults to currentFy() if not supplied. */
+  fy?: FyLabel;
+  /** Phase 2 legacy prop — kept for smoke test compatibility. */
+  onUpdateAccount?: (account: Account) => void;
 }
 
-export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({ accounts, entries, onUpdateAccount }) => {
-  const [expandedLabels, setExpandedLabels] = useState<string[]>([]);
-  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+// ── LabelRow helper ───────────────────────────────────────────────────────
 
-  const toggleLabel = (label: string) => {
-    setExpandedLabels(prev =>
-      prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
-    );
-  };
+interface LabelRowProps {
+  code: string;
+  plainEnglish: string;
+  value: Decimal | undefined;
+  anomalies?: Anomaly[];
+  highlight?: boolean;
+}
 
-  const taxReturn = useMemo(() => {
-    const fy = currentFy();
-    return computeCompany({ fy, entries, accounts, period: { type: 'fy', fy } });
-  }, [entries, accounts]);
-
-  const getAccountsForLabel = (label: string) => {
-    return accounts.filter(a => a.companyTaxLabel === label);
-  };
-
-  // Build section-specific label subsets from COMPANY_LABELS
-  const INCOME_KEYS = ['6A', '6F', '6T'] as const;
-  const EXPENSE_KEYS = ['6C', '6G', '6X', '6S'] as const;
-  const RECON_KEYS = ['7T'] as const;
-
-  const incomeLabels = Object.fromEntries(INCOME_KEYS.map(k => [k, COMPANY_LABELS[k]]));
-  const expenseLabels = Object.fromEntries(EXPENSE_KEYS.map(k => [k, COMPANY_LABELS[k]]));
-  const reconLabels = Object.fromEntries(RECON_KEYS.map(k => [k, COMPANY_LABELS[k]]));
-
-  const renderSection = (title: string, labels: Record<string, { title: string; description: string }>, highlightKeys: string[] = []) => (
-    <div className="mb-8">
-      <h3 className="col-header mb-4 border-b border-[var(--line-strong)] pb-2">{title}</h3>
-      <div className="space-y-3">
-        {Object.entries(labels).map(([label, info]) => {
-          const value = Number(taxReturn[label as keyof typeof taxReturn]?.value.toFixed(2)) || 0;
-          const isHighlight = highlightKeys.includes(label);
-          const isExpanded = expandedLabels.includes(label);
-          const labelAccounts = getAccountsForLabel(label);
-          const isCalculated = ['6T', '6S', '7T'].includes(label);
-
-          return (
-            <div key={label} className={cn(
-              "border transition-all overflow-hidden",
-              isHighlight ? "border-[var(--ink)] ring-1 ring-[var(--ink)]" : "border-[var(--line)]",
-              isExpanded && "shadow-md"
-            )}>
-              <div
-                className={cn(
-                  "flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 cursor-pointer transition-colors",
-                  isHighlight ? "bg-gray-50" : "bg-white",
-                  !isCalculated && "hover:bg-blue-50/30"
-                )}
-                onClick={() => !isCalculated && toggleLabel(label)}
-              >
-                <div className="flex items-start gap-4 flex-1">
-                  <span className={cn(
-                    "px-2 py-1 rounded text-[10px] font-mono font-bold shrink-0 w-16 text-center",
-                    isHighlight ? "bg-[var(--ink)] text-white" : "bg-gray-100 text-gray-700"
-                  )}>
-                    {label.replace('_EXP', '')}
-                  </span>
-                  <div>
-                    <div className={cn("text-sm", isHighlight ? "font-bold" : "font-bold")}>{info.title}</div>
-                    <div className="text-xs text-gray-500 mt-0.5 max-w-md">{info.description}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-6 mt-3 sm:mt-0">
-                  <div className={cn("text-lg data-value", isHighlight ? "font-bold text-indigo-600" : "font-bold")}>
-                    ${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </div>
-                  {!isCalculated && (
-                    <div className="text-gray-300">
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {isExpanded && !isCalculated && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
-                    exit={{ height: 0 }}
-                    className="overflow-hidden bg-white border-t border-[var(--line)]"
-                  >
-                    <div className="p-4 bg-gray-50/50">
-                      <div className="text-[10px] font-bold uppercase text-gray-400 mb-3 tracking-widest flex justify-between items-center">
-                        Contributing Accounts
-                        <span className="bg-white px-1.5 py-0.5 border border-gray-200 rounded">{labelAccounts.length}</span>
-                      </div>
-                      <div className="space-y-2">
-                        {labelAccounts.length === 0 ? (
-                          <div className="text-sm text-gray-400 italic py-2">No accounts mapped.</div>
-                        ) : (
-                          labelAccounts.map(account => (
-                            <div key={account.id} className="flex justify-between items-center bg-white p-2 border border-[var(--line)] text-sm group">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-[10px] text-gray-400">{account.code}</span>
-                                <span>{account.name}</span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                {editingAccountId === account.id ? (
-                                  <select
-                                    className="text-xs border border-[var(--line)] p-1 bg-white"
-                                    value={account.companyTaxLabel || ''}
-                                    onChange={(e) => {
-                                      onUpdateAccount({ ...account, companyTaxLabel: e.target.value });
-                                      setEditingAccountId(null);
-                                    }}
-                                    onBlur={() => setEditingAccountId(null)}
-                                    autoFocus
-                                  >
-                                    <option value="">Unmapped</option>
-                                    {INCOME_KEYS.filter(k => k !== '6T').map(k => (
-                                      <option key={k} value={k}>Income: {COMPANY_LABELS[k].title}</option>
-                                    ))}
-                                    {EXPENSE_KEYS.filter(k => k !== '6S').map(k => (
-                                      <option key={k} value={k}>Expense: {COMPANY_LABELS[k].title}</option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <button onClick={() => setEditingAccountId(account.id)} className="opacity-0 group-hover:opacity-100 p-1 text-blue-600">
-                                    <Edit3 size={14} />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))
-                        )}
-                        <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
-                          <select
-                            className="w-full text-xs p-2 bg-white border border-[var(--line)]"
-                            value=""
-                            onChange={(e) => {
-                              const acc = accounts.find(a => a.id === e.target.value);
-                              if (acc) onUpdateAccount({ ...acc, companyTaxLabel: label });
-                            }}
-                          >
-                            <option value="">Map additional account to {label}...</option>
-                            {accounts
-                              .filter(a => a.companyTaxLabel !== label && (a.type === 'Revenue' || a.type === 'Expense'))
-                              .map(a => <option key={a.id} value={a.id}>{a.code} - {a.name}</option>)
-                            }
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </div>
+function LabelRow({ code, plainEnglish, value, anomalies, highlight }: LabelRowProps) {
+  return (
+    <div
+      className={`grid grid-cols-3 gap-2 py-1 border-b border-gray-100 ${highlight ? 'font-bold' : ''}`}
+    >
+      <span className="font-mono text-xs text-gray-500">{code}</span>
+      <span className="text-sm">{plainEnglish}</span>
+      <span className="text-sm text-right font-mono">
+        ${value?.toFixed(2) ?? '0.00'}
+      </span>
+      {anomalies && anomalies.length > 0 && (
+        <div className="col-span-3 flex flex-wrap gap-1 mt-1">
+          {anomalies.map((a) => (
+            <span key={a.id}>
+              <AnomalyBadge severity={a.severity} message={a.message} label={a.label} />
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
+}
+
+// ── Default entity ─────────────────────────────────────────────────────────
+
+const DEFAULT_ENTITY: Entity = {
+  _v: 4,
+  id: 'unknown',
+  name: 'Unknown Company',
+  type: 'Company',
+  status: 'Active',
+};
+
+// ── Main component ────────────────────────────────────────────────────────
+
+export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({
+  entity: entityProp,
+  accounts,
+  entries,
+  period,
+  addLog,
+  fy,
+}) => {
+  const entity: Entity = entityProp ?? DEFAULT_ENTITY;
+  const effectiveFy: FyLabel = fy ?? (
+    period?.type === 'fy' ? period.fy : currentFy()
+  );
+
+  const result = useMemo(
+    () => computeCompanyReturn({ entity, accounts, entries, fy: effectiveFy }),
+    [entity, accounts, entries, effectiveFy],
+  );
+
+  const isLocked = result.meta.locked;
+
+  const handlePrint = () => {
+    addLog?.(
+      'EXPORT_DATA',
+      JSON.stringify({ entityId: entity.id, form: 'C', fy: effectiveFy, timestamp: today().toISOString() }),
+      entity.id,
+    );
+    window.print();
+  };
+
+  // Build inline anomalies map by label code
+  const inlineAnomaliesByLabel: Record<string, Anomaly[]> = {};
+  for (const a of result.meta.anomalies) {
+    if (a.label) {
+      (inlineAnomaliesByLabel[a.label] ??= []).push(a);
+    }
+  }
+
+  const getLabel = (code: CompanyLabel) => COMPANY_LABELS_FULL[code];
+  const L = result.labels;
+  const taxRatePct = Math.round(Number(result.meta.taxRate) * 100);
 
   return (
-    <div className="bg-white p-4 sm:p-6 shadow-sm border border-[var(--line-strong)]">
-      <div className="flex items-center gap-2 mb-6">
-        <Building2 className="text-indigo-600" />
-        <h2 className="text-xl font-medium">Company Tax Return (CTR)</h2>
+    <section className="print-form-c p-4">
+      {/* Print-only banner */}
+      <PrintBanner form="C" entityName={entity.name} fy={effectiveFy} locked={isLocked} />
+
+      {/* Screen header */}
+      <header className="no-print flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Form C — {entity.name} ({effectiveFy})</h2>
+        <button
+          onClick={handlePrint}
+          className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 transition-colors"
+        >
+          {isLocked ? 'Print finalised return' : 'Print working paper'}
+        </button>
+      </header>
+
+      {/* Applied Tax Rate box (prominent) */}
+      <div className="border border-indigo-300 bg-indigo-50 rounded p-3 mb-4">
+        <strong className="text-lg">{taxRatePct}% applied</strong>
+        <br />
+        <em className="text-sm text-gray-600">{result.meta.taxRateBasis as string}</em>
       </div>
 
-      <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 mb-8 flex gap-3">
-        <Info className="text-indigo-500 shrink-0" size={20} />
-        <p className="text-sm text-indigo-800">
-          This assistant maps your Chart of Accounts to standard ATO Company Tax Return labels (Item 6 and Item 7).
-          Values are calculated based on your posted journal entries. Click a label to view contributing accounts and edit mappings.
-        </p>
-      </div>
+      {/* Income labels */}
+      <section className="mb-6">
+        <h3 className="text-sm font-bold uppercase text-gray-500 mb-2">Income (NAT 0656)</h3>
+        <LabelRow code="6A" plainEnglish={getLabel('6A').plainEnglish} value={L['6A']?.value} />
+        <LabelRow code="6F" plainEnglish={getLabel('6F').plainEnglish} value={L['6F']?.value} />
+        <LabelRow code="6H" plainEnglish={getLabel('6H').plainEnglish} value={L['6H']?.value} />
+        <LabelRow code="6T" plainEnglish={getLabel('6T').plainEnglish} value={L['6T']?.value} highlight />
+      </section>
 
-      <div className="space-y-4">
-        {renderSection('Item 6: Calculation of total profit or loss - Income', incomeLabels, ['6T'])}
-        {renderSection('Item 6: Calculation of total profit or loss - Expenses', expenseLabels, ['6S'])}
-        {renderSection('Item 7: Reconciliation to taxable income or loss', reconLabels, ['7T'])}
-      </div>
+      {/* Expense labels */}
+      <section className="mb-6">
+        <h3 className="text-sm font-bold uppercase text-gray-500 mb-2">Expenses</h3>
+        <LabelRow code="6C" plainEnglish={getLabel('6C').plainEnglish} value={L['6C']?.value} />
+        <LabelRow code="6G" plainEnglish={getLabel('6G').plainEnglish} value={L['6G']?.value} />
+        <LabelRow code="6X" plainEnglish={getLabel('6X').plainEnglish} value={L['6X']?.value} />
+        <LabelRow code="6S" plainEnglish={getLabel('6S').plainEnglish} value={L['6S']?.value} highlight />
+      </section>
 
-      <div className="mt-8 pt-6 border-t border-[var(--line)]">
-        <h3 className="col-header mb-4">Accountant's Reconciliation</h3>
-        <div className="text-xs text-gray-500 italic">
-          * Note: These figures are pre-tax and exclude GST. Ensure all BAS reconciliations and depreciation schedules are complete before finalising the company tax return.
-        </div>
-      </div>
-    </div>
+      {/* Taxable income */}
+      <section className="mb-6">
+        <h3 className="text-sm font-bold uppercase text-gray-500 mb-2">Taxable Income</h3>
+        <LabelRow code="7T" plainEnglish={getLabel('7T').plainEnglish} value={L['7T']?.value} highlight />
+        <LabelRow code="CS_B" plainEnglish={getLabel('CS_B').plainEnglish} value={L['CS_B']?.value} highlight />
+      </section>
+
+      {/* Franking Account */}
+      <section className="mb-6">
+        <h3 className="text-sm font-bold uppercase text-gray-500 mb-2">Franking Account</h3>
+        <LabelRow
+          code="Opening"
+          plainEnglish={getLabel('franking_open').plainEnglish}
+          value={L['franking_open']?.value}
+        />
+        <LabelRow
+          code="Movements"
+          plainEnglish={getLabel('franking_move').plainEnglish}
+          value={L['franking_move']?.value}
+        />
+        <LabelRow
+          code="Closing"
+          plainEnglish={getLabel('franking_close').plainEnglish}
+          value={L['franking_close']?.value}
+          highlight
+        />
+      </section>
+
+      {/* Consolidated Anomalies */}
+      {result.meta.anomalies.length > 0 && (
+        <section className="mt-4 border border-gray-200 p-3 rounded">
+          <h3 className="text-sm font-bold mb-2">Notices &amp; Anomalies</h3>
+          <ul className="space-y-1">
+            {result.meta.anomalies.map((a) => (
+              <li key={a.id}>
+                <AnomalyBadge severity={a.severity} message={a.message} label={a.label} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Print-only footer */}
+      <footer className="print-footer print-only">{FOOTER_DISCLAIMER}</footer>
+    </section>
   );
 };

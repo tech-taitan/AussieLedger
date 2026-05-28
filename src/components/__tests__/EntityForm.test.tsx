@@ -122,6 +122,41 @@ describe('Phase 4 — EntityForm v3 widening (ENT-01/03/04/05/06)', () => {
 });
 
 describe('EntityForm — Phase 5 wiring (v4 fields)', () => {
-  it.todo('aggregatedTurnover field — renders numeric input and passes value to onSave entity');
-  it.todo('paygInstalmentAmount field — renders numeric input and passes value to onSave entity');
+  it('aggregatedTurnover field — renders numeric input and passes value to onSave entity', () => {
+    const onSave = vi.fn();
+    render(<EntityForm onSave={onSave} onCancel={() => {}} />);
+    // Find the aggregated turnover input by label text
+    const input = screen.getByLabelText(/aggregated turnover/i) as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.type).toBe('text');
+    // Type a value
+    fireEvent.change(input, { target: { value: '5000000' } });
+    // Fill required name and submit
+    fireEvent.change(screen.getByPlaceholderText(/e.g\. Acme Corp|Sample Pty Ltd/i), {
+      target: { value: 'Test Entity' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /create entity|save/i }));
+    expect(onSave).toHaveBeenCalled();
+    const saved = onSave.mock.calls[0][0] as Record<string, unknown>;
+    expect(saved.aggregatedTurnover).toBe('5000000');
+  });
+
+  it('paygInstalmentAmount field — renders numeric input and passes value to onSave entity', () => {
+    const onSave = vi.fn();
+    render(<EntityForm onSave={onSave} onCancel={() => {}} />);
+    // Find the PAYG instalment input
+    const input = screen.getByLabelText(/payg instalment amount|t7/i) as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.type).toBe('text');
+    // Type a value
+    fireEvent.change(input, { target: { value: '2500' } });
+    // Fill required name and submit
+    fireEvent.change(screen.getByPlaceholderText(/e.g\. Acme Corp|Sample Pty Ltd/i), {
+      target: { value: 'Test Entity' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /create entity|save/i }));
+    expect(onSave).toHaveBeenCalled();
+    const saved = onSave.mock.calls[0][0] as Record<string, unknown>;
+    expect(saved.paygInstalmentAmount).toBe('2500');
+  });
 });
