@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   TrendingUp,
@@ -29,8 +29,15 @@ import { AccountManager } from './AccountManager';
 import { FinancialTrendChart } from './FinancialTrendChart';
 import { MasterDashboard } from './MasterDashboard';
 import { DataPage } from './DataPage';
+import { YearEndWizard } from './YearEndWizard';
+import { Settings } from './Settings';
+import { PersonaModeModal } from './PersonaModeModal';
 import { cn } from '../lib/utils';
-import type { View, Entity, Account, AuditLog } from '../types';
+import { currentFy, today } from '../lib/period';
+import type { FyLabel } from '../lib/period';
+import { getPrimaryEntityId } from '../lib/persona';
+import type { Settings as SettingsType } from '../lib/persona';
+import type { View, Entity, Account, AuditLog, AuditAction } from '../types';
 import type { JournalsHook } from '../hooks/useJournals';
 import type { EntitiesHook } from '../hooks/useEntities';
 
@@ -58,6 +65,35 @@ interface ViewRouterProps {
   >;
   onSaveCOA: (updated: Account[]) => void;
   onUpdateAccount: (updated: Account) => void;
+  /** Plan 06-3 additions — settings + mode-gated routing */
+  settings?: SettingsType | null;
+  setSettings?: (s: SettingsType) => void;
+  clearSettings?: () => void;
+  addLog?: (action: AuditAction, details: string, entityId?: string) => void;
+}
+
+// ─── Helper: compute lockedFy for a given entity + date ──────────────────────
+
+/**
+ * Returns the FY string if the given entity has it finalised, else undefined.
+ * Uses the journal date (if provided) or current FY as context.
+ */
+function computeLockedFy(
+  entity: Entity | undefined,
+  journalDate?: string,
+): string | undefined {
+  if (!entity?.returnStatusByFy) return undefined;
+  // Determine the FY from the journal date or current FY
+  let fy: FyLabel;
+  if (journalDate) {
+    // Parse date string and derive FY: AU FY runs Jul 1 → Jun 30
+    const d = new Date(journalDate); // date PARSE — allowed by structural-lint
+    const year = d.getMonth() >= 6 ? d.getFullYear() + 1 : d.getFullYear();
+    fy = `FY${year}` as FyLabel;
+  } else {
+    fy = currentFy(today());
+  }
+  return entity.returnStatusByFy[fy] === 'finalised' ? fy : undefined;
 }
 
 // ─── Private view helpers ──────────────────────────────────────────────────
@@ -472,8 +508,43 @@ export function ViewRouter({
   entityActions,
   onSaveCOA,
   onUpdateAccount,
+  settings,
+  setSettings,
+  clearSettings,
+  addLog: _addLog,
 }: ViewRouterProps) {
   const activeEntity = entities.find((e) => e.id === activeEntityId);
+
+  // ── First-run gate: settings not yet set ─────────────────────────────────
+  if (settings === null || settings === undefined) {
+    if (setSettings) {
+      return <PersonaModeModal onComplete={setSettings} />;
+    }
+  }
+
+  // ── Owner mode auto-select + redirect ────────────────────────────────────
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!settings) return;
+    if (settings.mode === 'owner' && activeEntityId === null && entities.length > 0) {
+      const primaryId = getPrimaryEntityId(entities, settings) ?? entities[0].id;
+      setActiveEntityId(primaryId);
+      if (view !== 'edit-entity') {
+        setView('dashboard');
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings?.mode, entities.length, activeEntityId]);
+
+  // ── Owner mode: block master-dashboard, redirect to dashboard ─────────────
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!settings) return;
+    if (settings.mode === 'owner' && view === 'master-dashboard') {
+      setView('dashboard');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings?.mode, view]);
 
   return (
     <AnimatePresence mode="wait">
@@ -491,6 +562,7 @@ export function ViewRouter({
               setShowNewJournal(false);
             }}
             onCancel={() => setShowNewJournal(false)}
+            lockedFy={computeLockedFy(activeEntity)}
           />
         </motion.div>
       ) : (
@@ -501,7 +573,7 @@ export function ViewRouter({
           exit={{ opacity: 0, x: -10 }}
           transition={{ duration: 0.2 }}
         >
-          {view === 'master-dashboard' && (
+          {view === 'master-dashboard' && settings?.mode !== 'owner' && (
             <MasterDashboard
               entities={entities}
               accounts={accounts}
@@ -632,6 +704,26 @@ export function ViewRouter({
           )}
 
           {view === 'data' && <DataPage />}
+
+          {view === 'year-end' && activeEntity && (
+            <YearEndWizard
+              entity={activeEntity}
+              accounts={accounts}
+              entries={journals.filteredEntries}
+              fy={currentFy(today())}
+              onUpdateEntity={entityActions.updateEntity}
+              onNavigateToAccount={() => setView('coa-manager')}
+            />
+          )}
+
+          {view === 'settings' && setSettings && clearSettings && (
+            <Settings
+              settings={settings ?? null}
+              onChange={setSettings}
+              onClearSettings={clearSettings}
+              entities={entities}
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>

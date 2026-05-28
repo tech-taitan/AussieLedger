@@ -8,6 +8,7 @@ import { useAuditLog } from './hooks/useAuditLog';
 import { useAccounts } from './hooks/useAccounts';
 import { useJournals } from './hooks/useJournals';
 import { useEntities } from './hooks/useEntities';
+import { useSettings } from './lib/persona';
 import { MainLayout } from './components/shell/MainLayout';
 import { ViewRouter } from './components/ViewRouter';
 import type { View } from './types';
@@ -22,6 +23,7 @@ export default function App() {
   // migration is handled inside LocalAdapter.init() — App.tsx no longer
   // owns a synchronous migration useEffect.
   const { auditLogs, addLog } = useAuditLog();
+  const { settings, setSettings, clearSettings } = useSettings();
   const { accounts, updateAccount, saveAll } = useAccounts(addLog);
   const {
     entities,
@@ -52,6 +54,8 @@ export default function App() {
       activeEntityId={activeEntityId}
       setActiveEntityId={setActiveEntityId}
       entities={entities}
+      accounts={accounts}
+      allEntries={journalsHook.allEntries}
       setShowNewJournal={setShowNewJournal}
     >
       <ViewRouter
@@ -80,6 +84,10 @@ export default function App() {
           setView('master-dashboard');
         }}
         onUpdateAccount={updateAccount}
+        settings={settings}
+        setSettings={setSettings}
+        clearSettings={clearSettings}
+        addLog={(action, details, entityId) => addLog(action, details, entityId)}
       />
     </MainLayout>
   );

@@ -9,7 +9,9 @@ import { Header } from './Header';
 import { BottomNav } from './BottomNav';
 import { DisclaimerFooter } from '../DisclaimerFooter';
 import { AdapterFallbackBanner } from '../AdapterFallbackBanner';
-import type { View, Entity } from '../../types';
+import { useSettings } from '../../lib/persona';
+import { useAnomalyCounts } from '../../hooks/useAnomalyCounts';
+import type { View, Entity, Account, JournalEntry } from '../../types';
 
 interface MainLayoutProps {
   view: View;
@@ -19,6 +21,8 @@ interface MainLayoutProps {
   activeEntityId: string | null;
   setActiveEntityId: (id: string | null) => void;
   entities: Entity[];
+  accounts: Account[];
+  allEntries: Record<string, JournalEntry[]>;
   setShowNewJournal: (show: boolean) => void;
   children: React.ReactNode;
 }
@@ -31,10 +35,14 @@ export function MainLayout({
   activeEntityId,
   setActiveEntityId,
   entities,
+  accounts,
+  allEntries,
   setShowNewJournal,
   children,
 }: MainLayoutProps) {
   const activeEntity = entities.find((e) => e.id === activeEntityId);
+  const { settings } = useSettings();
+  const anomalyCounts = useAnomalyCounts(accounts, allEntries, activeEntityId);
 
   return (
     <div className="min-h-screen flex bg-[var(--bg)] relative">
@@ -46,6 +54,8 @@ export function MainLayout({
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
         setActiveEntityId={setActiveEntityId}
+        mode={settings?.mode ?? null}
+        anomalyCounts={anomalyCounts}
       />
 
       {/* Main Content */}

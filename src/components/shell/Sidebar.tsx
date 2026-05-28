@@ -17,9 +17,18 @@ import {
   Layers,
   HardDriveDownload,
   X,
+  Settings,
+  CalendarCheck,
+  Users,
+  ListTree,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { View, Entity } from '../../types';
+
+interface AnomalyCounts {
+  journals: number;
+  accounts: number;
+}
 
 interface SidebarProps {
   view: View;
@@ -29,6 +38,10 @@ interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   setActiveEntityId: (id: string | null) => void;
+  /** Current persona mode; null = not yet set (first-run). */
+  mode: 'owner' | 'agent' | null;
+  /** Anomaly counts for badge display. */
+  anomalyCounts: AnomalyCounts;
 }
 
 function NavButton({
@@ -36,11 +49,13 @@ function NavButton({
   onClick,
   icon,
   label,
+  badge,
 }: {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
+  badge?: number;
 }) {
   return (
     <button
@@ -51,7 +66,12 @@ function NavButton({
       )}
     >
       {icon}
-      {label}
+      <span className="flex-1 text-left">{label}</span>
+      {badge != null && badge > 0 && (
+        <span className="ml-auto text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold">
+          {badge}
+        </span>
+      )}
     </button>
   );
 }
@@ -64,6 +84,8 @@ export function Sidebar({
   isOpen,
   setIsOpen,
   setActiveEntityId,
+  mode,
+  anomalyCounts,
 }: SidebarProps) {
   return (
     <>
@@ -105,16 +127,44 @@ export function Sidebar({
           </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          <NavButton
-            active={view === 'master-dashboard'}
-            onClick={() => {
-              setView('master-dashboard');
-              setActiveEntityId(null);
-            }}
-            icon={<Layers size={18} />}
-            label="Master Dashboard"
-          />
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {/* ── Agent mode: top-level "Clients" (replaces Master Dashboard) ── */}
+          {mode === 'agent' && (
+            <NavButton
+              active={view === 'master-dashboard'}
+              onClick={() => {
+                setView('master-dashboard');
+                setActiveEntityId(null);
+              }}
+              icon={<Users size={18} />}
+              label="Clients"
+            />
+          )}
+
+          {/* ── Legacy / null mode: show Master Dashboard ── */}
+          {(mode === null) && (
+            <NavButton
+              active={view === 'master-dashboard'}
+              onClick={() => {
+                setView('master-dashboard');
+                setActiveEntityId(null);
+              }}
+              icon={<Layers size={18} />}
+              label="Master Dashboard"
+            />
+          )}
+
+          {/* ── Owner mode: Year-End at top ── */}
+          {mode === 'owner' && activeEntity && (
+            <NavButton
+              active={view === 'year-end'}
+              onClick={() => setView('year-end')}
+              icon={<CalendarCheck size={18} />}
+              label="Year-End"
+            />
+          )}
+
+          {/* ── Global items for all modes ── */}
           <NavButton
             active={view === 'audit-trail'}
             onClick={() => setView('audit-trail')}
@@ -127,6 +177,15 @@ export function Sidebar({
             icon={<HardDriveDownload size={18} />}
             label="Data"
           />
+          {/* ── Settings (all modes) ── */}
+          <NavButton
+            active={view === 'settings'}
+            onClick={() => setView('settings')}
+            icon={<Settings size={18} />}
+            label="Settings"
+          />
+
+          {/* ── Entity-scoped items ── */}
           {activeEntity && (
             <>
               <div className="py-2 mt-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-t border-[var(--line)]">
@@ -143,12 +202,20 @@ export function Sidebar({
                 onClick={() => setView('journals')}
                 icon={<BookOpen size={18} />}
                 label="Journal Entries"
+                badge={anomalyCounts.journals}
               />
               <NavButton
                 active={view === 'trial-balance'}
                 onClick={() => setView('trial-balance')}
                 icon={<FileSpreadsheet size={18} />}
                 label="Trial Balance"
+              />
+              <NavButton
+                active={view === 'coa-manager'}
+                onClick={() => setView('coa-manager')}
+                icon={<ListTree size={18} />}
+                label="Accounts"
+                badge={anomalyCounts.accounts}
               />
               <NavButton
                 active={view === 'tax-return'}
