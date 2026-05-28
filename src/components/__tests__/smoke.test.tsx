@@ -50,8 +50,15 @@ describe('Smoke tests — every major component renders without crashing (FND-07
     );
   });
   it('TrustTaxReturn renders', () => {
+    const trustEntity = {
+      _v: 4 as const,
+      id: 'smoke-trust',
+      name: 'Smoke Trust',
+      type: 'Trust' as const,
+      status: 'Active' as const,
+    };
     render(
-      <TrustTaxReturn accounts={sampleAccounts} entries={emptyEntries} onUpdateAccount={noOp} />,
+      <TrustTaxReturn entity={trustEntity} accounts={sampleAccounts} entries={emptyEntries} />,
     );
   });
   it('EntityForm renders (create mode)', () => {

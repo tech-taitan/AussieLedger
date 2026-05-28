@@ -563,11 +563,11 @@ export function ViewRouter({
             />
           )}
 
-          {view === 'trust-tax' && (
+          {view === 'trust-tax' && activeEntity && (
             <TrustTaxReturn
+              entity={activeEntity}
               accounts={accounts}
               entries={journals.filteredEntries}
-              onUpdateAccount={onUpdateAccount}
             />
           )}
 
