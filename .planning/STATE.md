@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: importtb-ux-rework
 current_phase: Phase 7 — ImportTB UX Rework (IN PROGRESS)
-current_plan: "07-4 (Plan 3 complete)"
+current_plan: "07-4 (Task 1 complete — awaiting UAT checkpoint)"
 status: in-progress
-stopped_at: Completed 07-3-PLAN.md (UI components + state machine wiring; 848 GREEN)
-last_updated: "2026-05-30T09:10:00.000Z"
+stopped_at: "07-4 Task 2 checkpoint:human-verify — pre-UAT gates all GREEN; waiting for user to run npm run dev and complete 42-step UAT"
+last_updated: "2026-05-30T09:20:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 0
@@ -34,10 +34,10 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 miles
 ## Current Position
 
 **Current phase:** Phase 7 — ImportTB UX Rework (IN PROGRESS)
-**Current plan:** 07-4 (Plan 07-3 complete — UI components + state machine wiring done)
-**Phase 7 status:** Plans 1+2+3 of 4 complete. All heuristics + UI components + state machine wired. Ready for Plan 07-4 UAT.
-**Last session:** 2026-05-30T09:10:00.000Z
-**Stopped at:** Completed 07-3-PLAN.md (UI components + state machine wiring; 848 GREEN)
+**Current plan:** 07-4 Task 2 — awaiting human UAT (checkpoint:human-verify)
+**Phase 7 status:** Plans 1+2+3+4-Task1 complete. Pre-UAT automated gate PASSED (848 SPA GREEN + 18 server GREEN + lint EXIT 0 + build EXIT 0). Paused at Task 2 checkpoint awaiting user UAT of 42 steps across 5 fixture scenarios.
+**Last session:** 2026-05-30T09:20:00.000Z
+**Stopped at:** 07-4 Task 2 checkpoint:human-verify — user must run `npm run dev` and complete 42-step UAT protocol
 **Overall progress:** v1.1: 0/3 phases complete (Phase 7 in progress).
 
 ```
@@ -73,6 +73,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | 7 | 1 | ~20 min | 1 | 17 | 769 GREEN, 75 todo |
 | 7 | 2 | ~16 min | 3 | 12 | 821 GREEN, 28 todo |
 | 7 | 3 | ~45 min | 4 | 8 | 848 GREEN, 11 todo |
+| 7 | 4 | ~5 min (Task 1) | 1/2 | 0 | 848 GREEN, 11 todo (gate only) |
 
 ---
 
