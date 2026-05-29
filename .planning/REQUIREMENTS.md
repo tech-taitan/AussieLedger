@@ -96,7 +96,7 @@ Cross-cutting tests and one-line code cleanup.
 
 ## Traceability
 
-Filled by `/gsd:roadmapper` once phase assignment locks. Each REQ-ID maps to exactly one phase.
+Phase assignments locked by `/gsd:roadmapper` 2026-05-29. Each REQ-ID maps to exactly one phase.
 
 | Req | Phase | Status |
 |-----|-------|--------|
