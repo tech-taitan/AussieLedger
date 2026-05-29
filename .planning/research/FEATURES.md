@@ -1,8 +1,9 @@
-# Feature Research
+# Feature Landscape — v2.0 Desktop + File-Backed + Network-Sandbox
 
-**Domain:** Australian small-business bookkeeping → tax-return tool (self-hosted, open-source)
-**Researched:** 2026-05-10
-**Confidence:** HIGH (AU tax domain well-understood; ATO form structures stable year-on-year; confirmed against PROJECT.md and existing codebase)
+**Domain:** Desktop accounting app — portable single-file model, local-first, network-sandboxed
+**Researched:** 2026-05-29
+**Confidence:** HIGH (Tauri 2 docs direct; GnuCash/Manager.io/QuickBooks patterns verified from official docs/forums; Apple OS conventions from Apple Developer docs)
+**Scope note:** This file covers ONLY new v2.0 capabilities. v1.0 domain features (wizard, persona modes, tax engine, BAS, CoA, journals) are covered in the archived v1.0 FEATURES.md and are not repeated here.
 
 ---
 
@@ -16,340 +17,245 @@
 
 ---
 
-## Table Stakes
+## Feature Groups
 
-Features users expect from any credible accounting → tax-return product. Absent = product feels broken or untrustworthy.
-
-### Bookkeeping Core
-
-| Feature | Why Expected | Complexity | Persona | Notes |
-|---------|--------------|------------|---------|-------|
-| Double-entry journal entry (debit = credit enforced) | Fundamental bookkeeping invariant; users expect software to stop mistakes | Low | BOTH | Prototype has this — enforce at data layer, not just UI |
-| Chart of Accounts (CRUD) with AU account categories | Every bookkeeping tool has a CoA; users arrive with one | Med | BOTH | Current 16 entries is insufficient; 80–150 credible AU SME accounts needed |
-| Account hierarchy (parent / child groupings) | Users want to see "Total Operating Expenses" not 40 flat lines | Med | BOTH | E.g. "Operating Expenses" header → individual expense lines |
-| GST code assignment per account (GST, FRE, INP, N-T) | AU-mandatory; every purchase/sale has a GST treatment | Low | BOTH | Prototype has 3 codes; INP (input-taxed) should also be supported |
-| Opening trial balance import (CSV / Excel) | Most users arrive with existing books in a spreadsheet or prior software | High | BOTH | Deterministic parser + column-mapping UI; current AI-only path is fragile |
-| Manual journal entry creation | Core workflow for adjustments, accruals, year-end entries | Low | BOTH | Prototype exists; needs edit/reverse/void capability |
-| Edit and reverse posted journal entries | Users make mistakes; no accounting product forces delete-and-re-enter | Med | BOTH | Must leave an immutable audit record of the reversal |
-| Trial balance report (date-range filtered) | Standard output from any GL; shows the state of the books | Low | BOTH | Prototype has this; needs period model applied consistently |
-| Financial year period model (1 Jul – 30 Jun) | AU businesses run on the ATO financial year, not calendar year | Med | BOTH | Periods: FY, Q1–Q4, custom range — applied to TB, BAS, tax outputs |
-| Durable persistence (survives browser cache clear) | Data loss for accounting records is catastrophic | High | BOTH | localStorage-only is a critical failure; File System API / SQLite-WASM / IndexedDB with mandatory export |
-| Data export (JSON + CSV) | Users want portability; self-hosted ethos requires it | Med | BOTH | At minimum: entity data, journal entries, TB export |
-| Audit trail (immutable, tamper-evident) | Accounting records must be traceable; agents need to show "who changed what" | Med | BOTH | Current AuditTrail.tsx is shallow; needs real immutability |
-| Compliance disclaimer (always visible) | Legal/ethical obligation — software is not tax advice | Low | BOTH | Prototype has none; mandatory before any real use |
-
-### Entity Management
-
-| Feature | Why Expected | Complexity | Persona | Notes |
-|---------|--------------|------------|---------|-------|
-| All four AU entity types: Company (Pty Ltd), Trust, Sole Trader / Individual, Partnership | Core scope; missing any one excludes large audience segments | Med | BOTH | Each has distinct tax form, labels, and distribution rules |
-| ABN / TFN fields on entity | Required on every ATO form; users need a place to record them | Low | BOTH | With AU-format validation (ABN = 11 digits, TFN = 9 digits) |
-| GST registration flag on entity | Determines whether BAS is required; drives GST code defaults | Low | BOTH | GST-registered vs not-registered changes form output |
-| Accounting method flag: cash vs accruals | ATO requires the method to be declared; drives how transactions are reported for BAS and tax | Low | BOTH | Affects G1/G3 GST reporting and income recognition |
-| Financial year end (defaults to 30 June, allows 31 Dec or custom for special approval entities) | Not all entities are on standard FY | Low | BOTH | Rare but correct |
-
-### Tax Outputs — BAS / IAS
-
-| Feature | Why Expected | Complexity | Persona | Notes |
-|---------|--------------|------------|---------|-------|
-| BAS calculation: G1 (total sales), G2 (export sales), G3 (other GST-free sales), G10 (capital purchases), G11 (non-capital purchases), 1A (GST on sales), 1B (GST on purchases) | ATO-mandated labels for every GST-registered entity | Med | BOTH | Prototype has these; correctness needs testing against ATO worksheet method |
-| BAS: PAYG withholding section (W1 total wages, W2 tax withheld) | Any entity with employees must report PAYG | Med | BOTH | Even sole traders may have employees |
-| BAS: PAYG instalment section (T7 for quarterly instalment) | Most small companies/trusts pay PAYG instalments | Med | BOTH | T7 varies by instalment method (income × rate or pre-calculated ATO amount) |
-| IAS: PAYG-only periods for non-GST entities | Entities not registered for GST still lodge IAS for PAYG | Low | BOTH | Separate from BAS |
-| BAS period selection: monthly / quarterly | ATO assigns lodgement frequency; users need to select which period they're preparing | Low | BOTH | Default quarterly for most small businesses |
-| Print-ready BAS summary (for manual transcription to myGov) | Users need to transcribe into the portal or hand to agent | Low | BOTH | Formatted output matching ATO field labels exactly |
-
-### Tax Outputs — Income Tax Returns
-
-| Feature | Why Expected | Complexity | Persona | Notes |
-|---------|--------------|------------|---------|-------|
-| Individual tax return (Form I) — business schedule: item 15 (net income or loss from business), item P1 (business income), P2 (deductions), P8 (net small business income) | Sole traders lodge via Form I with Supplementary sections | High | BOTH | Must cover all business schedule labels, not just 5–10 |
-| Company tax return (Form C) key labels: gross sales (item 6), total expenses (item 7), taxable income (item 7S), tax offset for base rate entity (item 7D), franking account balance | Core labels for a small Pty Ltd | High | BOTH | NAT 0656; base rate entity threshold is $50M aggregated turnover — important default |
-| Trust tax return (Form T): trust income, deductions, beneficiary distribution schedule | Trusts must distribute income; each beneficiary's share drives their individual return | Very High | BOTH | Distribution schedules are the complex part; amounts must reconcile to trust's net income |
-| Partnership tax return (Form P): partnership income/loss, individual partner distribution statements | Partnerships pass income to partners; Form P + each partner's Form I | High | BOTH | Partner share percentages must be maintained |
-| Tax rate / threshold accuracy: 25% base rate company tax (base rate entity), 30% otherwise; individual marginal rates | Correctness of tax-payable calculation | Med | BOTH | Current prototype has inline magic numbers; needs centralized constants with FY versioning |
-| Print-ready tax return summary per entity type | Users need to hand this to ATO via myGov or give to their agent | Med | BOTH | Labelled fields, ATO field codes, calculated amounts — formatted for human transcription |
-
-### Guidance & UX
-
-| Feature | Why Expected | Complexity | Persona | Notes |
-|---------|--------------|------------|---------|-------|
-| In-context field help (plain-English label descriptions) | Non-accountant users don't know what "G10" or "item 7S" means | Med | OWN | Tooltip / panel per ATO label; key differentiator but also table stakes for non-accountant tool |
-| Anomaly / warning flags (unbalanced TB, unmapped accounts, GST mismatches) | Users need the software to catch their mistakes before they print a return | Med | BOTH | Surfaced in-context at the point of the problem, not buried in a report |
-| Account → tax-label pre-mapping (smart defaults on default CoA) | Without this, every user must manually map 80+ accounts before the return works | High | BOTH | The most labour-intensive setup task; good defaults eliminate 90% of it |
+1. File Menu & File Lifecycle
+2. Default File Location & First-Run UX
+3. Backup / Autosave / Crash Recovery
+4. Multi-Window / Multi-File
+5. External-Edit Detection
+6. Migration from v1.0
+7. Network-Sandbox & AI Consent
+8. Anti-Features (explicit exclusions)
 
 ---
 
-## Differentiators
+## TABLE STAKES
 
-Features that give AussieLedger competitive advantage over Xero/MYOB/QuickBooks and free alternatives (GnuCash, Manager.io).
+Features that any credible desktop accounting tool with a file-based model MUST have. Absence makes the app feel broken or unsafe.
 
-| Feature | Value Proposition | Complexity | Persona | Notes |
-|---------|-------------------|------------|---------|-------|
-| Completely free, no subscription, no seat limits | Xero is $35–$85/month per entity; MYOB $29–$99/month; QuickBooks $20–$65/month. Zero cost is a genuine category-level differentiator for SMEs whose subscription has lapsed | Low (policy) | BOTH | Reinforced by open-source: no vendor lock-in, no feature gating |
-| Self-hosted: data stays on user's machine | Cloud tools hold accounting data on vendor servers. Accountants and privacy-conscious owners value local control | Med (infra/docs) | BOTH | Requires clear setup docs and durable local persistence |
-| Guided year-end wizard (non-accountant path) | Xero/MYOB assume accountant literacy; GnuCash has no guidance at all. A sequenced wizard (review unmapped accounts → confirm GST → preview return → finalise) lowers the bar | High | OWN | Wizard-first for owner mode; skippable for agent mode |
-| Both personas in one tool with mode switching | Commercial tools charge differently for agent vs client access; free tools don't address agents at all. One tool, mode switch, no paywall | Med | BOTH | Mode is a local instance setting, not a cloud account tier |
-| All four AU entity types without upsell | MYOB and Xero gatekeep trust/partnership support behind higher plans or separate products | Med (taxonomy) | BOTH | Company + Trust + Sole Trader + Partnership all in v1 |
-| ATO-labelled print-ready outputs matching actual form fields | Most spreadsheet templates don't use ATO field codes. GnuCash/Manager produce generic P&L, not ATO-structured summaries. Agents can drop these directly into their lodgement software | High | BOTH | NAT 0656 (Form C), 0660 (Form I), 0659 (Form T), 0976 (Form P) field alignment |
-| Hybrid workflow: import opening TB + ongoing journals | Xero requires ongoing transactional data entry; pure-TB tools don't handle year-round adjustments. Hybrid meets users where they are | Med | BOTH | Most compelling for the "lapsed subscription" segment arriving with a prior year's TB |
-| Tax-year versioning of rates/thresholds | Commercial tools auto-update; most free tools hardcode stale values. Documented FY constants with a refresh path is a meaningful trust signal for agents | Med | AGT | Constants file with FY tag; changelogs; documented manual update process |
-| Open-source: tax logic is inspectable and auditable | Agents and technically-literate owners can verify the math. No other free AU tax tool is fully open-source with visible tax computation | Low (posture) | AGT | "Show your working" builds trust for an accounting product |
-| Multi-client workspace for agents (fast entity switching, no per-client upsell) | Agent-focused tools (HandiTax, LodgeiT) are expensive. A free agent workspace for smaller/simpler clients has no direct competitor | Med | AGT | Agent mode: entity list, fast switch, no wizard overhead |
+### Group 1 — File Menu & File Lifecycle
+
+| Feature | Why Expected | Effort | Persona | Dependency | Pattern Reference |
+|---------|--------------|--------|---------|------------|-------------------|
+| **File → New** (creates a fresh `.aussieledger` file via OS Save dialog) | Every file-based desktop app opens with this. User expects to pick a location and filename on first create. | Small | BOTH | Tauri `save` dialog + FileBackedAdapter.createNew() | GnuCash, Manager.io, QuickBooks all open with a "New company file" dialog |
+| **File → Open** (OS file picker, `.aussieledger` filter) | Standard file-open gesture. Double-click on file should also trigger this. | Small | BOTH | Tauri `open` dialog + FileBackedAdapter.open() | Universal desktop convention |
+| **File → Open Recent** (last 5–10 files, stored in app config) | Accounting users work on the same file every session. Recent files list eliminates friction. | Small | BOTH | Tauri `BaseDirectory.AppData` for MRU list (not the .aussieledger file itself) | QuickBooks: "No Company Open" screen lists recent; GnuCash: File menu MRU; Manager.io: Businesses tab |
+| **File → Save As** (copy current file to new path/name — the primary "backup" gesture) | Users want named point-in-time snapshots, especially before year-end. This IS the backup UX for SQLite-per-file. | Small | BOTH | SQLite `VACUUM INTO` or file copy + reopen | GnuCash: File → Save As converts format; QuickBooks: File → Back Up Company |
+| **File → Close** (close current file, return to "no file open" state or welcome screen) | File-based apps must have a clean close path so the user can open a different file. | Small | BOTH | FileBackedAdapter.close() + WAL checkpoint | GnuCash, Manager.io |
+| **Title bar shows current filename + full path (on hover/tooltip)** | "Where's my file?" is the #1 UX complaint in Manager.io forums. Users must always know what file is open. | Small | BOTH | None — Tauri window title API | Manager.io surfaces path in bottom-left of Businesses screen; QuickBooks shows file path in title bar |
+| **Double-click `.aussieledger` file in OS to open AussieLedger** | OS file-association registration. Non-technical users expect this. | Small | BOTH | Tauri file association in `tauri.conf.json` + deep-link handler | Standard desktop app convention |
+| **"No file open" welcome screen** with New / Open / Recent options | When no file is loaded the app must not show a blank or broken state. | Small | BOTH | None beyond v1.0 shell | QuickBooks "No Company Open" screen; GnuCash start screen |
+
+**Save semantics note:** SQLite auto-commits every transaction. There is no "unsaved" state in the traditional sense — every journal entry, account change, or wizard step is immediately durable in the file. The correct model (confirmed by GnuCash SQLite backend behaviour) is: **no manual Save button for transactional data**. Instead, expose Save As for snapshots and a visible "Last saved" timestamp in the status bar. This matches Apple Pages autosave model, not Excel model. The Excel model (dot-modified indicator + Ctrl+S) is wrong for SQLite-backed apps and will confuse users into thinking data is at risk when it is not.
 
 ---
 
-## Anti-Features
+### Group 3 — Backup / Autosave / Crash Recovery
 
-Features to deliberately not build. Explicitly excluded from scope with reasoning, so they don't sneak back in.
+| Feature | Why Expected | Effort | Persona | Dependency | Pattern Reference |
+|---------|--------------|--------|---------|------------|-------------------|
+| **Autosave / no explicit Save button** (SQLite commits are the save) | Non-accountant owners are terrified of data loss. "Did my changes save?" anxiety is removed entirely when every change is transactionally committed. | Small | BOTH | FileBackedAdapter — transactions already auto-commit | GnuCash SQLite backend: "database formats save changes immediately" (GnuCash v5 docs) |
+| **"Last modified" timestamp visible in status bar** | Reassures user that their most recent action is persisted. Replaces the save-dot indicator of manual-save apps. | Small | BOTH | Read file mtime via Tauri fs plugin | Apple Pages: "Saved" in title area; VS Code: status bar info |
+| **File → Save As (snapshot / backup)** | Primary manual backup gesture. User wants to create a dated copy before year-end or before making risky bulk changes. Naming convention: `MyBusiness-2026-06-30.aussieledger` | Small | BOTH | SQLite `VACUUM INTO` target path (atomic copy; WAL folded in) | QuickBooks: "Back Up Company"; GnuCash: "Save As" |
+| **Backup reminder on close** (configurable: "Remind me to save a backup every N days") | Accounting data loss is catastrophic. QuickBooks trains users to expect this. Non-accountant audience especially needs the nudge. | Medium | BOTH | App config in `BaseDirectory.AppData`; countdown tracked per file | QuickBooks: close-time backup prompt; configurable interval 1–99 days |
+| **WAL checkpoint on clean close** | If the user copies the `.aussieledger` file while the app is open (via Dropbox, USB copy), the WAL file must be folded in. Tauri app must run `PRAGMA wal_checkpoint(FULL)` on File → Close and app quit. | Small | BOTH | FileBackedAdapter.close() — add checkpoint call | SQLite WAL docs: "checkpoint is run automatically" on clean close |
 
-| Anti-Feature | Why It Gets Requested | Why Not Build It | What to Do Instead |
+---
+
+### Group 4 — Multi-Window / Multi-File
+
+| Feature | Why Expected | Effort | Persona | Dependency | Pattern Reference |
+|---------|--------------|--------|---------|------------|-------------------|
+| **Single-instance, single-file-at-a-time** (File → Open switches context; second open of same file is blocked) | Both GnuCash and QuickBooks enforce exclusive file access. For a single-user accounting app this is correct: concurrent writes to the same SQLite file corrupt data. | Small | BOTH | SQLite exclusive lock (default journal mode); show error if file already locked | GnuCash: "could not obtain the lock" message; QuickBooks: "Company File in Use" error |
+| **Warn before opening a second file without closing** | User may accidentally open a second file. Prompt: "Close [current file] and open [new file]?" | Small | BOTH | Detect open file state before open dialog | GnuCash, QuickBooks both prompt |
+
+**Multi-window is DEFERRED:** Opening two `.aussieledger` files in separate windows requires two independent SQLite connections + separate React root states. This is a non-trivial Tauri multi-window architecture change. Single-instance single-file is the correct v2.0 model. Tax agents who work across multiple clients can use fast File → Recent switching. (See DEFER section.)
+
+---
+
+### Group 6 — Migration from v1.0
+
+| Feature | Why Expected | Effort | Persona | Dependency | Pattern Reference |
+|---------|--------------|--------|---------|------------|-------------------|
+| **"Import from v1.0" guided flow** — reads v1.0 JSON export, writes a new `.aussieledger` file | v1.0 users have data in IndexedDB or Express+SQLite. They MUST have a migration path or they are stranded. This is table stakes for any major-version upgrade. | Medium | BOTH | v1.0 JSON export (already exists: DataPage); v5→v6 schema migration runner | Pattern: one-shot import wizard, not automatic detection. GnuCash: File → Import; similar patterns in Uptime Kuma v1→v2 migration |
+| **v5→v6 schema migration in FileBackedAdapter** | The existing v0→v5 migration chain must be extended. v6 schema is the `.aussieledger` format. | Medium | BOTH | CONTRIBUTING.md additive-only migration rule; existing migration runner | v1.0 FND-09 (already shipped) |
+
+---
+
+### Group 7 — Network-Sandbox & AI Consent
+
+| Feature | Why Expected | Effort | Persona | Dependency | Pattern Reference |
+|---------|--------------|--------|---------|------------|-------------------|
+| **All outbound HTTP blocked by default in Tauri capabilities config** | The Tauri HTTP plugin requires explicit URL allowlist — if no `http:allow-fetch` + URL scope is configured, the fetch call throws at runtime. This is the hard network sandbox the v2.0 milestone promises. | Small | BOTH | Tauri `src-tauri/capabilities/default.json` — omit http permissions entirely unless AI is enabled | Tauri v2 HTTP Client docs: "does not allow explicitly any origins to be fetched" until configured |
+| **Explicit per-request consent dialog for AI calls** (e.g. "Suggest account mappings") | Before sending any GL data to an external API, a consent prompt is mandatory. Non-technical users do not expect their local accounting data to leave the machine. Missing consent = trust violation. | Medium | BOTH | Reuses Phase 3 export-replace dialog pattern; add network-destination details | AI UX Design patterns: "Transparency Before Action" — show data flow before processing. 1Password: telemetry is opt-in only. |
+| **Consent dialog shows exactly what is sent** ("Your account names and 6 months of GL totals will be sent to [host]. No individual transaction details.") | Vague "Enable AI?" toggles are insufficient for tax data. Users need to know the scope of the data leaving the machine. | Medium | BOTH | None — new UI component; dialog content is static per AI feature | Privacy-first design pattern: "granular privacy controls with clear explanations of what data is used and why" |
+| **Consent is per-session or per-request, not permanent** | For v2.0 with a non-technical audience who may regret enabling AI, per-session consent (resets on app restart) is the safer default. Permanent "always allow" can be added in v2.1. | Small | BOTH | Session state only (not persisted to app config in v2.0) | Signal: no silent network calls; each external action requires user intent |
+| **AiGateNote (v1.0 component) surfaced when AI is disabled** | Already built in v1.0. Must be preserved and wired to the new network-sandbox state (Tauri capability check, not just `isAiEnabled()` env check). | Small | BOTH | Existing AiGateNote component; add Tauri capability query | v1.0 Phase 6 AiGateNote |
+
+---
+
+## DIFFERENTIATORS
+
+Features that set AussieLedger v2.0 apart from GnuCash, Manager.io, and web-based tools. Not strictly expected, but valued.
+
+| Feature | Value Proposition | Effort | Persona | Dependency | Notes |
+|---------|-------------------|--------|---------|------------|-------|
+| **"Where is my file?" disclosure in app** — Settings or status bar shows full path with "Reveal in Finder/Explorer" button | Manager.io forum: "Where is the accounting file?" is the top confusion post. Manager surfaces path at bottom of Businesses screen. AussieLedger should do the same in a visible, permanent location. | Small | BOTH | Tauri `shell:open` to reveal in OS file manager | Differentiates from Manager's buried path; beats GnuCash which shows nothing |
+| **Drag-and-drop `.aussieledger` file onto window to open** | Power users expect this. Reduces friction of File → Open for USB-stick workflows. | Small | BOTH | Tauri drag-drop event handler | Not common in accounting tools; common in editors |
+| **Backup reminder with "Save As" prefilled name** (e.g. `MyBusiness-2026-06-30-backup.aussieledger`) | QuickBooks backup reminder doesn't suggest a name. A prefilled timestamped name reduces friction and creates a sensible naming convention for the user's backup folder. | Small | BOTH | Date-format utility already in codebase | No direct competitor does this well |
+| **File path shown in title bar** — `AussieLedger — MyBusiness.aussieledger` | Users asked "where's my file?" in every accounting forum we checked. Title bar is the most persistent UX real estate. | Small | BOTH | Tauri `setTitle()` API | QuickBooks does this; GnuCash does not consistently |
+| **CSV per-report export from file** (FND-02 carry-over) — TB CSV, BAS labels CSV, Form I CSV downloadable alongside `.aussieledger` file | Natural fit for the v2.0 file-export work. Users who share data with accountants need CSV, not JSON. Resolves the v1.0 known gap. | Medium | BOTH | Existing export infrastructure + Tauri `save` dialog for each report | FND-02 consciously deferred from v1.0; v2.0 is the correct milestone |
+| **Tauri native print dialog** (replaces `window.print()`) | Tauri 2 exposes `window.__TAURI__.webview.print()` which triggers the OS native print dialog. More reliable than `window.print()` in a WebView; allows saving to PDF via OS-level PDF printer without a PDF library. | Small | BOTH | Existing `window.print()` call → replace with Tauri print API | Resolves v1.0 open question about PDF library; free with Tauri |
+
+---
+
+## DEFER
+
+Nice features, but not v2.0. Explicitly out of scope for this milestone.
+
+| Feature | Why Valuable | Why Not v2.0 | When |
+|---------|--------------|--------------|------|
+| **Multi-window / two files simultaneously** | Tax agents want to view two clients side by side | Requires Tauri multi-window architecture, two independent SQLite handles, two React roots — significant architectural work | v2.1 or v3 |
+| **Permanent "always allow AI" toggle** (per-session consent is v2.0) | Power users find per-session consent friction | v2.0 audiences are cautious; permanent opt-in is a lower-risk v2.1 addition after consent UX is validated | v2.1 |
+| **Auto-update infrastructure** | User expects silent update like Chrome | Explicitly out of scope per PROJECT.md: "manual download for v2.0; auto-update v2.1" | v2.1 |
+| **Scheduled timed backup** (GnuCash/QB style: save backup at 2am daily) | Reduces reliance on user remembering to Save As | Requires background process / system scheduler; adds OS-level complexity | v2.1 |
+| **IndexedDB direct import** (detect v1.0 IDB data in same browser profile) | Reduces migration friction for users upgrading | Tauri WebView does not have access to browser's IndexedDB profile; IDB detection would require a separate browser-based export step anyway — the JSON export path is simpler and more reliable | Not feasible; JSON export path is correct |
+| **iCloud / Dropbox integration** | Users want cloud backup without manual file management | Explicitly out of scope per PROJECT.md: "Cloud sync/file-sync layer — Dropbox/iCloud users can manage that themselves with the file" | v3+ |
+| **File versioning / history** (undo beyond single transaction) | Power users want to revert to 3 days ago | Requires snapshot-chain management alongside primary file; complex storage design | v3+ |
+| **`.aussieledger` file encryption** (password-protected file) | Tax data is sensitive; encrypted file at rest | Requires SQLite Encryption Extension (SEE, commercial) or SQLCipher (LGPL); significant dependency addition | v2.1 after evaluating SQLCipher |
+
+---
+
+## ANTI-FEATURES
+
+Features to explicitly NOT build in v2.0. Each row becomes an explicit "out of scope" REQ-ID in REQUIREMENTS.md.
+
+| Anti-Feature | Why It Gets Requested | Why Never Build It in v2.0 | What to Do Instead |
 |---|---|---|---|
-| SBR / direct ATO lodgement | "Why can't I lodge directly from the app?" | ATO software developer registration, RAM/myID credential handling, ATO conformance testing, ongoing certification maintenance — months of compliance work before any user value | Print-ready output with ATO field codes; users transcribe to myGov or hand to agent |
-| Bank feeds / Open Banking | "Just connect my bank" | Paid APIs (Basiq, Yodlee, CDR accreditation), commercial data-holder agreements, PCI-adjacent security scope, conflicts with open-source self-hosted ethos | TB import from CSV/Excel covers the same data; no API costs, no credential risk |
-| Bank statement CSV parsing + transaction reconciliation | "I want to import my bank statement" | Pulls in a second product surface: transaction categorisation, rules engine, splits, transfers, reconciliation UX — doubles scope without being on the TB→tax critical path | Opening TB import covers the year-end use case; transaction reconciliation is a v2+ milestone |
-| AI chatbot / conversational assistant | "Ask your accountant" UX is appealing | API key in client bundle (security), hallucination risk on tax advice, requires paid API, breaks offline/self-hosted instances, chosen explicitly against by the user | Guided wizards + smart defaults + in-context help tooltips achieve the same guidance goal deterministically |
-| Invoicing / AR / AP / inventory / payroll | Xero competitors have all of this | None of these features sit on the TB → tax return critical path; each is a significant product surface; building them dilutes the core value proposition | Document as explicit v2+ gap; TB import absorbs the output of any external invoicing tool |
-| FBT, LCT, fuel-tax credits, R&D tax incentive, Division 7A loans, CGT events, rental schedules | "What about my rental property?" | Each is a specialist tax surface requiring dedicated schedules, ATO label sets, and domain-specific rules — collectively a multi-month project | Surface as known gaps with disclaimer; treat as v2+ modules after core forms are solid |
-| Multi-tenant hosted SaaS / cloud offering | "Can I access from anywhere?" | Central hosting, multi-user auth, billing, data isolation, uptime obligations — turns a free tool into a service business | Self-hosted; user can deploy on VPS if remote access is needed; provide clear deployment docs |
-| Foreign entity support (US LLC, UK Ltd, etc.) | Prototype had a "US Big Law Firm" seed entity | AU-only is a deliberate constraint; multi-jurisdiction tax rules multiply complexity non-linearly | Remove foreign seed data; document AU-only scope clearly in UI and README |
-| Slide / presentation generator | Prototype had Gemini-powered slide generator | Off-mission decorative feature; pulls in AI API dependency | Remove entirely |
-| "ATO Connected" status indicator (simulated or real) | Looks professional, users might expect real-time ATO connection | Simulated version is actively misleading; real version requires SBR (out of scope) | Remove; replace with honest disclaimer about print-ready / manual transcription workflow |
-| Real-time collaborative editing | "Multiple users editing simultaneously" | Complex CRDT / locking problem; conflicts with local-file persistence model; unnecessary for small-entity use | Mode-level access control (owner vs agent view) is sufficient; single-writer model is fine for v1 |
+| **Background telemetry / analytics / crash reporting** | "We need to know if it crashes" | Breaks the "all data local" promise. Any background call — even a crash reporter — requires user consent in a network-sandboxed app. The Tauri HTTP plugin is blocked by default; adding telemetry would be an active choice to violate the model. | Ship with zero telemetry. If crash reporting is ever added, it must be explicit opt-in with a visible network-consent dialog. |
+| **Silent "phone home" version check on launch** | "How will users know about updates?" | A version check pings a remote server on every launch without user action. This is a network call the user did not initiate. It also breaks the hard network sandbox. | Show version in Help → About. Publish GitHub Releases. Let users check manually. Auto-update is v2.1 after explicit user opt-in. |
+| **Online help / documentation fetched at runtime** | "Link to the docs" is convenient | External link in app requires network; if docs are fetched silently, this is an undisclosed network call. Opens a browser tab which the user controls. | Bundle minimal inline help (existing LabelTooltip + AiGateNote pattern). External links open browser tab — user-initiated, not automatic. Do NOT fetch help content silently. |
+| **Embedded browser frames pulling external content** (ads, status pages, news feeds) | Some accounting apps embed a dashboard pulling live data | Any iframe/webview pulling external content breaks the network sandbox and can exfiltrate file path or machine info via referrer headers. | No embedded external content. Zero. If an external page is needed, open it in the OS browser. |
+| **Automatic "check for updates" network call** | Users want to stay current | Same as phone-home version check. Breaks sandbox. Explicit user action in Help menu is the correct model for v2.0. | Help → Check for Updates (user-initiated, one-off network call with consent). Not automatic. |
+| **Storing `.aussieledger` file in hidden app-data path by default** (`~/Library/Application Support/` or `%APPDATA%`) | App config files (GnuCash preferences, Manager.io index) correctly live in AppData. But the USER'S accounting file is not app config — it is user-created data. Apple explicitly states: "user data belongs in user-controlled directories" (Apple BPFileSystem docs). Hiding the file in AppData would reproduce the "where's my data?" problem that v2.0 is designed to solve. | Default save location for new `.aussieledger` files must be `~/Documents/AussieLedger/` (macOS/Linux) / `Documents\AussieLedger\` (Windows). The MRU list and app preferences live in AppData — but not the user's file. | Default save dialog pre-navigates to `~/Documents/AussieLedger/`. User may choose any location. The choice is theirs and is visible. |
+| **Locking the file to the app-data folder** (Manager.io's default model) | Manager.io's desktop edition probes only its app-data folder for `.manager` files by default; files outside this folder don't appear in the Businesses list unless "opened directly". | AussieLedger's portable-file promise requires that the file is fully moveable. A hidden app-data folder defeats USB-stick, NAS, and encrypted-drive use cases. | OS-native file picker everywhere. No hidden probe folder. |
+| **Implicit network calls when AI is "enabled"** | "The user already turned on AI in settings" | Even with AI enabled, each batch of data sent externally must be an explicit user action ("Suggest mappings" button click), not a background inference on every journal entry save. The AiGateNote v1 pattern is correct: gated at the action, not at the toggle. | Per-action consent dialog (see Group 7 above). Setting enables the feature; each use requires confirmation of what is sent. |
+| **"ATO Connected" or similar status theatre** | Looks professional | Explicitly removed in v1.0 as actively misleading. Must not reappear in v2.0 in any form — including network indicators that imply live ATO data. | Always-visible "not tax advice" disclaimer (v1.0 FND-06, retained). |
 
 ---
 
 ## Feature Dependencies
 
 ```
-Durable persistence
-    └──required by──> All features (data loss makes every other feature worthless)
+FileBackedAdapter (new, behind StorageAdapter interface — zero domain-layer changes)
+    └──required by──> File → New / Open / Close / Save As
+    └──required by──> WAL checkpoint on close
+    └──required by──> External-edit detection (file watcher)
+    └──required by──> v1.0→v2.0 migration (v5→v6 schema)
 
-Chart of Accounts (with GST codes + tax-label mapping)
-    └──required by──> Journal entry
-    └──required by──> Opening TB import (account matching)
-    └──required by──> BAS calculation (G1/G10/G11 depend on GST codes)
-    └──required by──> All tax return outputs (label rollups depend on CoA → ATO label mapping)
+Tauri OS file picker (tauri-plugin-dialog)
+    └──required by──> File → New, File → Open, File → Save As
+    └──required by──> CSV per-report export (FND-02)
 
-Journal entries (posted, balanced)
-    └──required by──> Trial balance
-    └──required by──> BAS calculation
-    └──required by──> All income tax return outputs
+Tauri file watcher (tauri-plugin-fs, "watch" feature flag)
+    └──required by──> External-edit detection ("File changed externally, reload?")
 
-Trial balance
-    └──required by──> Year-end review wizard
-    └──required by──> Print-ready tax return outputs
+Tauri BaseDirectory.AppData
+    └──required by──> MRU (recent files) list
+    └──required by──> Backup reminder countdown
+    └──NOT used for──> .aussieledger file itself (user Documents)
 
-GST code on account
-    └──required by──> BAS G1, G10, G11 calculation
-    └──required by──> GST auto-calc on journal lines
+v5→v6 schema migration (extends existing v0→v5 chain)
+    └──required by──> Import from v1.0
+    └──required by──> Opening any file created by v1.0 express+SQLite shape
 
-Account → ATO tax-label mapping (smart defaults)
-    └──required by──> Individual tax return (item 15 / P1 / P2 rollups)
-    └──required by──> Company tax return (item 6 / 7 rollups)
-    └──required by──> Trust tax return (income / deduction rollups)
-    └──required by──> Partnership tax return (income / loss rollups)
+Network sandbox (Tauri HTTP plugin — no URL scope granted)
+    └──enforced by──> Omitting http: permissions from capabilities/default.json
+    └──overridden by──> Per-action AI consent dialog (adds URL scope for that session only)
 
-Entity type (Company / Trust / Sole Trader / Partnership)
-    └──required by──> Correct tax return form selection
-    └──required by──> Account → tax-label mapping (label sets differ per entity type)
-    └──required by──> Distribution schedule (Trust: beneficiaries; Partnership: partners)
+Consent dialog (new component)
+    └──reuses──> Phase 3 export-replace dialog pattern (existing modal shell)
+    └──required by──> Any AI feature that calls external API
+    └──required by──> Help → Check for Updates (user-initiated only)
 
-Beneficiary / partner register
-    └──required by──> Trust distribution schedule (Form T)
-    └──required by──> Partnership distribution statement (Form P)
-
-Period model (financial year / quarters)
-    └──required by──> BAS period selection
-    └──required by──> Trial balance date filtering
-    └──required by──> Tax return year selection
-
-Tax rate / threshold constants (FY-versioned)
-    └──required by──> Company tax payable calculation
-    └──required by──> Individual marginal rate calculation
-    └──required by──> BAS PAYG instalment (T7)
-
-Print-ready output (PDF / print CSS)
-    └──required by──> BAS summary
-    └──required by──> All income tax return summaries
-    └──enhances──> Tax-agent workflow (agent hands summary to lodgement software)
-
-Year-end wizard
-    └──requires──> Trial balance
-    └──requires──> Account → tax-label mapping
-    └──enhances──> Owner mode (guided non-accountant path)
-    └──not required by──> Agent mode (agent skips wizard)
-
-Agent mode (multi-client workspace)
-    └──requires──> Durable persistence
-    └──requires──> Entity management (multi-entity)
-    └──enhances──> Fast entity switching
+AiGateNote (v1.0 component, retained)
+    └──wired to──> Tauri capability check (not just env var)
+    └──shown when──> AI feature attempted without network permission
 ```
 
-### Dependency Notes
+---
 
-- **BAS requires GST codes on accounts:** Without GST codes, the G1/G10/G11 bucketing is impossible. CoA must be built with GST codes before BAS is useful.
-- **Tax returns require CoA → ATO label mapping:** Smart defaults on the default CoA unlock tax return outputs without manual setup. This is the highest-leverage single feature.
-- **Trust and partnership returns require distribution registers:** Beneficiary / partner records must exist before Form T or Form P can produce their schedules. These are simple data entities but must be modelled before the return components are built.
-- **Durable persistence is a foundation prerequisite:** Nothing else is trustworthy until data survives a browser cache clear. This must be the first major feature delivered.
-- **Period model must be consistent:** TB date filtering, BAS period, and tax return year must all use the same period abstraction. Building them independently (as the prototype did) creates subtle inconsistencies.
+## Pattern References
+
+### File-based accounting apps surveyed
+
+**GnuCash v5.x** — Single file (XML or SQLite). File menu: New, Open, Save, Save As, Recent (MRU). SQLite backend: changes committed immediately, no autosave needed. XML backend: configurable autosave interval. Creates `.YYYYMMDDHHMMSS.gnucash` backup alongside file on every save. Uses `.LCK` lock files for exclusive access. Does not implement external-modification detection (file watching). Closest model to AussieLedger for SQLite semantics.
+Sources: GnuCash v5 guide (basics-files1, basics-backup1), GnuCash FAQ
+
+**Manager.io Desktop** — Single `.manager` file per business. Default location is hidden app-data folder (surfaces path in bottom-left of Businesses screen). Supports "Open data file directly" via OS double-click. No explicit Save button (changes persist immediately). Backup via dedicated Backup function. The hidden app-data default is the primary UX pain point per Manager.io forum.
+Sources: manager.io/guides/8394, manager.io/guides/12280, Manager.io forum
+
+**QuickBooks Desktop** — `.qbw` company file. Default location: `C:\Users\Public\Public Documents\Intuit\QuickBooks\Company Files` (Windows). "No Company Open" screen with recent files + New/Open. Backup reminder on close (configurable N-day interval). Scheduled backups. File locking (exclusive access; "Company File in Use" error). Title bar shows filename. Multi-user mode exists but is an enterprise feature (v2.0 out of scope).
+Sources: QuickBooks Community, Intuit documentation
+
+**Apple Pages (autosave model)** — No Save button. Shows "Saved" in title area after each change. File → Duplicate creates a new copy. Time Machine integration for version history. This is the correct mental model for SQLite-backed apps: the file IS always saved; the UI just confirms it.
+
+### OS file conventions
+
+**macOS Apple Developer docs:** User-created documents belong in `~/Documents/`. App support files (preferences, MRU lists, config) belong in `~/Library/Application Support/YourApp/`. "Application should never install files into the user's Documents directory" — but this means the app should not auto-create files there without user consent via dialog. The first-run "New file" dialog should pre-navigate to `~/Documents/AussieLedger/` and let the user confirm.
+
+**Windows:** `{FOLDERID_Documents}` = `C:\Users\<user>\Documents\`. App data: `%APPDATA%\AussieLedger\` (roaming) or `%LOCALAPPDATA%\AussieLedger\` (local). Same split: user file in Documents, MRU/prefs in AppData.
+
+**Tauri 2 BaseDirectory:**
+- `Document` → `~/Documents` (macOS), `{FOLDERID_Documents}` (Windows), `XDG_DOCUMENTS_DIR` (Linux)
+- `AppData` → `~/Library/Application Support/<bundle-id>` (macOS), `%APPDATA%\<bundle-id>` (Windows), `$XDG_DATA_HOME/<bundle-id>` (Linux)
+These are the two directories used: Document for the `.aussieledger` file default; AppData for MRU list and preferences.
+
+### Tauri 2 capabilities confirmed
+
+- **Network sandbox:** HTTP plugin requires explicit `http:allow-fetch` permission + URL scope in `capabilities/default.json`. Without it, all fetch calls throw at runtime. This is the hard sandbox. Confirmed in Tauri v2 HTTP Client documentation.
+- **File watching:** `tauri-plugin-fs` with `features = ["watch"]` in Cargo.toml. APIs: `watch()` (debounced) and `watchImmediate()`. Returns unwatch cleanup function. Requires `fs:allow-watch` capability. Confirmed in Tauri v2 File System documentation.
+- **File dialogs:** `tauri-plugin-dialog` provides `open()` and `save()` with filter support. Standard OS picker.
+- **File associations:** `tauri.conf.json` supports registering file type handlers (double-click `.aussieledger` opens AussieLedger).
 
 ---
 
-## MVP Definition
+## External-Edit Detection (Group 5) — Separate Table
 
-### Launch With (v1)
+This warrants its own table because it spans multiple features and has a nuanced implementation path.
 
-- [ ] Durable persistence (not localStorage-only) — foundational; everything else fails without it
-- [ ] Chart of Accounts (80–150 accounts, AU SME defaults, GST codes, tax-label pre-mapping for all 4 entity types)
-- [ ] Journal entry (create, edit, reverse, void) with hard data-layer balance enforcement
-- [ ] Opening TB import (deterministic CSV parser + column-mapping UI)
-- [ ] Trial balance (date-range filtered, consistent period model)
-- [ ] BAS calculation (G1, G2, G3, G10, G11, 1A, 1B, W1, W2, T7) — print-ready
-- [ ] IAS (PAYG-only) — print-ready
-- [ ] Individual income tax return — business schedule (items 1, 6, 15, P1, P2, P8) — print-ready
-- [ ] Company tax return (Form C) — core labels for small Pty Ltd — print-ready
-- [ ] Trust tax return (Form T) including beneficiary distribution schedule — print-ready
-- [ ] Partnership tax return (Form P) including partner distribution statements — print-ready
-- [ ] FY-versioned tax rate / threshold constants (centralised, not magic numbers)
-- [ ] Entity management (all 4 types, ABN/TFN, GST registration, accounting method)
-- [ ] Compliance disclaimer (always visible)
-- [ ] Data export (JSON + CSV)
-- [ ] Audit trail (immutable per-entry log of create / edit / reverse actions)
-- [ ] Anomaly flags (unmapped accounts, unbalanced TB, GST mismatches)
-- [ ] Account → ATO tax-label pre-mapping (smart defaults on default CoA)
-- [ ] Owner mode: simplified nav + year-end preparation wizard
-- [ ] Agent mode: multi-client list, fast entity switching, no wizard overhead
-- [ ] In-context plain-English help on ATO labels
-
-### Add After Validation (v1.x)
-
-- [ ] Beneficiary / partner registers with history tracking — required for Trust/Partnership returns but may be simplified for v1 launch
-- [ ] PDF export (vs print-CSS in v1) — nice to have; print-to-PDF via browser covers v1
-- [ ] Tax-year constants update workflow / tooling — manual edit is OK for v1; documented process is sufficient
-- [ ] Multi-user access on shared self-hosted instance (optional password gate)
-
-### Future Consideration (v2+)
-
-- [ ] Bank statement CSV parsing + transaction reconciliation — separate product surface; defer until core is proven
-- [ ] FBT, Division 7A, CGT, rental schedule modules — specialist surfaces; defer after core forms stable
-- [ ] SBR / direct ATO lodgement — compliance project requiring ATO developer registration
-- [ ] Mobile-native experience — current responsive web shell is adequate for v1
-- [ ] Plugin / extension system for third-party integrations
-
----
-
-## Feature Prioritization Matrix
-
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Durable persistence | HIGH | High | P1 |
-| Default CoA (80–150 accounts, pre-mapped) | HIGH | Med | P1 |
-| Journal entry (create + edit + reverse) | HIGH | Low–Med | P1 |
-| Opening TB import (deterministic) | HIGH | High | P1 |
-| Account → tax-label smart defaults | HIGH | Med | P1 |
-| BAS calculation (all labels) | HIGH | Med | P1 |
-| Company tax return (Form C) | HIGH | High | P1 |
-| Individual tax return (Form I) business schedule | HIGH | High | P1 |
-| Trust tax return (Form T) + distributions | HIGH | Very High | P1 |
-| Partnership tax return (Form P) + distributions | HIGH | High | P1 |
-| FY-versioned rate constants | HIGH | Low | P1 |
-| Compliance disclaimer | HIGH | Low | P1 |
-| Anomaly flags | HIGH | Med | P1 |
-| Print-ready output (print CSS) | HIGH | Low–Med | P1 |
-| Year-end wizard (owner mode) | HIGH | High | P1 |
-| Agent mode (multi-client, fast switch) | HIGH | Med | P1 |
-| In-context label help | Med | Med | P2 |
-| Audit trail (deep, immutable) | Med | Med | P2 |
-| Data export (JSON + CSV) | Med | Low | P2 |
-| PDF export (library-generated) | Med | Med | P2 |
-| Tax-year update tooling | Med | Low | P2 |
-| Beneficiary / partner register history | Low | Med | P3 |
-| Multi-user auth (optional password gate) | Low | High | P3 |
-
----
-
-## Competitor Feature Analysis
-
-| Feature | Xero / MYOB / QuickBooks | GnuCash / Manager.io | AussieLedger v1 Target |
-|---------|--------------------------|----------------------|------------------------|
-| Cost | $30–$99/month per entity | Free (GnuCash), free tier limited (Manager.io) | Free, unlimited entities |
-| Self-hosted | No | GnuCash yes (desktop), Manager.io no | Yes (primary distribution) |
-| AU entity types | Company + Sole Trader (Pty Ltd trust/partnership behind higher plans) | Generic (not AU-specific) | All 4 AU types in v1 |
-| ATO-labelled tax form outputs | Yes (Form C/I via accounting reports, not ATO field codes) | No — generic P&L only | ATO field-code aligned outputs |
-| BAS calculation | Yes | GnuCash: manual; Manager.io: basic GST report | Full BAS + IAS labels |
-| Opening TB import | Yes | Yes (GnuCash: QIF/OFX; Manager.io: CSV) | CSV/Excel with column-mapping UI |
-| Ongoing journal entry | Yes | Yes | Yes |
-| Guided wizard for non-accountants | No — assumes literacy | No | Year-end wizard (owner mode) |
-| Tax-agent workspace | Separate agent portal (Xero Practice Manager, billed) | Not supported | Agent mode (free, same tool) |
-| Direct ATO lodgement | Xero Tax (separate, expensive) | No | Out of scope v1 |
-| Open-source / auditable | No | GnuCash: yes | Yes |
-| Bank feeds | Yes | No | Out of scope v1 |
-
----
-
-## AU-Specific Domain Notes
-
-These notes capture AU tax domain details that affect feature implementation directly.
-
-**GST Codes (relevant for CoA and BAS)**
-- `GST` — taxable supply / taxable purchase (10%)
-- `FRE` — GST-free supply or purchase
-- `INP` — input-taxed supply (financial services, residential rent) — not claimable
-- `N-T` — not reportable / out of scope for GST (wages, ATO payments, owner drawings)
-- `CAP` — capital purchase (goes to G10, not G11)
-
-**BAS Worksheet Method (ATO option 3 — simplest for small businesses)**
-- G1: Total sales (all sales including GST)
-- G2: Export sales
-- G3: Other GST-free sales
-- G10: Capital purchases (10% claimable)
-- G11: Non-capital purchases (10% claimable)
-- 1A = (G1 − G2 − G3) ÷ 11
-- 1B = (G10 + G11) ÷ 11
-
-**Company tax rates (FY2025–26)**
-- Base rate entity (aggregated turnover < $50M, ≤ 80% passive income): 25%
-- All other companies: 30%
-- Imputation rate follows the applicable tax rate (25% or 30%)
-
-**Individual marginal rates (FY2025–26 — verify against ATO each year)**
-- $0 – $18,200: Nil
-- $18,201 – $45,000: 19%
-- $45,001 – $135,000: 32.5%
-- $135,001 – $190,000: 37%
-- $190,001+: 45%
-- Plus 2% Medicare levy (with low-income thresholds)
-- Low Income Tax Offset (LITO) up to $700 phases out between $37,500 and $66,667
-
-**Trust distribution rules**
-- Trust must distribute all net income to avoid top-rate tax on undistributed income
-- Each beneficiary includes their share in their own return (Form I, item 13)
-- Trustee resolution required by 30 June; distribution schedule is the critical document
-
-**Partnership**
-- Partnership itself pays no income tax; files Form P
-- Each partner includes their share in Form I (item 13, partnership income)
-- Partner loss shares may be restricted (non-commercial loss rules apply)
-
-**Lodgement deadlines (print-ready workflow context)**
-- Individual / sole trader returns: 31 October (self-lodgement); 15 May via tax agent
-- Company / Trust / Partnership returns: 28 February (standard); 15 May via agent
-- BAS (quarterly): 28 October, 28 February, 28 April, 28 July
-- BAS (monthly): 21st of following month
+| Scenario | Recommended Behaviour | Effort | Notes |
+|----------|-----------------------|--------|-------|
+| Dropbox/OneDrive syncs a newer version of the open file | `watchImmediate` fires modify event → toast: "File changed externally. Reload to see latest version?" with Reload / Ignore buttons | Medium | Do NOT auto-reload: auto-reload could overwrite in-flight transactions. Let user decide. |
+| User replaces file from another machine (USB copy) while open | Same as above — file watcher fires | Medium | Same toast pattern |
+| App itself modifies the file (normal operation) | Watcher will fire on every transaction commit. Must debounce / filter self-originated events. Only surface toast for changes originating outside the process. | Medium | Filter by process ID or checksum; `watch()` debounced version preferred over `watchImmediate` for this reason |
+| File deleted while open | `watchImmediate` fires delete event → modal: "The open file has been deleted or moved. Save a copy now?" with Save As / Continue Without File | Medium | Critical: user must not lose unsaved in-memory state |
+| `.aussieledger-wal` file detected by watcher | WAL file changes on every write — do NOT watch the WAL file, only the main `.aussieledger` file | Small | Watcher path must be the main DB file only |
 
 ---
 
 ## Sources
 
-- ATO website: tax return form specifications (NAT 0656 Form C, NAT 0660 Form I, NAT 0659 Form T, NAT 0976 Form P) — confidence HIGH (stable AU tax domain)
-- ATO BAS worksheet method — confidence HIGH
-- ATO company tax rates FY2025–26 — confidence HIGH (base rate entity 25%, standard 30%)
-- ATO individual marginal rates FY2025–26 — confidence MEDIUM (rates confirmed from training data; flag for annual verification against ATO tax tables)
-- Competitor feature analysis (Xero, MYOB, QuickBooks, GnuCash, Manager.io) — confidence MEDIUM (based on training data; pricing may have changed; verify current plans before publishing)
-- PROJECT.md and existing codebase analysis — confidence HIGH (primary source of truth for scope)
+| Source | Confidence | URL |
+|--------|------------|-----|
+| GnuCash v5 guide — file storage and backup | HIGH | https://www.gnucash.org/docs/v5/C/gnucash-guide/basics-files1.html |
+| GnuCash v5 guide — backup and recovery | HIGH | https://www.gnucash.org/docs/v5/C/gnucash-guide/basics-backup1.html |
+| GnuCash FAQ — file locking | HIGH | https://wiki.gnucash.org/wiki/FAQ |
+| Manager.io guides — application data folder | HIGH | https://www2.manager.io/guides/8394 |
+| Manager.io guides — open file directly | HIGH | https://www2.manager.io/guides/12280 |
+| Manager.io forum — "where is the accounting file?" | MEDIUM | https://forum.manager.io/t/where-is-the-accounting-file/1559 |
+| QuickBooks Desktop — company file location | HIGH | https://quickbooks.intuit.com/learn-support/en-us/help-article/back-data/locating-backups-company-data-files/L7hRh9jRa_US_en_US |
+| QuickBooks — scheduled automatic backups | HIGH | https://ticket.summithosting.com/hc/en-us/articles/14302881516695-QuickBooks-Scheduling-Automatic-Backups |
+| Tauri v2 HTTP Client plugin | HIGH | https://v2.tauri.app/plugin/http-client/ |
+| Tauri v2 File System plugin (with watch) | HIGH | https://v2.tauri.app/plugin/file-system/ |
+| Tauri v2 path namespace / BaseDirectory | HIGH | https://v2.tauri.app/reference/javascript/api/namespacepath/ |
+| Apple BPFileSystem — where to put files | HIGH | https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPFileSystem/Articles/WhereToPutFiles.html |
+| SQLite WAL mode docs | HIGH | https://sqlite.org/wal.html |
+| AI UX Design patterns — privacy-first design | MEDIUM | https://www.aiuxdesign.guide/patterns/privacy-first-design |
+| PROJECT.md — v2.0 milestone goals and constraints | HIGH | .planning/PROJECT.md (primary source) |
 
 ---
 
-*Feature research for: AussieLedger — AU small-business bookkeeping → tax-return tool*
-*Researched: 2026-05-10*
+*Feature research for: AussieLedger v2.0 — Desktop + File-Backed + Network-Sandbox*
+*Researched: 2026-05-29*

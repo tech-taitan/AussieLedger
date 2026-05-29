@@ -1,326 +1,391 @@
-# Stack Research
+# Technology Stack
 
-**Domain:** Australian accounting / bookkeeping / tax-return web application
-**Researched:** 2026-05-10
-**Overall Confidence:** MEDIUM (external network access unavailable; versions sourced from training data through August 2025 + npm registry knowledge; flag for version pin verification before each phase begins)
-
----
-
-## Existing Stack (Keep — Do Not Replace)
-
-| Technology | Version in Repo | Keep? | Note |
-|------------|-----------------|-------|------|
-| React | 19.0.0 | YES | Concurrent rendering; no upgrade needed |
-| TypeScript | ~5.8.2 | YES | Strict mode already on |
-| Vite | 6.2.0 | YES | Fast HMR; used as build tool |
-| Tailwind CSS | 4.1.14 | YES | Vite-integrated; no config file needed |
-| motion (Framer fork) | 12.x | YES | Animations already in use |
-| lucide-react | 0.546.0 | YES | Icon system |
-| recharts | 3.8.0 | YES | Charts for dashboard |
-| clsx + tailwind-merge | 2.x / 3.x | YES | `cn()` utility |
-| express | 4.21.2 | REPURPOSE | Currently unused; needed for AI proxy + optional server tier |
-| @google/genai | 1.29.0 | REMOVE from critical path | Must be moved server-side or stripped; never in client bundle |
+**Project:** AussieLedger v2.0 — Standalone Tauri Desktop App
+**Researched:** 2026-05-29
+**Scope:** v2.0 ADDITIONS ONLY — what gets added on top of the v1.0 stack for the Tauri desktop shape. The existing v1.0 stack (React 19, TypeScript 5.8, Vite 6, Tailwind v4, motion, lucide, recharts, decimal.js, idb, Express, better-sqlite3, Zod, Vitest 2.1.9) is unchanged and not re-evaluated here.
 
 ---
 
-## Recommended Additions
+## Recommended Stack Additions for v2.0
 
-### Persistence
+### Tauri Core
 
-**Recommendation: sql.js (SQLite compiled to WASM) + mandatory JSON export**
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| `@tauri-apps/cli` | **2.11.2** | Build + dev toolchain | Current stable as of 2026-05-29; `npm run tauri dev` wires to existing Vite dev server |
+| `@tauri-apps/api` | **2.11.0** | Frontend JS bindings (window, event, path APIs) | Peer to CLI; use same minor series |
+| Rust toolchain | 1.77.2+ | Tauri core compilation | Minimum required by Tauri 2.x plugins |
 
-Rationale: The project is self-hosted, single-page-app-first. A full server-side database is optional (see Server Tier below). For the SPA-only path the options are:
+**Vite 6 compatibility:** HIGH confidence. Tauri v2 officially documents and recommends Vite as the frontend bundler. The `tauri.conf.json` points `devUrl: "http://localhost:5173"` at the Vite dev server; `npm run tauri dev` starts the Vite HMR server then opens the webview. No Vite 6–specific breaking issues found. Required `vite.config.ts` additions are minimal (see Integration Notes).
 
-| Option | Self-hosted? | Durable? | Export? | Complexity | Verdict |
-|--------|-------------|---------|---------|------------|---------|
-| localStorage | YES | NO | Manual | Trivial | REJECT — loses data on cache clear |
-| IndexedDB raw | YES | YES | Manual | High API surface | REJECT — raw API is painful; still lost on cache clear in private mode |
-| Dexie.js (IndexedDB wrapper) | YES | YES | Via custom code | Low | VIABLE for single-user; IndexedDB still lost on cache clear |
-| sql.js (SQLite WASM) + File System Access API | YES | YES (explicit save) | SQL dump / JSON | Medium | RECOMMENDED for SPA path |
-| PGlite (Postgres WASM) | YES | YES | pg_dump | Medium | Heavier; Postgres semantics not needed |
-| SQLite + Node/Express server | YES | YES | SQL dump | Medium | RECOMMENDED for server-tier path |
-
-**For single-user SPA (no server):** Use `sql.js` with the [File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_Access_API) to persist an `.sqlite` file to the user's local disk. On startup, prompt "Open existing ledger file or create new." The user controls the file; cache clears don't affect it.
-
-**For multi-client / tax-agent server tier:** Use `better-sqlite3` (Node) with an Express API layer. The same schema runs in both modes; server mode is opt-in.
-
-| Library | Version | Purpose | Self-hosted? | Confidence |
-|---------|---------|---------|--------------|------------|
-| `sql.js` | ^1.12.0 | SQLite compiled to WASM; runs entirely in browser with no server | YES | MEDIUM — version from training data; verify before install |
-| `better-sqlite3` | ^9.x | Synchronous SQLite bindings for Node.js; used in server tier | YES | MEDIUM |
-| `@electric-sql/pglite` | ^0.2.x | Postgres WASM alternative; heavier but richer SQL | YES | LOW — project is newer; verify stability |
-
-**What NOT to use for persistence:**
-
-| Avoid | Why |
-|-------|-----|
-| Firebase / Firestore | Hosted-only; violates self-host + free constraint |
-| Supabase (hosted) | Same issue; self-hosted Supabase is possible but massively complex for this scope |
-| MongoDB Atlas | Hosted-only |
-| PlanetScale / Neon / Turso hosted tiers | All managed-cloud; not acceptable in critical path |
-| Prisma ORM | Adds migration complexity; overkill for a single-user SQLite app; also requires a server |
+**Tauri vs Electron: choose Tauri.** Binary size is 3–10 MB vs Electron's 120–180 MB (ships its own Chromium). RAM at idle is ~50 MB vs ~150–300 MB. The sandboxed Rust core means the network allowlist is enforced at the OS layer, not just a polyfillable JS promise rejection. Electron has no equivalent hard-sandbox for outbound HTTP from the renderer. Electron's advantage (Node.js native module ecosystem, better-sqlite3 runs without shims) is moot once we resolve the SQLite backend question below.
 
 ---
 
-### Test Framework
+### SQLite Backend: tauri-plugin-sql (Rust/sqlx) — RECOMMENDED over Node sidecar
 
-**Recommendation: Vitest + @testing-library/react + @testing-library/user-event + jsdom**
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| `@tauri-apps/plugin-sql` | **2.4.0** (npm) | Frontend JS bindings to SQLite | Official Tauri plugin; ships as part of the compiled binary |
+| `tauri-plugin-sql` | **2.4.0** (Rust crate, Cargo.toml) | Rust sqlx wrapper exposed to frontend | Statically linked; no Node runtime bundled; no `.node` native binding |
 
-Rationale: Vitest is the natural pairing for a Vite project. It reuses the Vite config, supports TypeScript natively with zero extra tooling, and runs in Node with jsdom for component tests. React Testing Library enforces testing from the user's perspective (label text, roles) which is correct for form-heavy tax UI.
+**Why tauri-plugin-sql over keeping the Node sidecar:**
 
-| Library | Version | Purpose | Confidence |
-|---------|---------|---------|------------|
-| `vitest` | ^2.x | Test runner; Vite-native; supports ESM | HIGH |
-| `@testing-library/react` | ^16.x | Component testing; user-centric queries | HIGH |
-| `@testing-library/user-event` | ^14.x | Realistic browser event simulation | HIGH |
-| `@testing-library/jest-dom` | ^6.x | DOM assertion matchers (`toBeInTheDocument` etc.) | HIGH |
-| `jsdom` | ^24.x | DOM environment for Node; used by Vitest | HIGH |
-| `@vitest/coverage-v8` | ^2.x | V8-native coverage; zero extra deps | MEDIUM |
+The v1.0 stack runs an Express + better-sqlite3 server (`server/`) that the SPA calls via HTTP. For the Tauri desktop shape there are two paths:
 
-Priority test surfaces (from CONCERNS.md):
-1. Tax math: BAS aggregation (G1/G10/1A/1B), GST `/11` divisor, company/trust/individual label rollups
-2. Trial balance balance enforcement
-3. CSV import parsing (deterministic path, not AI path)
-4. Schema migration / state deserialisation
+| Path | What ships | Bundle size delta | Transaction support | Maintenance |
+|------|-----------|------------------|---------------------|-------------|
+| **Node sidecar** (keep `server/`) | Entire Node.js runtime (~50 MB via `pkg`) + better-sqlite3 native `.node` binary | +50–70 MB per platform | Full (`db.transaction()` synchronous) | Must cross-compile 3 sidecar targets; `pkg` has known issues with native `.node` modules; CI complexity |
+| **tauri-plugin-sql** (official) | Statically linked into Tauri Rust binary | ~0 MB delta (already have Rust binary) | `execute('BEGIN')` workaround; no official API (issue #886 open) | First-party plugin; maintained by Tauri team; single binary |
 
-**What NOT to use:**
+**Verdict: tauri-plugin-sql.** The sidecar approach adds 50–70 MB to the installer, requires cross-compiling a Node binary for Windows/macOS/Linux x64/arm64 (6 sidecar targets), and `pkg` has documented trouble with native `.node` addons like better-sqlite3 because they must be recompiled per platform — defeating the purpose of `pkg`. The v1.0 SQL is plain SQL strings (no ORM), so migrating from `better-sqlite3` to `@tauri-apps/plugin-sql` is a surface-area swap, not a query rewrite.
 
-| Avoid | Why |
-|-------|-----|
-| Jest | Requires babel transform or extra config for ESM + Vite; Vitest is the same API without the friction |
-| Playwright / Cypress alone | End-to-end only; too slow for unit-testing tax math; add as a secondary layer later |
-| Testing with real browser storage | IndexedDB / localStorage in jsdom is unreliable; mock at the persistence layer boundary |
+**Transaction gap:** tauri-plugin-sql does not have a first-class transaction API (GitHub issue #886, open as of 2026-05-29). The workaround `execute('BEGIN IMMEDIATE')` / `execute('COMMIT')` / `execute('ROLLBACK')` works for single-connection SQLite but has known edge-case failures if an IPC call throws before ROLLBACK executes. For the v2.0 migration runner and auto-save flow, the recommended pattern is: batch all DDL/DML for a logical operation into a single `execute()` call by concatenating the SQL with a separator — SQLite's `exec` (which underlies the plugin) supports multi-statement strings. This sidesteps the multi-round-trip race condition. The existing `server/db/migrate.ts` uses `db.transaction()` synchronously; the FileBackedAdapter equivalent will reconstruct that pattern as a single concatenated `exec` call.
+
+**Alternative if transactions are unacceptable:** `tauri-plugin-rusqlite2` (community crate, `razein97/tauri-plugin-rusqlite2`) adds explicit `beginTransaction` / `commitTransaction` / `rollbackTransaction` APIs backed by rusqlite. Use only if the `BEGIN`/`COMMIT` concatenation approach proves insufficient in practice.
 
 ---
 
-### PDF Generation
+### File System Access
 
-**Recommendation: @react-pdf/renderer**
+| Plugin | npm Version | Cargo Version | Purpose |
+|--------|-------------|---------------|---------|
+| `@tauri-apps/plugin-fs` | **2.4.5** | `tauri-plugin-fs = "2"` | Read/write the `.aussieledger` SQLite file; `watch()` for external change detection |
+| `@tauri-apps/plugin-dialog` | **2.6.0** | `tauri-plugin-dialog = "2"` | Native OS file open/save dialogs with `.aussieledger` filter |
 
-Rationale: Tax returns are structured, label-driven documents. `@react-pdf/renderer` lets you define the PDF layout using React components — a natural fit given the stack. It runs client-side (no server required), produces print-ready A4 PDFs, and handles Unicode/UTF-8 for AU content. It does NOT depend on a headless browser.
-
-Alternatives evaluated:
-
-| Library | Approach | Self-hostable? | Pros | Cons | Verdict |
-|---------|----------|---------------|------|------|---------|
-| `@react-pdf/renderer` | React → PDF (pdfmake under the hood) | YES | React-native API; A4 layouts; client-side | Layout model is separate from DOM (no Tailwind classes) | RECOMMENDED |
-| `jsPDF` | Imperative canvas-to-PDF | YES | Mature; widely used | Imperative API; pixel-level positioning is painful for forms | VIABLE fallback |
-| `pdf-lib` | Low-level PDF manipulation | YES | Precise control; good for filling existing PDF templates | Not a layout engine; too low-level for building from scratch | Use only if ATO provides fillable PDFs |
-| Puppeteer / headless Chrome | HTML → PDF | YES (self-hosted) | Can reuse existing HTML layout | Requires Node server + Chrome binary; heavy; overkill for static output | REJECT for v1 |
-| PDFMake | JSON → PDF | YES | No browser dependency | Non-React API; harder to maintain alongside components | VIABLE fallback |
-
-**Specific AU consideration:** ATO return forms (NAT 0660 etc.) are label-driven summaries, not exact ATO form replicas. `@react-pdf/renderer` is sufficient to produce a clearly labelled, print-ready working-paper PDF the user can transcribe into myGov. Exact ATO form replication is out of scope (SBR lodgement is also out of scope).
-
-| Library | Version | Confidence |
-|---------|---------|------------|
-| `@react-pdf/renderer` | ^3.x or ^4.x | MEDIUM — verify latest stable; v3 was stable as of training cutoff |
-
----
-
-### Server Tier (Optional — for AI proxy and tax-agent multi-client mode)
-
-**Recommendation: Keep Express 4 (already installed); add a thin `server/` directory**
-
-Rationale: Express is already a declared dependency. The missing piece is a `server/index.ts` that:
-1. Proxies Gemini API calls (removing the key from the client bundle — CRITICAL security fix)
-2. Optionally serves a `better-sqlite3`-backed REST API for multi-client data
-3. Is started separately (`node server/index.ts`) — the SPA continues to work standalone without it
-
-An entire new framework (Fastify, Hono, tRPC) is not justified. Express 4 with TypeScript (`tsx` is already installed for running TS in Node) is sufficient.
-
-| Technology | Version | Purpose | Confidence |
-|------------|---------|---------|------------|
-| `express` | 4.21.2 (already installed) | HTTP server; AI proxy; optional data API | HIGH |
-| `tsx` | 4.21.0 (already installed) | Run `server/index.ts` without separate compile step | HIGH |
-| `cors` | ^2.x | CORS middleware for SPA ↔ server requests | HIGH |
-| `better-sqlite3` | ^9.x | SQLite on the server side for multi-client persistence | MEDIUM |
-| `@types/better-sqlite3` | ^7.x | TypeScript definitions | MEDIUM |
-
-**What NOT to add:**
-
-| Avoid | Why |
-|-------|-----|
-| Next.js / Remix | Full-stack rewrite; conflicts with "build on existing stack" constraint |
-| Fastify / Hono | No problem Express doesn't solve here; unnecessary migration |
-| tRPC | Good DX but adds surface area; overkill for a thin proxy |
-| Prisma | ORM abstraction over SQLite adds complexity with no benefit at this scale |
-| Docker (required) | Acceptable as an optional deployment artifact, but must not be REQUIRED for self-hosting |
-
----
-
-### AU-Specific Date / Currency / Number Formatting
-
-**Recommendation: Native `Intl` APIs (zero dependency)**
-
-Rationale: Node.js 18+ and all modern browsers fully support the ECMA Internationalization API (`Intl.NumberFormat`, `Intl.DateTimeFormat`). For Australian locale this is sufficient and has no dependency cost.
+**File open/save dialog — confirmed working for custom extensions:**
 
 ```typescript
-// Currency
-new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(1234.56)
-// → "A$1,234.56"
+import { open, save } from '@tauri-apps/plugin-dialog';
 
-// Date (AU short format)
-new Intl.DateTimeFormat('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date('2025-06-30'))
-// → "30/06/2025"
+// File -> Open
+const filePath = await open({
+  multiple: false,
+  filters: [{ name: 'AussieLedger File', extensions: ['aussieledger'] }],
+});
 
-// Financial year helper (not in Intl — write once in src/lib/date.ts)
-// AU FY: 1 July – 30 June
-// FY2025 = 1 July 2024 – 30 June 2025
+// File -> Save As
+const destPath = await save({
+  defaultPath: 'MyBusiness.aussieledger',
+  filters: [{ name: 'AussieLedger File', extensions: ['aussieledger'] }],
+});
 ```
 
-A `src/lib/date.ts` module should centralise:
-- AU financial year boundaries (`fyStart(year)`, `fyEnd(year)`)
-- Quarter-to-date ranges (Q1 = Jul–Sep, Q2 = Oct–Dec, Q3 = Jan–Mar, Q4 = Apr–Jun)
-- BAS period helpers
+**File watching (external change detection):** `@tauri-apps/plugin-fs` includes `watch()` / `watchImmediate()` built-in, enabled via Cargo feature flag `features = ["watch"]`. No separate watch plugin needed. The `watch()` variant is debounced (good for auto-save detection); `watchImmediate()` fires on every inotify/FSEvents/ReadDirectoryChangesW event.
 
-| Option | Dependency cost | Covers AUD | AU dates | Verdict |
-|--------|----------------|------------|----------|---------|
-| Native `Intl` | None | YES | YES | RECOMMENDED |
-| `date-fns` + `date-fns-tz` | ~80 KB | No (need Intl for currency) | YES (locale helpers) | Add only if FY/quarter logic gets complex |
-| `dayjs` | ~7 KB | No | YES | Lighter than date-fns; still add only if needed |
-| `luxon` | ~70 KB | No | YES | Verbose API; not worth adding |
-| `numeral` | ~15 KB | Partial | No | Unmaintained; AVOID |
+**File association (double-click `.aussieledger` opens the app):** Configured in `tauri.conf.json` under `bundle.fileAssociations`:
 
-**Confidence:** HIGH (Intl APIs are ECMA standard; no version uncertainty)
-
----
-
-### Code Quality (Linting / Formatting)
-
-**Recommendation: ESLint 9 (flat config) + eslint-plugin-react-hooks + Prettier**
-
-Rationale: CONCERNS.md flags "no ESLint/Prettier" as a LOW risk. It's a quick fix with high maintainability payoff, especially for catching React hooks mistakes (missing dep arrays) that break tax-state logic.
-
-| Tool | Version | Purpose | Confidence |
-|------|---------|---------|------------|
-| `eslint` | ^9.x | Linting with flat config | HIGH |
-| `@eslint/js` | ^9.x | Built-in recommended rules | HIGH |
-| `eslint-plugin-react-hooks` | ^5.x | Hooks lint rules | HIGH |
-| `typescript-eslint` | ^8.x | TypeScript-aware lint rules | HIGH |
-| `prettier` | ^3.x | Opinionated formatter | HIGH |
-| `eslint-config-prettier` | ^9.x | Disables ESLint rules that conflict with Prettier | HIGH |
-
----
-
-## Complete Recommended Additions (Install Commands)
-
-```bash
-# Test framework
-npm install -D vitest @testing-library/react @testing-library/user-event @testing-library/jest-dom jsdom @vitest/coverage-v8
-
-# PDF generation
-npm install @react-pdf/renderer
-
-# Persistence — SPA path (SQLite WASM)
-npm install sql.js
-npm install -D @types/sql.js
-
-# Persistence — server tier (if/when built)
-npm install better-sqlite3
-npm install -D @types/better-sqlite3
-
-# Server tier additions
-npm install cors
-npm install -D @types/cors
-
-# Code quality
-npm install -D eslint @eslint/js eslint-plugin-react-hooks typescript-eslint prettier eslint-config-prettier
+```json
+{
+  "bundle": {
+    "fileAssociations": [
+      {
+        "ext": "aussieledger",
+        "name": "AussieLedger Ledger File",
+        "role": "Editor",
+        "mimeType": "application/x-aussieledger"
+      }
+    ]
+  }
+}
 ```
 
----
-
-## Alternatives Considered
-
-| Category | Recommended | Alternative | Why Not Alternative |
-|----------|-------------|-------------|---------------------|
-| Test runner | Vitest | Jest | ESM/Vite config friction; Vitest is a drop-in with zero extra config |
-| Component testing | @testing-library/react | Enzyme | Enzyme is effectively deprecated for React 18+; RTL is the community standard |
-| PDF | @react-pdf/renderer | jsPDF | Imperative API is painful for structured form layouts |
-| PDF | @react-pdf/renderer | Puppeteer | Requires headless Chrome + server; too heavy for a self-hosted SPA |
-| Persistence (SPA) | sql.js | Dexie.js (IndexedDB) | IndexedDB still lost on cache clear in some scenarios; sql.js + File System Access API gives user-controlled files |
-| Persistence (SPA) | sql.js | PGlite | Heavier; Postgres semantics unnecessary; sql.js is more mature |
-| Locale / dates | Native Intl | date-fns | date-fns adds 80KB for capabilities Intl already provides; add only if FY logic warrants it |
-| Server | Express (existing) | Fastify / Hono | No problem Express doesn't solve; not worth a migration |
-| Server | Express (existing) | Next.js | Full-stack rewrite; violates "build on existing stack" constraint |
+Works on Windows (registry) and macOS (UTType in Info.plist). Linux file association via `.desktop` file; works for installed packages but not AppImage run-in-place.
 
 ---
 
-## What NOT to Use
+### Network Sandbox
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `@google/genai` in client bundle | API key embedded at build time; extracted trivially from dist JS | Move Gemini calls to `server/` proxy; never expose key to browser |
-| Firebase / Firestore / Supabase (hosted) | Managed cloud; violates self-hosted + free constraint | sql.js (SPA) or better-sqlite3 (server) |
-| Basiq / Yodlee (bank feeds) | Paid APIs; commercial agreements; incompatible with open-source ethos | Out of scope for v1 |
-| `numeral.js` | Unmaintained since 2019; AU locale support is incomplete | Native `Intl.NumberFormat('en-AU', ...)` |
-| Prisma ORM | Adds migration toolchain complexity over SQLite; not worth the overhead at this scale | Direct `sql.js` or `better-sqlite3` queries |
-| Jest | ESM support requires extra babel config in a Vite project | Vitest |
-| Playwright / Cypress (as primary test layer) | Too slow for unit-testing tax math; fine as a secondary E2E layer after unit tests exist | Vitest for unit/integration; add E2E later |
-| Direct ATO SBR lodgement libraries | No mature open-source AU SBR TypeScript library exists; ATO certification is a multi-month compliance project | Print-ready PDF output only in v1 |
+**Mechanism in Tauri 2.x: two independent layers, both required.**
 
----
+**Layer 1 — Capability / Permission system (Rust-enforced):**
+The `@tauri-apps/plugin-http` exposes `fetch()` to the webview via IPC. Without adding this plugin and granting its permission, Tauri's `window.__TAURI_INTERNALS__` IPC cannot make outbound HTTP. However: the underlying WebView (Chromium on Windows/Linux, WebKit on macOS) can still make native `fetch()` calls unless blocked by CSP. The capability system alone does not block native webview fetch.
 
-## Stack Patterns by Deployment Variant
+**Layer 2 — Content Security Policy (enforced by the WebView engine):**
+To truly forbid outbound HTTP from React code, set CSP in `tauri.conf.json`:
 
-**Single-user SPA (no server, simplest self-hosting):**
-- Persistence: sql.js + File System Access API (user's own `.sqlite` file)
-- No server process; `npm run build` → serve `dist/` statically
-- AI features: disabled or require user to enter their own API key in settings (never baked into build)
+```json
+{
+  "app": {
+    "security": {
+      "csp": {
+        "default-src": ["'self'", "ipc:", "http://ipc.localhost"],
+        "connect-src": ["'none'"]
+      }
+    }
+  }
+}
+```
 
-**Single-user with optional server:**
-- Start with SPA path; add Express server tier when AI proxy is needed
-- `npm run dev:server` starts `server/index.ts` via tsx
-- SPA detects `VITE_API_URL` env var; falls back to standalone mode if absent
+`"connect-src": ["'none'"]` blocks all `fetch()`, `XMLHttpRequest`, and WebSocket from the React SPA. `ipc:` and `http://ipc.localhost` are the Tauri IPC transports and must be allowed.
 
-**Tax-agent multi-client:**
-- Express server with better-sqlite3
-- Server holds entity isolation; client sends auth token (simple password or JWT)
-- Same React frontend; persona mode = "tax-agent" in settings
+**Note:** CSP is only applied when explicitly configured; without it, React can `fetch()` any URL. Setting `connect-src: 'none'` is the correct implementation of the "hard network sandbox" requirement.
+
+**Do NOT install `@tauri-apps/plugin-http`.** That plugin grants outbound HTTP capability to the IPC layer. Since we are forbidding all outbound HTTP in v2.0, do not add this dependency at all. Future AI features that require network (v3+) should add the plugin with a scoped allowlist at that point.
 
 ---
 
-## AU-Specific Considerations
+### Single-Instance Lock
 
-| Concern | Approach | Confidence |
-|---------|----------|------------|
-| Financial year boundary (1 Jul – 30 Jun) | `src/lib/date.ts` — never use calendar year as a default | HIGH |
-| Currency display (AUD, A$) | `Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' })` | HIGH |
-| Date format (DD/MM/YYYY) | `Intl.DateTimeFormat('en-AU')` | HIGH |
-| GST rate (10%) and divisor (÷11 for inclusive) | Centralise in `src/lib/tax/gst.ts`; do not inline | HIGH |
-| Tax year currency (ATO label changes annually) | Centralise constants in `src/lib/tax/constants/fy{YYYY}.ts`; document refresh process | MEDIUM |
-| ATO form numbers (NAT 0660, 0656, 0659, 0976) | Reference in PDF output headers; do not claim to produce ATO-accepted forms | HIGH |
-| ABN / TFN validation | ABN: modulus-89 algorithm (well documented); TFN: modulus-11; implement in `src/lib/validation.ts` | MEDIUM |
-| BAS periods (monthly/quarterly) | Period model should support Q1=Jul–Sep, Q2=Oct–Dec, Q3=Jan–Mar, Q4=Apr–Jun | HIGH |
+| Plugin | Cargo | Purpose |
+|--------|-------|---------|
+| (Rust-only, no npm package) | `tauri-plugin-single-instance = "2"` | Prevent two windows opening the same `.aussieledger` file |
+
+Version: Rust crate `2.4.0` (latest as of 2026-05-29; no npm counterpart — plugin has no JS API by design).
+
+The plugin passes `args` (the CLI arguments of the second attempted launch, which includes the file path if the user double-clicks a second `.aussieledger` file) to a callback in the first running instance. The first instance can then open the file in a new tab or raise a "file already open" dialog. The plugin must be registered first in `lib.rs` before all other plugins.
+
+**Linux caveat:** Requires DBus; does not work inside flatpak/snap sandboxes unless DBus access is explicitly declared in the packaging manifest.
 
 ---
 
-## Version Compatibility Notes
+### Auto-Update (DEFERRED to v2.1 — research only)
 
-| Package | Compatible With | Note |
-|---------|-----------------|------|
-| vitest ^2.x | Vite ^6.x, TypeScript ^5.x | Native Vite integration; no extra config |
-| @testing-library/react ^16.x | React 19.x | RTL 16 added React 19 act() compatibility |
-| @react-pdf/renderer ^3.x | React 19.x | Verify React 19 compatibility before install; v3 was tested against React 18 |
-| sql.js ^1.x | Browser + Node | WASM binary must be served statically; Vite requires `assetsInclude: ['**/*.wasm']` config |
-| better-sqlite3 ^9.x | Node 18+ | Native Node addon; requires `npm rebuild` after Node version change |
-| eslint ^9.x | TypeScript 5.x | Flat config (`eslint.config.ts`) replaces legacy `.eslintrc`; typescript-eslint ^8 required |
+| Plugin | npm Version | Cargo |
+|--------|-------------|-------|
+| `@tauri-apps/plugin-updater` | **2.10.1** | `tauri-plugin-updater = "2"` |
+
+**Do NOT install this for v2.0.** This entry exists only to document what v2.1 will add.
+
+Requirements when the time comes: a `updater-latest.json` static file hosted on GitHub Releases (the `tauri-action` GitHub Action generates this automatically), a signing keypair (`tauri signer generate`; private key in GitHub Secrets, public key in `tauri.conf.json`). Update signatures cannot be disabled — this is enforced by the Tauri binary. The update JSON can be served from GitHub Releases directly, satisfying the DEP-01 "no paid services" constraint.
+
+---
+
+### CI Build Matrix
+
+**Use `tauri-apps/tauri-action@v0` (the official GitHub Action).**
+
+Standard matrix for Windows + macOS + Linux producing `.msi` / `.dmg` / `.AppImage`:
+
+```yaml
+jobs:
+  publish-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'      # macOS arm64 (M1+)
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-13'          # macOS x64 (Intel)
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04'      # Linux x64 → AppImage + deb
+            args: ''
+          - platform: 'windows-latest'    # Windows x64 → .msi + .nsis
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux deps
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf
+      - uses: actions/setup-node@v4
+        with: { node-version: 'lts/*', cache: 'npm' }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install frontend deps
+        run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Code signing vars go here (see Code Signing section)
+        with:
+          tagName: v__VERSION__
+          releaseName: 'AussieLedger v__VERSION__'
+          args: ${{ matrix.args }}
+```
+
+macOS requires two separate matrix entries (arm64 + x64) because Apple Silicon and Intel have different target triples and the Rust toolchain must compile for each. The `tauri-action` handles `--target` correctly.
+
+Note on Windows ARM64: Tauri 2.9+ ships ARM64 Windows binaries. Add `aarch64-pc-windows-msvc` to the matrix if targeting Surface/Copilot+ devices. Skip for v2.0.
+
+---
+
+### Code Signing
+
+**This section explicitly surfaces the DEP-01 "no paid services" tension.**
+
+#### Windows
+
+| Approach | Cost | SmartScreen outcome | CI complexity |
+|----------|------|---------------------|---------------|
+| **Unsigned** | $0 | "Windows protected your PC" warning on every download; users must click "Run anyway" (three clicks). Still executable — not blocked. | None |
+| **Azure Artifact Signing** (formerly Trusted Signing) | $9.99/month + Azure account | SmartScreen trust builds over time (OV-equivalent); near-immediate trust after enough downloads | Medium: Azure app registration + GitHub Secrets |
+| **EV Certificate** (DigiCert / Sectigo) | ~$300–500/year; requires hardware HSM | Immediate SmartScreen trust; zero warning | High: must use Azure Key Vault or physical HSM; CI needs `relic` signing tool |
+| **SignPath Foundation** | Free for qualifying OSS projects | OV-equivalent trust; SmartScreen warning possible until reputation builds | Medium: GitHub integration; requires OSI-approved license (Apache 2.0 qualifies) |
+
+**Recommendation for v2.0:** Start unsigned for development and CI testing. Apply to SignPath Foundation (free, Apache 2.0 project qualifies at signpath.org) for the first public release. This satisfies DEP-01 at zero cost while providing real certificate trust. Azure Artifact Signing at $9.99/month is the fallback if SignPath Foundation approval takes too long.
+
+**Do NOT buy an EV certificate.** EV certs require hardware HSM storage (physical device or Azure Key Vault — both paid). The cost ($300–500/year + HSM) conflicts with DEP-01.
+
+#### macOS
+
+| Approach | Cost | Gatekeeper outcome |
+|----------|------|-------------------|
+| **Unsigned + unnotarized** | $0 | macOS 15+ (Sequoia/Tahoe): "App is damaged and can't be opened" — users cannot run it at all without `xattr -d com.apple.quarantine`. **Effectively unshippable for non-technical users.** |
+| **Apple Developer ID** (code signed + notarized) | $99 USD/year Apple Developer Program | Gatekeeper passes; installs silently |
+
+**macOS is the harder problem.** Since macOS Sequoia 15.1 (2024), Apple removed the "Open Anyway" shortcut in Settings > Security. The quarantine attribute removal via `xattr` is a terminal command that non-technical users cannot be expected to run. Distributing an unsigned macOS app to the target audience (non-accountant business owners) is not viable.
+
+**Recommendation:** The $99/year Apple Developer Program fee directly conflicts with DEP-01. Two options:
+
+1. **Accept the friction:** Ship macOS as "experimental / developer-only" in v2.0, documented with `xattr` instructions. Non-macOS users are unblocked. Revisit before any public macOS release.
+2. **Community sponsorship:** Accept donations via GitHub Sponsors for the Apple Developer Program fee. Apache 2.0 project receiving donations is standard; the fee is infrastructure, not a paid service in the product critical path.
+
+**Linux:** No code signing required. AppImage runs as-is; `.deb` installs without warnings. No cost.
+
+---
+
+## Pinned Versions Table
+
+| Package | Version | Where | Install |
+|---------|---------|-------|---------|
+| `@tauri-apps/cli` | 2.11.2 | npm devDep | `npm install -D @tauri-apps/cli@2.11.2` |
+| `@tauri-apps/api` | 2.11.0 | npm dep | `npm install @tauri-apps/api@2.11.0` |
+| `@tauri-apps/plugin-sql` | 2.4.0 | npm dep | `npm install @tauri-apps/plugin-sql@2.4.0` |
+| `@tauri-apps/plugin-dialog` | 2.6.0 | npm dep | `npm install @tauri-apps/plugin-dialog@2.6.0` |
+| `@tauri-apps/plugin-fs` | 2.4.5 | npm dep | `npm install @tauri-apps/plugin-fs@2.4.5` |
+| `tauri-plugin-sql` | 2.4.0 | Cargo.toml | `tauri-plugin-sql = { version = "2", features = ["sqlite"] }` |
+| `tauri-plugin-fs` | 2 | Cargo.toml | `tauri-plugin-fs = { version = "2", features = ["watch"] }` |
+| `tauri-plugin-dialog` | 2 | Cargo.toml | `tauri-plugin-dialog = "2"` |
+| `tauri-plugin-single-instance` | 2 | Cargo.toml | `tauri-plugin-single-instance = { version = "2", target... }` |
+| `@tauri-apps/plugin-updater` | 2.10.1 | npm dep (v2.1 only) | `npm install @tauri-apps/plugin-updater@2.10.1` |
+| `tauri-plugin-updater` | 2 | Cargo.toml (v2.1 only) | `tauri-plugin-updater = "2"` |
+
+**Rust minimum:** 1.77.2  
+**Node.js minimum:** LTS (20.x or 22.x)
+
+---
+
+## Integration Notes
+
+### Vite Config Changes Required
+
+Add to `vite.config.ts`:
+
+```typescript
+export default defineConfig({
+  // Existing config preserved...
+  clearScreen: false,       // Tauri captures stderr; don't clear
+  server: {
+    port: 5173,
+    strictPort: true,       // Fail fast if 5173 is taken
+  },
+  envPrefix: ['VITE_', 'TAURI_ENV_*'],  // Expose Tauri env vars to frontend
+  build: {
+    target: process.env.TAURI_ENV_PLATFORM === 'windows'
+      ? 'chrome105'
+      : 'safari13',         // Match Tauri's bundled webview version
+    minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
+    sourcemap: !!process.env.TAURI_ENV_DEBUG,
+  },
+});
+```
+
+### StorageAdapter Integration Point
+
+The Phase 3 `StorageAdapter` interface is the correct seam. v2.0 adds a `FileBackedAdapter` that:
+1. Opens the user-selected `.aussieledger` SQLite file via `@tauri-apps/plugin-sql`
+2. Implements the same `StorageAdapter` interface (entities, accounts, entries, audit) as `ServerAdapter`
+3. Replaces the `ServerAdapter`'s Express HTTP calls with direct `db.execute()` / `db.select()` IPC calls
+
+The v1.0 SQL schema (DDL in `server/db/migrations/`) is directly reusable — no query rewrite. The migration runner logic from `server/db/migrate.ts` reconstructs as a `FileBackedAdapter.migrate()` that runs each SQL file as a multi-statement `execute()` call.
+
+**Key difference from ServerAdapter:** `@tauri-apps/plugin-sql` is asynchronous (Promise-based IPC). The existing `ServerAdapter` is already async (fetch). No sync/async boundary change required.
+
+### `window.print()` in Tauri Webview
+
+`window.print()` **works** in Tauri's webview and invokes the OS native print dialog. This is confirmed by Tauri's use of WRY (the webview library) which exposes the browser print API. The v1.0 decision "no PDF library — `window.print()` + `@media print` CSS" remains valid for v2.0.
+
+**Caveat:** There is no programmatic/silent PDF generation API in Tauri 2 (GitHub issues #4917, #12284 are open feature requests). This means print-to-PDF requires user interaction with the system print dialog. For v2.0 this is acceptable — the v1.0 UX pattern is preserved. Do not add a PDF library.
+
+### File Watcher for "File Changed Externally"
+
+When the user has their `.aussieledger` file on a NAS or USB drive, another process could write to it. The `watch()` function from `@tauri-apps/plugin-fs` (with `features = ["watch"]` in Cargo.toml) covers this:
+
+```typescript
+import { watch } from '@tauri-apps/plugin-fs';
+
+const unwatch = await watch(currentFilePath, (event) => {
+  if (event.type === 'modify') {
+    // Show "File changed externally — reload?" dialog
+  }
+}, { recursive: false });
+```
+
+No separate plugin needed.
+
+---
+
+## Trade-offs Considered
+
+### Why NOT keep the Express + better-sqlite3 server as a Tauri sidecar
+
+The v1.0 `server/` directory is an Express HTTP server backed by better-sqlite3. It could theoretically be bundled as a Tauri sidecar binary. The reasons not to:
+
+1. **Bundle size:** `pkg` (the Node-to-binary tool) bundles a full Node.js runtime (~50 MB compressed). The current Tauri binary without a sidecar is ~3–8 MB. Adding the sidecar triples the installer size.
+
+2. **Cross-compilation:** A `better-sqlite3` sidecar requires a separately compiled `.node` native addon for each of 5 platforms (win-x64, win-arm64, mac-arm64, mac-x64, linux-x64). The CI matrix becomes a 5×5 matrix of platform × Node version. `pkg` has documented issues with native addons because they cannot be compiled into the JS bundle — they must be bundled separately as platform-specific `.node` files.
+
+3. **IPC overhead:** The sidecar communicates with Tauri via `stdin`/`stdout` IPC (pipes). Every database query crosses two IPC boundaries: React → Tauri Rust core → sidecar stdin/stdout → Node → SQLite → back. `@tauri-apps/plugin-sql` crosses only one: React → Rust IPC → SQLite (via sqlx).
+
+4. **Port conflicts and firewall:** The sidecar Express server would need a TCP port. On Windows this triggers firewall dialogs on first run. `@tauri-apps/plugin-sql` needs no port.
+
+5. **Migration cost:** The v1.0 server SQL is plain strings. Migrating to `plugin-sql`'s `execute()` / `select()` API is a surface-area swap, not a rewrite. The query logic is identical.
+
+### Why NOT Electron
+
+Electron ships a full Chromium engine (~120 MB on disk, ~150–300 MB RAM at idle). Tauri uses the OS-native webview (WKWebView on macOS, WebView2 on Windows, WebKitGTK on Linux). For AussieLedger v2.0 the meaningful differences are:
+
+- Tauri binary: ~4–8 MB installer vs Electron: ~130–180 MB installer
+- Tauri network sandbox is OS-enforced (CSP + no-http-plugin); Electron's network restrictions are renderer-process polyfills that can be bypassed from the main process
+- Tauri requires the user to have WebView2 on Windows (auto-installed on Win10 21H2+; bundled in NSIS installer as fallback); Electron always ships its own Chromium
+- Electron has better native module support (better-sqlite3 works natively); this advantage is not worth the 15–20× size increase given the sidecar trade-off analysis above
+
+---
+
+## What NOT to Add
+
+| Do Not Add | Why | Alternative |
+|------------|-----|-------------|
+| `@tauri-apps/plugin-http` | Grants outbound HTTP to the IPC layer — directly undermines the network sandbox | Omit; the hard-sandbox is the point |
+| Electron | 15–20× larger binary; no meaningful technical advantage over Tauri for this use case | Tauri 2.x |
+| Node.js sidecar + `pkg` | +50–70 MB installer; cross-compilation complexity for native addons | `@tauri-apps/plugin-sql` |
+| `node-notifier` | Desktop notifications require a separate npm package in Electron/Node world | Tauri has `tauri-plugin-notification` built-in (not needed for v2.0, but it exists for v2.1+) |
+| `electron-store` | Electron config storage | Tauri has `tauri-plugin-store` built-in; not needed for v2.0 (settings stay in `localStorage` per Phase 6 pattern) |
+| PDF library (`@react-pdf/renderer`, `jsPDF`, `puppeteer`) | `window.print()` continues to work inside Tauri webview; no regression from v1.0 | `window.print()` + `@media print` CSS (unchanged) |
+| `tauri-plugin-updater` in v2.0 | Auto-update deferred to v2.1 per PROJECT.md scope | Add in v2.1 milestone |
+| `tauri-plugin-rusqlite2` (community) | Only needed if `BEGIN`/`COMMIT` concatenation proves insufficient | Add only if official plugin transaction gap causes correctness issues |
 
 ---
 
 ## Sources
 
-- Project context read from `.planning/PROJECT.md`, `.planning/codebase/STACK.md`, `.planning/codebase/CONCERNS.md`, `package.json` — HIGH confidence (primary source)
-- sql.js documentation: https://sql.js.org — MEDIUM confidence (training data; WebFetch unavailable during research)
-- Vitest documentation: https://vitest.dev — MEDIUM confidence (training data)
-- React Testing Library: https://testing-library.com/docs/react-testing-library/intro — MEDIUM confidence (training data)
-- @react-pdf/renderer: https://react-pdf.org — MEDIUM confidence (training data; React 19 compat should be verified)
-- MDN Intl API: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl — HIGH confidence (ECMA standard)
-- ATO form references: https://www.ato.gov.au/forms-and-instructions — HIGH confidence (domain knowledge)
-- ESLint v9 flat config: https://eslint.org/docs/latest/use/configure/configuration-files — MEDIUM confidence (training data)
-
-**IMPORTANT — Version Verification Required:** External network access (WebSearch, WebFetch, npm registry) was unavailable during this research session. All version numbers above are sourced from training data (cutoff August 2025) and the existing `package.json`. Before each phase begins, run `npm show <package> version` to confirm the latest stable release and update accordingly.
+- Tauri 2 release versions (HIGH confidence): https://v2.tauri.app/release/ — verified 2026-05-29; @tauri-apps/cli 2.11.2, @tauri-apps/api 2.11.0
+- @tauri-apps/plugin-sql npm version (MEDIUM confidence, from search result): `2.4.0` last published ~2 months before 2026-05-29; crate history at https://docs.rs/crate/tauri-plugin-sql/latest confirms 2.3.2 / 2.4.0 sequence
+- @tauri-apps/plugin-dialog 2.6.0 (MEDIUM confidence): npm search result 2026-05-29
+- @tauri-apps/plugin-fs 2.4.5 (MEDIUM confidence): npm search result 2026-05-29
+- @tauri-apps/plugin-updater 2.10.1 (MEDIUM confidence): npm page confirmed 2026-05-29
+- tauri-plugin-single-instance 2.4.0 Rust crate (MEDIUM): docs.rs link in search results 2026-05-29
+- Tauri CSP documentation: https://v2.tauri.app/security/csp/ — confirmed `connect-src: 'none'` blocks fetch()
+- Tauri capabilities documentation: https://v2.tauri.app/security/capabilities/
+- Tauri HTTP plugin scope: https://v2.tauri.app/reference/javascript/http/
+- Tauri plugin-sql transaction gap: https://github.com/tauri-apps/plugins-workspace/issues/886 (open, "help wanted")
+- Tauri sidecar Node.js documentation: https://v2.tauri.app/learn/sidecar-nodejs/
+- Tauri GitHub Actions pipeline: https://v2.tauri.app/distribute/pipelines/github/
+- Tauri Windows code signing: https://v2.tauri.app/distribute/sign/windows/
+- macOS Sequoia 15.1 unsigned app block: OSnews report + MacRumors forum, 2024
+- SignPath Foundation (free OSS signing): https://signpath.org/ — Apache 2.0 license qualifies
+- Azure Artifact Signing pricing ($9.99/month): https://azure.microsoft.com/en-us/products/artifact-signing
+- window.print() in Tauri (no silent PDF API): https://github.com/tauri-apps/wry/issues/707, https://github.com/tauri-apps/tauri/issues/4917
+- File association config: https://v2.tauri.app/reference/config/ — `bundle.fileAssociations` field
+- Tauri Vite integration: https://v2.tauri.app/start/frontend/vite/
+- Node sidecar bundle size reference: https://github.com/tauri-apps/tauri/issues/8614
 
 ---
 
-*Stack research for: AussieLedger — AU accounting / tax-return web application*
-*Researched: 2026-05-10*
+*v2.0 stack additions research — AussieLedger Tauri desktop milestone*
+*Researched: 2026-05-29*
