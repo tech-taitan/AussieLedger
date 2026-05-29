@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: importtb-ux-rework
-current_phase: Phase 7 — ImportTB UX Rework (IN PROGRESS)
-current_plan: "07-4 (Task 1 complete — awaiting UAT checkpoint)"
+current_phase: Phase 8 — Family Medicare Levy Engine (NOT STARTED)
+current_plan: "08-1 (not yet planned)"
 status: in-progress
-stopped_at: "07-4 Task 2 checkpoint:human-verify — pre-UAT gates all GREEN; waiting for user to run npm run dev and complete 42-step UAT"
-last_updated: "2026-05-30T09:20:00.000Z"
+stopped_at: "Completed 07-4-PLAN.md — Phase 7 fully complete; all 5 IMP-07..11 requirements signed off"
+last_updated: "2026-05-30T12:00:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 0
-  total_plans: 2
-  completed_plans: 2
+  completed_phases: 1
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State: AussieLedger
@@ -33,19 +33,19 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 miles
 
 ## Current Position
 
-**Current phase:** Phase 7 — ImportTB UX Rework (IN PROGRESS)
-**Current plan:** 07-4 Task 2 — awaiting human UAT (checkpoint:human-verify)
-**Phase 7 status:** Plans 1+2+3+4-Task1 complete. Pre-UAT automated gate PASSED (848 SPA GREEN + 18 server GREEN + lint EXIT 0 + build EXIT 0). Paused at Task 2 checkpoint awaiting user UAT of 42 steps across 5 fixture scenarios.
-**Last session:** 2026-05-30T09:20:00.000Z
-**Stopped at:** 07-4 Task 2 checkpoint:human-verify — user must run `npm run dev` and complete 42-step UAT protocol
-**Overall progress:** v1.1: 0/3 phases complete (Phase 7 in progress).
+**Current phase:** Phase 8 — Family Medicare Levy Engine (NOT STARTED)
+**Current plan:** 08-1 (not yet planned)
+**Phase 7 status:** COMPLETE — all 4 plans shipped; all 5 IMP-07..11 requirements verified by user UAT on 2026-05-30. Final test counts: 848 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
+**Last session:** 2026-05-30T12:00:00.000Z
+**Stopped at:** Completed 07-4-PLAN.md — Phase 7 fully complete; ready for Phase 8 planning
+**Overall progress:** v1.1: 1/3 phases complete (Phase 7 done, Phase 8 next).
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
        [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ]
 
 v1.1:  [Phase 7] [Phase 8] [Phase 9]
-       [ NEXT  ] [      ] [      ]
+       [ DONE  ] [ NEXT  ] [      ]
 
 v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 ```
@@ -56,7 +56,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 
 | Phase | Name | Key Outcome | Status |
 |-------|------|-------------|--------|
-| 7 | ImportTB UX Rework | Header detection + tolerant currency parser + subtotal exclusion + split-column merging + rejected-rows review panel | NOT STARTED |
+| 7 | ImportTB UX Rework | Header detection + tolerant currency parser + subtotal exclusion + split-column merging + rejected-rows review panel | COMPLETE (2026-05-30) |
 | 8 | Family Medicare Levy Engine | v5→v6 additive schema (Entity gains `dependants` + `spouseIncome`) + real family threshold engine + EntityForm extension + Form I family-variant rendering | NOT STARTED |
 | 9 | Exports + Polish + Cleanup | FND-02 closure (TB/BAS/Form-I CSV) + anomaly fix-it deep-links + cosmetic + Nyquist frontmatter flip | NOT STARTED |
 
@@ -64,8 +64,8 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 
 ## Performance Metrics
 
-- Plans completed: 0 / Plans total: TBD (phases 7–9 not yet planned)
-- Phases complete: 0/3 (v1.1 phases)
+- Plans completed: 4 / Plans total: TBD (phases 8–9 not yet planned)
+- Phases complete: 1/3 (v1.1 phases) — Phase 7 COMPLETE
 - Requirements mapped: 15/15 v1.1 requirements — all phases 7–9 covered
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
@@ -73,7 +73,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | 7 | 1 | ~20 min | 1 | 17 | 769 GREEN, 75 todo |
 | 7 | 2 | ~16 min | 3 | 12 | 821 GREEN, 28 todo |
 | 7 | 3 | ~45 min | 4 | 8 | 848 GREEN, 11 todo |
-| 7 | 4 | ~5 min (Task 1) | 1/2 | 0 | 848 GREEN, 11 todo (gate only) |
+| 7 | 4 | ~10 min | 2/2 | 1 | 848 GREEN, 11 todo (UAT sign-off) |
 
 ---
 
@@ -159,6 +159,6 @@ None.
 
 ## Next Steps
 
-1. `/gsd:discuss-phase 7` — gather context and clarify approach for ImportTB UX rework
-2. (Alternatively) `/gsd:plan-phase 7` — skip discussion, plan directly
-3. Phases 8 + 9 can be started in parallel with 7 if desired (independent codebases)
+1. `/gsd:plan-phase 8` — plan Family Medicare Levy Engine (v5→v6 migration + family threshold engine + EntityForm extension + Form I variant)
+2. (Alternatively) `/gsd:plan-phase 9` — plan Exports + Polish + Cleanup (independent of Phase 8)
+3. Phases 8 + 9 are independent of each other and can be planned/executed in parallel if desired

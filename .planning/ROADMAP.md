@@ -24,7 +24,7 @@
 
 ### v1.1 (In Progress)
 
-- [ ] **Phase 7: ImportTB UX Rework** — header-row detection + tolerant currency parser + subtotal exclusion + split-column merging + extended ImportReviewPane with rejected-rows panel
+- [x] **Phase 7: ImportTB UX Rework** — header-row detection + tolerant currency parser + subtotal exclusion + split-column merging + extended ImportReviewPane with rejected-rows panel
 - [ ] **Phase 8: Family Medicare Levy Engine** — v5→v6 additive schema (Entity gains `dependants` + `spouseIncome`) + real family threshold engine in `medicare.ts` + EntityForm extension + Form I family-variant rendering
 - [ ] **Phase 9: Exports + Polish + Cleanup** — FND-02 closure (TB/BAS/Form-I CSV exports) + anomaly fix-it deep-links + cosmetic sweep (`App.tsx:114` + Nyquist frontmatter)
 
@@ -51,7 +51,7 @@
 - [x] 07-1-PLAN.md — Wave 0 scaffold: 6 test stubs (it.todo) + 4 messy-TB fixtures + XLSX build script + stub modules; 64 new it.todo() stubs; 769 GREEN, 75 todo (commit 9193931)
 - [x] 07-2-PLAN.md — Pure-function implementations: currencyParse + headerDetect + subtotalDetect + columnMerge + widen csv.ts/xlsx.ts with optional headerRowIndex; flip 4 lib test files RED → GREEN; 821 GREEN, 28 todo (commits b2142b2, cdd2951, 4b81fac)
 - [x] 07-3-PLAN.md — Component wiring: HeaderRowPicker + RejectedRowsPanel + extend ImportTB state-machine + extend ImportReviewPane; Phase 4 clean-flow regression test added; 848 GREEN, 11 todo (commits f3fe67d, 39ad609, 9274ccd, f013749, 5ce4f99)
-- [ ] 07-4-PLAN.md — Manual UAT against all 4 messy fixtures + Phase 4 clean regression; sign off all 5 IMP-07..11 requirements
+- [x] 07-4-PLAN.md — Manual UAT against all 4 messy fixtures + Phase 4 clean regression; sign off all 5 IMP-07..11 requirements (approved 2026-05-30)
 
 ### Phase 8: Family Medicare Levy Engine
 
@@ -97,7 +97,7 @@
 | 4. Bookkeeping Core | v1.0 | 4/4 | Complete | 2026-05-13 |
 | 5. Tax Outputs | v1.0 | 4/4 | Complete | 2026-05-28 |
 | 6. Personas, Wizard, and Deployment | v1.0 | 4/4 | Complete | 2026-05-29 |
-| 7. ImportTB UX Rework | v1.1 | 0/? | Not started | — |
+| 7. ImportTB UX Rework | v1.1 | 4/4 | Complete | 2026-05-30 |
 | 8. Family Medicare Levy Engine | v1.1 | 0/? | Not started | — |
 | 9. Exports + Polish + Cleanup | v1.1 | 0/? | Not started | — |
 

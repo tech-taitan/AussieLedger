@@ -2,7 +2,7 @@
 phase: 07-importtb-ux-rework
 plan: 4
 subsystem: uat-manual-verification
-status: partial — awaiting UAT sign-off
+status: complete
 tags:
   - wave-4-uat
   - manual-verification
@@ -40,9 +40,9 @@ decisions:
 metrics:
   duration: "~5 min (Task 1 automated gate)"
   completed_date: "2026-05-30"
-  tasks_completed: 1
+  tasks_completed: 2
   tasks_total: 2
-  files_created: 0
+  files_created: 1
   files_modified: 0
   tests_green: 848
   tests_todo: 11
@@ -51,9 +51,9 @@ metrics:
 
 # Phase 7 Plan 4: Manual UAT — Messy Fixtures + Phase 4 Regression
 
-**One-liner:** Pre-UAT automated gate (848 SPA + 18 server GREEN, lint + build EXIT 0, all 4 fixtures present); awaiting human UAT of 42 steps across 5 fixture scenarios to sign off IMP-07..11.
+**One-liner:** Pre-UAT automated gate (848 SPA + 18 server GREEN, lint + build EXIT 0, all 4 fixtures present); all 42 UAT steps PASSED across Xero/MYOB/QBO/Excel messy fixtures and Phase 4 clean-flow regression; IMP-07..11 signed off 2026-05-30.
 
-**Status: PARTIAL — Task 1 complete, Task 2 (human-verify checkpoint) in progress.**
+**Status: COMPLETE**
 
 ---
 
@@ -91,15 +91,34 @@ Manual UAT against all four messy fixtures (Xero, MYOB, QBO, hand-edited Excel) 
 
 ---
 
-## Tasks Pending
-
 ### Task 2: Manual UAT — 42 steps across 5 fixture scenarios
 
-**Status:** AWAITING USER ACTION (checkpoint:human-verify)
+**Status:** COMPLETE — user approved 2026-05-30
 
-See checkpoint details in SUMMARY for the 42-step UAT protocol and the IMP-07..11 sign-off criteria.
+**Output:** `.planning/phases/07-importtb-ux-rework/07-UAT.md` — per-fixture table and IMP sign-off record created.
 
-**Output required:** `.planning/phases/07-importtb-ux-rework/07-UAT.md` with per-fixture table and IMP sign-off section.
+---
+
+## UAT Outcome
+
+**Approved by:** user  
+**Approved date:** 2026-05-30  
+**Approval signal:** `approved`
+
+All 42 UAT steps PASSED. Per-fixture results:
+
+| Fixture | Steps | Result |
+|---------|-------|--------|
+| Xero TB (xero-tb.csv) | 1–8 | PASS |
+| MYOB TB (myob-tb.csv) | 9–15 | PASS |
+| QuickBooks TB (quickbooks-tb.xlsx) | 16–25 | PASS |
+| Hand-edited Excel TB (excel-hand-edited.csv) | 26–33 | PASS |
+| Phase 4 regression (clean CSV) | 34–42 | PASS |
+
+All 5 IMP-07..11 requirements signed off. Phase 4 clean-import regression confirmed — no Phase 7 UI noise on clean files; fingerprint-collision guard (IMP-05) preserved.
+
+**Final test counts (at UAT sign-off):**  
+848 SPA GREEN + 11 todo + 0 RED · 18 server GREEN · lint EXIT 0 · build EXIT 0
 
 ---
 
@@ -109,9 +128,9 @@ None — Task 1 was verification-only. No source files were modified.
 
 ---
 
-## Self-Check: PARTIAL
+## Self-Check: PASSED
 
-Task 1 verification:
+Task 1 (automated gate):
 - 848 SPA GREEN — PASS
 - 18 server GREEN — PASS
 - lint EXIT 0 — PASS
@@ -119,4 +138,8 @@ Task 1 verification:
 - All 4 fixture files present — PASS
 - Architecture invariant diffs empty — PASS
 
-Task 2 pending user UAT sign-off.
+Task 2 (manual UAT):
+- All 42 steps PASSED — PASS
+- All 5 IMP-07..11 requirements signed off — PASS
+- 07-UAT.md created at `.planning/phases/07-importtb-ux-rework/07-UAT.md` — PASS
+- User approved 2026-05-30 — PASS
