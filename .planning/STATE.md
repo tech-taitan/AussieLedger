@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
-milestone: pending-next
-milestone_name: TBD
+milestone: v2.0
+milestone_name: standalone-app-and-local-data-sovereignty
 current_phase: null
 current_plan: null
-status: milestone-archived
-stopped_at: v1.0 SHIPPED 2026-05-29 — awaiting /gsd:new-milestone for v1.1 or v2.0
-last_updated: "2026-05-29T08:30:00.000Z"
+status: defining-requirements
+stopped_at: v2.0 milestone goals locked — gathering requirements next
+last_updated: "2026-05-29T08:45:00.000Z"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution).
 
 **Core value:** A non-accountant business owner can take their trial balance, record their year's adjustments and journals in plain English, and walk away with a print-ready tax return — without paying for software.
 
-**Current focus:** Planning next milestone (v1.1 polish-and-CSV vs v2.0 standalone desktop app). Run `/gsd:new-milestone` to lock direction.
+**Current focus:** v2.0 — Standalone Tauri desktop app + single-file SQLite-per-instance backing + hard network sandbox. Goal locked 2026-05-29; defining requirements next.
 
 ---
 

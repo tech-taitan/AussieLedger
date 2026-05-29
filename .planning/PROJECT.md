@@ -6,14 +6,34 @@
 
 The brownfield prototype that existed at project init is now a real tool: the StorageAdapter hides IndexedDB (single-user) and SQLite (small-firm VPS), the tax engine produces print-ready returns for all four AU entity types, the year-end wizard walks a non-accountant from "I have a TB" to "I have a finalised working paper", and the project ships under Apache 2.0 with a clone-and-run install.
 
-## Next Milestone Goals
+## Current Milestone: v2.0 — Standalone App + Local Data Sovereignty
 
-**Not yet locked.** Two candidate directions surfaced during v1.0:
+**Goal:** Ship AussieLedger as a standalone desktop app (Tauri) backed by a single-file SQLite-per-instance model, so the target audience (non-accountant business owners) can install with a double-click AND every byte of their tax data is provably local — no browser-storage opacity, no implicit network calls, no "where's my data?" confusion.
 
-1. **v1.1 — Polish + CSV (the small bump)** — close FND-02 (CSV per-report export), retro-fix Nyquist frontmatter on Phases 1/2/6, clean cosmetic debt (`App.tsx:114` dead string), add anomaly fix-it deep-links, family-Medicare-levy threshold engine.
-2. **v2.0 — Standalone desktop app (the big bump)** — see `.planning/todos/pending/2026-05-28-package-as-standalone-desktop-app-with-local-backend.md`. Package the SPA + local backend as a Tauri/Electron desktop app so the target audience (non-accountant business owners) can install with a double-click instead of `npm install`. The Phase 3 StorageAdapter abstraction was designed precisely for this swap; the cost depends on whether persistence moves to Tauri IPC or keeps Express as a sidecar.
+**Why now:** v1.0 proves the tax engine + wizard + persona shell are correct. The remaining v1.0 friction (`npm install` install path; browser storage opacity; AI-feature network ambiguity) all stem from the web-app shell, not from the domain logic. v2.0 swaps the shell while keeping the domain layer untouched — the Phase 3 `StorageAdapter` FINAL invariant was designed for exactly this. The same change that solves the "double-click install" UX also solves the "guaranteed local data" trust requirement.
 
-Run `/gsd:new-milestone` to lock direction and start questioning → research → requirements → roadmap.
+**Target features:**
+- **Tauri 2.x desktop binary** for Windows / macOS / Linux — installable from a single OS-native installer (`.msi` / `.dmg` / `.AppImage`); no Node, no terminal, no `npm install`
+- **File-backed SQLite-per-instance** — each user's books live in a portable `*.aussieledger` file the user owns end-to-end (File → New / File → Open / File → Save As). The file IS the source of truth; the in-app SQLite handle is a working cache
+- **Hard network sandbox** — Tauri allowlist forbids any outbound HTTP by default; without an explicit allowlist entry per host, network calls are *impossible*, not just discouraged. AI features become explicit "send this batch to Google" actions, not background calls
+- **Native OS file paths** — file dialogs use the OS picker; documented default location (e.g. `~/Documents/AussieLedger/` on macOS, `Documents\AussieLedger\` on Windows); user can put the file on a USB stick, NAS, or encrypted drive
+- **`FileBackedAdapter`** behind the Phase 3 `StorageAdapter` interface — domain layer (hooks, components, tax engine) sees zero change; the swap happens at the adapter
+- **Auto-save + crash recovery** — desktop user doesn't manually save after every change; the file commits transactionally, with an explicit "Save As" for snapshots/backups
+- **Cross-platform CI build pipeline** — every push produces signed (where the cert is available) installers on GitHub Releases; the web SPA remains a build target for users who want it
+- **Migration from v1.0** — existing v1.0 IndexedDB + Express+SQLite users get a one-time "Import your v1.0 data" flow that reads the v5 JSON export and writes a v6 `.aussieledger` file
+
+**Out of scope (deferred from v2.0):**
+- Direct ATO / myGov lodgement (still v3+)
+- Multi-user / firm-shared editing of a single file (single-user-per-file in v2; file-locking acceptable; concurrent edits not)
+- Cloud sync / file-sync layer (Dropbox/iCloud users can manage that themselves with the file)
+- Auto-update infrastructure (manual download for v2.0; auto-update v2.1)
+- Mobile app (responsive web SPA continues to serve mobile users; native mobile = v3+)
+- CSV per-report export (FND-02 from v1.0 carries forward as a v2 requirement, not a separate v1.1)
+
+**Carry-over from v1.0 known gaps absorbed into v2.0:**
+- FND-02 CSV per-report export (TB CSV, BAS labels CSV, Form I CSV) — natural fit alongside the file-export work
+- Cosmetic: `App.tsx:114` dead `'US Big Law Firm'` string — sweep during v2.0 SPA changes
+- Nyquist `nyquist_compliant: false` frontmatter on Phases 1/2/6 — retroactive flip via `/gsd:validate-phase` if Nyquist gating still matters going forward
 
 ## What This Is
 
