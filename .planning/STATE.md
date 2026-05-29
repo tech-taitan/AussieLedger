@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: polish-closure-and-tb-import-rework
-current_phase: 7
-current_plan: null
-status: ready-to-plan
-stopped_at: v1.1 roadmap created — ready to plan Phase 7 (ImportTB UX Rework)
-last_updated: "2026-05-29T13:00:00.000Z"
+milestone: v1.0
+milestone_name: milestone
+current_phase: Phase 7 — ImportTB UX Rework (READY TO PLAN)
+current_plan: "None — run `/gsd:plan-phase 7` to create the first v1.1 plan"
+status: unknown
+stopped_at: Phase 7 context gathered
+last_updated: "2026-05-29T21:23:46.145Z"
 progress:
   total_phases: 3
   completed_phases: 0
@@ -36,8 +36,8 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 miles
 **Current phase:** Phase 7 — ImportTB UX Rework (READY TO PLAN)
 **Current plan:** None — run `/gsd:plan-phase 7` to create the first v1.1 plan
 **Phase 7 status:** Not started.
-**Last session:** 2026-05-29T13:00:00Z
-**Stopped at:** v1.1 roadmap written — 3 phases (7–9), 15 requirements mapped, all coverage validated. Next: `/gsd:plan-phase 7`
+**Last session:** 2026-05-29T21:23:46.142Z
+**Stopped at:** Phase 7 context gathered
 **Overall progress:** v1.1: 0/3 phases complete.
 
 ```
