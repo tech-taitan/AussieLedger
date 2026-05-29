@@ -6,6 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ImportReviewPane } from '../ImportReviewPane';
 import type { Account, ImportedAccount } from '../../types';
+import type { RejectedRow } from '../RejectedRowsPanel';
 
 const ACCOUNTS: Account[] = [
   { id: 'acc-1', code: '4100', name: 'Sales', type: 'Revenue', gstCode: 'GST' },
@@ -165,5 +166,116 @@ describe('ImportReviewPane (IMP-03)', () => {
     const optionTexts = Array.from(select.options).map((o) => o.textContent ?? '');
     expect(optionTexts.some((t) => t.includes('Archived Account'))).toBe(false);
     expect(optionTexts.some((t) => t.includes('Sales'))).toBe(true);
+  });
+
+  // Phase 7 additions — backward-compatible new props
+
+  it('IMP-08: tolerant-parse-banner renders when tolerantParseCount > 0', () => {
+    const row: ImportedAccount = {
+      externalCode: '1000',
+      externalName: 'Cash',
+      debit: 100,
+      credit: 0,
+      mappedAccountId: undefined,
+      confidence: 0,
+    };
+    render(
+      <ImportReviewPane
+        rows={[row]}
+        accounts={[]}
+        onUpdate={vi.fn()}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+        tolerantParseCount={3}
+      />,
+    );
+    const banner = screen.getByTestId('tolerant-parse-banner');
+    expect(banner.textContent).toMatch(/Tolerantly parsed currency in 3 cells/);
+  });
+
+  it('IMP-08: AnomalyBadge renders when lowConfidenceParseCount > 0', () => {
+    const row: ImportedAccount = {
+      externalCode: '1000',
+      externalName: 'Cash',
+      debit: 100,
+      credit: 0,
+      mappedAccountId: undefined,
+      confidence: 0,
+    };
+    render(
+      <ImportReviewPane
+        rows={[row]}
+        accounts={[]}
+        onUpdate={vi.fn()}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+        tolerantParseCount={3}
+        lowConfidenceParseCount={2}
+      />,
+    );
+    expect(screen.getByTestId('tolerant-parse-banner').textContent).toMatch(
+      /2 cells low confidence/,
+    );
+  });
+
+  it('IMP-09/11: RejectedRowsPanel renders inline when rejectedRows non-empty', () => {
+    const row: ImportedAccount = {
+      externalCode: '1000',
+      externalName: 'Cash',
+      debit: 100,
+      credit: 0,
+      mappedAccountId: undefined,
+      confidence: 0,
+    };
+    const rejected: RejectedRow[] = [
+      {
+        rowIndex: 5,
+        reason: 'subtotal',
+        rawCode: '',
+        rawName: 'Total Revenue',
+        rawDebit: '0',
+        rawCredit: '55000',
+      },
+    ];
+    render(
+      <ImportReviewPane
+        rows={[row]}
+        accounts={[]}
+        onUpdate={vi.fn()}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+        rejectedRows={rejected}
+        onRejectedRowUpdate={vi.fn()}
+        onRejectedRowReparse={vi.fn()}
+        onIncludeAllSubtotals={vi.fn()}
+        onApplyToSimilar={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('rejected-rows-banner')).toBeTruthy();
+    expect(screen.getByTestId('rejected-rows-banner').textContent).toMatch(
+      /1 rows rejected/,
+    );
+  });
+
+  it('REGRESSION: omitting Phase 7 props (Phase 4 caller) does not render banner, badge, or panel', () => {
+    const row: ImportedAccount = {
+      externalCode: '1000',
+      externalName: 'Cash',
+      debit: 100,
+      credit: 0,
+      mappedAccountId: undefined,
+      confidence: 0,
+    };
+    render(
+      <ImportReviewPane
+        rows={[row]}
+        accounts={[]}
+        onUpdate={vi.fn()}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('tolerant-parse-banner')).toBeNull();
+    expect(screen.queryByTestId('rejected-rows-banner')).toBeNull();
   });
 });

@@ -6,6 +6,9 @@ import React from 'react';
 import type { Account, ImportedAccount } from '../types';
 import { HIGH_CONFIDENCE_THRESHOLD } from '../lib/import/match';
 import { cn } from '../lib/utils';
+import type { RejectedRow } from './RejectedRowsPanel';
+import { RejectedRowsPanel } from './RejectedRowsPanel';
+import { AnomalyBadge } from './AnomalyBadge';
 
 /**
  * Row-level review UI between fuzzy match and post.
@@ -21,6 +24,12 @@ import { cn } from '../lib/utils';
  *   to TRUE; rows are excluded only when explicitly unchecked).
  * - Debit and credit are editable inline.
  * - `onAccept` and `onReject` fire the parent's accept/reject paths.
+ *
+ * Phase 7 additions (all OPTIONAL — backward-compatible with Phase 4 callers):
+ * - `rejectedRows`: renders RejectedRowsPanel inline below accepted rows
+ * - `tolerantParseCount`: shows "Tolerantly parsed currency in N cells" banner
+ * - `lowConfidenceParseCount`: shows AnomalyBadge for ambiguous parses
+ * - Callback props for rejected-row interactions
  */
 interface ImportReviewPaneProps {
   rows: ImportedAccount[];
@@ -28,6 +37,14 @@ interface ImportReviewPaneProps {
   onUpdate: (rows: ImportedAccount[]) => void;
   onAccept: () => void;
   onReject: () => void;
+  // Phase 7 additions — optional, backward-compatible
+  rejectedRows?: RejectedRow[];
+  tolerantParseCount?: number;
+  lowConfidenceParseCount?: number;
+  onRejectedRowUpdate?: (rowIndex: number, patch: Partial<RejectedRow>) => void;
+  onRejectedRowReparse?: (rowIndex: number) => void;
+  onIncludeAllSubtotals?: () => void;
+  onApplyToSimilar?: (sourceRowIndex: number) => void;
 }
 
 /**
@@ -46,11 +63,26 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
   onUpdate,
   onAccept,
   onReject,
+  rejectedRows,
+  tolerantParseCount,
+  lowConfidenceParseCount,
+  onRejectedRowUpdate,
+  onRejectedRowReparse,
+  onIncludeAllSubtotals,
+  onApplyToSimilar,
 }) => {
   const updateRow = (idx: number, patch: Partial<ReviewRow>) => {
     const next = rows.map((r, i) => (i === idx ? { ...r, ...patch } : r));
     onUpdate(next);
   };
+
+  const hasRejectedRows =
+    rejectedRows != null &&
+    rejectedRows.length > 0 &&
+    onRejectedRowUpdate != null &&
+    onRejectedRowReparse != null &&
+    onIncludeAllSubtotals != null &&
+    onApplyToSimilar != null;
 
   return (
     <section
@@ -78,6 +110,22 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Phase 7: tolerant-parse banner */}
+      {(tolerantParseCount ?? 0) > 0 && (
+        <div
+          data-testid="tolerant-parse-banner"
+          className="bg-blue-50 border border-blue-100 p-2 text-xs mb-2 flex items-center gap-2"
+        >
+          <span>Tolerantly parsed currency in {tolerantParseCount} cells</span>
+          {(lowConfidenceParseCount ?? 0) > 0 && (
+            <AnomalyBadge
+              severity="warn"
+              label={`${lowConfidenceParseCount} cells low confidence`}
+            />
+          )}
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
@@ -205,6 +253,17 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Phase 7: Rejected Rows Panel — inline below accepted rows */}
+      {hasRejectedRows && (
+        <RejectedRowsPanel
+          rejectedRows={rejectedRows!}
+          onUpdate={onRejectedRowUpdate!}
+          onReparse={onRejectedRowReparse!}
+          onIncludeAllSubtotals={onIncludeAllSubtotals!}
+          onApplyToSimilar={onApplyToSimilar!}
+        />
+      )}
     </section>
   );
 };
