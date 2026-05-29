@@ -18,15 +18,22 @@ import type { ImportedAccount, JournalEntry, JournalLine, Account } from '../typ
 import { motion, AnimatePresence } from 'motion/react';
 import { isAiEnabled, GEMINI_MODEL } from '../lib/ai';
 import { fuzzyMatch, HIGH_CONFIDENCE_THRESHOLD } from '../lib/import/match';
-import { parseCsvFile } from '../lib/import/csv';
-import { parseXlsxBuffer, pickSheetByName } from '../lib/import/xlsx';
+import { parseCsvFile, parseCsvRaw } from '../lib/import/csv';
+import { parseXlsxBuffer, pickSheetByName, getXlsxRawRows } from '../lib/import/xlsx';
 import {
   computeImportFingerprint,
   type ColumnMappingByName,
   type RawRow,
 } from '../lib/import/fingerprint';
+import { detectHeaderRow, type HeaderDetectResult } from '../lib/import/headerDetect';
+import { parseCurrency } from '../lib/import/currencyParse';
+import { detectSubtotals, type ImportRow as SubtotalImportRow } from '../lib/import/subtotalDetect';
+import { detectSplitColumns, mergeColumns, deriveRegexSignature } from '../lib/import/columnMerge';
+import Decimal from 'decimal.js';
 import { XlsxSheetPicker } from './XlsxSheetPicker';
 import { ImportReviewPane, type ReviewRow } from './ImportReviewPane';
+import { HeaderRowPicker } from './HeaderRowPicker';
+import type { RejectedRow } from './RejectedRowsPanel';
 import { AiGateNote } from './AiGateNote';
 import { today } from '../lib/period';
 
@@ -64,6 +71,22 @@ export const ImportTB: React.FC<ImportTBProps> = ({
   const [xlsxBuffer, setXlsxBuffer] = useState<ArrayBuffer | null>(null);
   const [sheetPickerNames, setSheetPickerNames] = useState<string[] | null>(null);
 
+  // ── Phase 7: Header-row detection state ────────────────────────────────────
+  const [rawRows, setRawRows] = useState<string[][] | null>(null);
+  const [headerDetectResult, setHeaderDetectResult] = useState<HeaderDetectResult | null>(null);
+  const [headerRowIndex, setHeaderRowIndex] = useState<number | null>(null);
+  const [isPickingHeader, setIsPickingHeader] = useState(false);
+  const [pickedFile, setPickedFile] = useState<File | null>(null);
+  const [pickedSheetName, setPickedSheetName] = useState<string | null>(null);
+
+  // ── Phase 7: Missing-code mode ─────────────────────────────────────────────
+  const [missingCodeMode, setMissingCodeMode] = useState<'pick' | null>(null);
+
+  // ── Phase 7: Rejected rows + parse counters ────────────────────────────────
+  const [rejectedRows, setRejectedRows] = useState<RejectedRow[]>([]);
+  const [tolerantParseCount, setTolerantParseCount] = useState(0);
+  const [lowConfidenceParseCount, setLowConfidenceParseCount] = useState(0);
+
   // ── Column mapping (by header NAME, not index) ────────────────────────────
   const [columnMappingByName, setColumnMappingByName] =
     useState<ColumnMappingByName>({ code: '', name: '', debit: '', credit: '' });
@@ -94,22 +117,34 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     const lower = file.name.toLowerCase();
     try {
       if (lower.endsWith('.csv')) {
-        const { rows, headers } = await parseCsvFile(file);
-        setParsedRows(rows);
-        setParsedHeaders(headers);
-        seedDefaultMapping(headers);
-        setIsColumnMapping(true);
+        setPickedFile(file);
+        const raw = await parseCsvRaw(file);
+        setRawRows(raw);
+        const detect = detectHeaderRow(raw);
+        setHeaderDetectResult(detect);
+        if (detect.autoPickRow !== null) {
+          await proceedAfterHeaderPick(detect.autoPickRow, file, null, null);
+        } else {
+          setIsPickingHeader(true);
+        }
       } else if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
         const buf = await file.arrayBuffer();
         setXlsxBuffer(buf);
-        const { sheetNames, rows, headers } = parseXlsxBuffer(buf);
+        setPickedFile(file);
+        const { sheetNames } = parseXlsxBuffer(buf);
         if (sheetNames.length > 1) {
           setSheetPickerNames(sheetNames);
         } else {
-          setParsedRows(rows);
-          setParsedHeaders(headers);
-          seedDefaultMapping(headers);
-          setIsColumnMapping(true);
+          setPickedSheetName(sheetNames[0]);
+          const raw = getXlsxRawRows(buf, sheetNames[0]);
+          setRawRows(raw);
+          const detect = detectHeaderRow(raw);
+          setHeaderDetectResult(detect);
+          if (detect.autoPickRow !== null) {
+            await proceedAfterHeaderPick(detect.autoPickRow, file, buf, sheetNames[0]);
+          } else {
+            setIsPickingHeader(true);
+          }
         }
       } else {
         alert('Unsupported file type. Please choose .csv, .xls, or .xlsx.');
@@ -135,19 +170,19 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     });
   };
 
-  // ── Sheet picker → buffer-aware sheet selection ───────────────────────────
-  const handleSheetPick = (name: string) => {
+  // ── Sheet picker → header detection then column mapping ───────────────────
+  const handleSheetPick = async (name: string) => {
     if (!xlsxBuffer) return;
-    try {
-      const { rows, headers } = pickSheetByName(xlsxBuffer, name);
-      setParsedRows(rows);
-      setParsedHeaders(headers);
-      seedDefaultMapping(headers);
-      setSheetPickerNames(null);
-      setIsColumnMapping(true);
-    } catch (err) {
-      console.error('Sheet pick failed', err);
-      alert(`Could not read sheet "${name}": ${(err as Error).message}`);
+    setSheetPickerNames(null);
+    setPickedSheetName(name);
+    const raw = getXlsxRawRows(xlsxBuffer, name);
+    setRawRows(raw);
+    const detect = detectHeaderRow(raw);
+    setHeaderDetectResult(detect);
+    if (detect.autoPickRow !== null) {
+      await proceedAfterHeaderPick(detect.autoPickRow, pickedFile, xlsxBuffer, name);
+    } else {
+      setIsPickingHeader(true);
     }
   };
 
@@ -156,26 +191,176 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     setXlsxBuffer(null);
   };
 
-  // ── Column mapping → review stage (deterministic fuzzyMatch baseline) ─────
+  // ── Header row pick → proceed to column mapping ───────────────────────────
+  const handleHeaderPick = async (rowIndex: number) => {
+    setHeaderRowIndex(rowIndex);
+    setIsPickingHeader(false);
+    await proceedAfterHeaderPick(rowIndex, pickedFile, xlsxBuffer, pickedSheetName);
+  };
+
+  /**
+   * After header row is chosen (auto-picked or user-selected), parse the file
+   * with the correct headerRowIndex, run split-column detection, then advance
+   * to the column-mapping step (or missing-code picker if needed).
+   */
+  const proceedAfterHeaderPick = async (
+    rowIdx: number,
+    file: File | null,
+    buf: ArrayBuffer | null,
+    sheet: string | null,
+  ) => {
+    try {
+      let parsed: { rows: RawRow[]; headers: string[] };
+      if (buf && sheet) {
+        parsed = pickSheetByName(buf, sheet, { headerRowIndex: rowIdx });
+      } else if (file) {
+        parsed = await parseCsvFile(file, { headerRowIndex: rowIdx });
+      } else {
+        throw new Error('No file or buffer available');
+      }
+
+      // Split-column detection
+      const splitResult = detectSplitColumns(parsed.headers, parsed.rows);
+      let effectiveRows = parsed.rows;
+      let effectiveHeaders = parsed.headers;
+
+      if (
+        splitResult.hasSplitColumns &&
+        splitResult.missingCodeFraction < 0.5 &&
+        splitResult.codeColHeader &&
+        splitResult.nameColHeader
+      ) {
+        effectiveRows = mergeColumns(
+          parsed.rows,
+          splitResult.codeColHeader,
+          splitResult.nameColHeader,
+        );
+        effectiveHeaders = [...parsed.headers, '__merged_code_name'];
+      }
+
+      setParsedRows(effectiveRows);
+      setParsedHeaders(effectiveHeaders);
+      seedDefaultMapping(effectiveHeaders);
+
+      if (splitResult.codeColHeader && splitResult.missingCodeFraction > 0.5) {
+        setMissingCodeMode('pick');
+      } else {
+        setIsColumnMapping(true);
+      }
+    } catch (err) {
+      console.error('proceedAfterHeaderPick failed', err);
+      alert(
+        `Could not parse file with header row ${rowIdx + 1}: ${(err as Error).message}`,
+      );
+    }
+  };
+
+  // ── Column mapping → review stage (deterministic fuzzyMatch + currency-parse)
   const processColumnMapping = () => {
     if (!parsedRows) return;
-    const imported: ImportedAccount[] = parsedRows
-      .map((r) => ({
-        externalCode: (r[columnMappingByName.code] ?? '').toString().trim(),
-        externalName: (r[columnMappingByName.name] ?? '').toString().trim(),
-        debit: Number(r[columnMappingByName.debit] ?? 0) || 0,
-        credit: Number(r[columnMappingByName.credit] ?? 0) || 0,
-      }))
-      .filter(
-        (r) =>
-          (r.externalCode || r.externalName) &&
-          (r.debit !== 0 || r.credit !== 0),
-      );
+    const accepted: ReviewRow[] = [];
+    const rejected: RejectedRow[] = [];
+    let tolerant = 0;
+    let lowConf = 0;
 
-    // Deterministic baseline match — always runs (IMP-04 deterministic path).
-    const matched: ReviewRow[] = imported.map((row) => {
+    parsedRows.forEach((r, idx) => {
+      const code = (r[columnMappingByName.code] ?? '').toString().trim();
+      const name = (r[columnMappingByName.name] ?? '').toString().trim();
+      const rawDebit = (r[columnMappingByName.debit] ?? '').toString();
+      const rawCredit = (r[columnMappingByName.credit] ?? '').toString();
+      const debitResult = parseCurrency(rawDebit);
+      const creditResult = parseCurrency(rawCredit);
+
+      // Track tolerant parses (high-confidence but had formatting stripped)
+      if (rawDebit.trim() !== '' && debitResult.confidence === 'high' && /[$,A]/.test(rawDebit))
+        tolerant++;
+      if (rawCredit.trim() !== '' && creditResult.confidence === 'high' && /[$,A]/.test(rawCredit))
+        tolerant++;
+      // Track low-confidence parses (ambiguous — e.g. "1,234" AU or EU?)
+      if (debitResult.confidence === 'low' && debitResult.decimal !== null) lowConf++;
+      if (creditResult.confidence === 'low' && creditResult.decimal !== null) lowConf++;
+
+      // Reject if either parse returned null (non-empty unparseable cell)
+      if (debitResult.decimal === null || creditResult.decimal === null) {
+        const failingColumn: RejectedRow['failingColumn'] =
+          debitResult.decimal === null ? 'debit' : 'credit';
+        const failingCellValue =
+          debitResult.decimal === null ? rawDebit : rawCredit;
+        rejected.push({
+          rowIndex: idx,
+          reason: 'currency-unparseable',
+          rawCode: code,
+          rawName: name,
+          rawDebit,
+          rawCredit,
+          failingCellValue,
+          failingColumn,
+        });
+        return;
+      }
+
+      // Drop empty rows silently
+      if (!code && !name) return;
+
+      // Rows with name but no code go to rejected for review
+      if (!code && name) {
+        rejected.push({
+          rowIndex: idx,
+          reason: 'no-account-code',
+          rawCode: code,
+          rawName: name,
+          rawDebit,
+          rawCredit,
+        });
+        return;
+      }
+
+      const debitNum = debitResult.decimal.toNumber();
+      const creditNum = creditResult.decimal.toNumber();
+      // Drop rows with zero amounts (likely blank / section-heading rows)
+      if (debitNum === 0 && creditNum === 0) return;
+
+      accepted.push({
+        externalCode: code,
+        externalName: name,
+        debit: debitNum,
+        credit: creditNum,
+        mappedAccountId: undefined,
+        confidence: 0,
+        reasoning: 'Pending fuzzy match',
+        _include: true,
+      });
+    });
+
+    // Run subtotal detection on accepted rows
+    const subtotalInput: SubtotalImportRow[] = accepted.map((a, i) => ({
+      rowIndex: i,
+      code: a.externalCode,
+      name: a.externalName,
+      debit: new Decimal(a.debit),
+      credit: new Decimal(a.credit),
+      rawDebit: String(a.debit),
+      rawCredit: String(a.credit),
+    }));
+    const subtotalFlags = detectSubtotals(subtotalInput);
+    const subtotalIxs = new Set(subtotalFlags.map((f) => f.rowIndex));
+
+    const finalAccepted: ReviewRow[] = [];
+    accepted.forEach((row, i) => {
+      if (subtotalIxs.has(i)) {
+        rejected.push({
+          rowIndex: i,
+          reason: 'subtotal',
+          rawCode: row.externalCode,
+          rawName: row.externalName,
+          rawDebit: String(row.debit),
+          rawCredit: String(row.credit),
+        });
+        return;
+      }
+      // Deterministic fuzzy match — preserves Phase 4 behavior (IMP-04)
       const result = fuzzyMatch(row, accounts);
-      return {
+      finalAccepted.push({
         ...row,
         mappedAccountId: result.mappedAccountId,
         confidence: result.confidence,
@@ -183,12 +368,91 @@ export const ImportTB: React.FC<ImportTBProps> = ({
           result.confidence >= HIGH_CONFIDENCE_THRESHOLD
             ? 'Auto-matched (deterministic)'
             : 'Manual review recommended',
-        _include: true,
-      };
+      });
     });
-    setImportedRows(matched);
+
+    setImportedRows(finalAccepted);
+    setRejectedRows(rejected);
+    setTolerantParseCount(tolerant);
+    setLowConfidenceParseCount(lowConf);
     setIsColumnMapping(false);
     setReviewing(true);
+  };
+
+  // ── Rejected row handlers ─────────────────────────────────────────────────
+  const handleRejectedRowUpdate = (rowIndex: number, patch: Partial<RejectedRow>) => {
+    setRejectedRows((curr) =>
+      curr.map((r) => (r.rowIndex === rowIndex ? { ...r, ...patch } : r)),
+    );
+  };
+
+  const handleRejectedRowReparse = (rowIndex: number) => {
+    const row = rejectedRows.find((r) => r.rowIndex === rowIndex);
+    if (!row) return;
+    const debitResult = parseCurrency(row.editedDebit ?? row.rawDebit);
+    const creditResult = parseCurrency(row.editedCredit ?? row.rawCredit);
+    if (debitResult.decimal === null || creditResult.decimal === null) return;
+    setRejectedRows((curr) => curr.filter((r) => r.rowIndex !== rowIndex));
+    setImportedRows((curr) => [
+      ...curr,
+      {
+        externalCode: row.editedCode ?? row.rawCode,
+        externalName: row.editedName ?? row.rawName,
+        debit: debitResult.decimal!.toNumber(),
+        credit: creditResult.decimal!.toNumber(),
+        mappedAccountId: undefined,
+        confidence: 0,
+        reasoning: 'Re-parsed from rejected',
+        _include: true,
+      } as ReviewRow,
+    ]);
+  };
+
+  const handleIncludeAllSubtotals = () => {
+    const subtotals = rejectedRows.filter((r) => r.reason === 'subtotal');
+    setRejectedRows((curr) => curr.filter((r) => r.reason !== 'subtotal'));
+    setImportedRows((curr) => [
+      ...curr,
+      ...subtotals.map((s) => {
+        const debit = parseCurrency(s.rawDebit).decimal?.toNumber() ?? 0;
+        const credit = parseCurrency(s.rawCredit).decimal?.toNumber() ?? 0;
+        return {
+          externalCode: s.rawCode,
+          externalName: s.rawName,
+          debit,
+          credit,
+          mappedAccountId: undefined,
+          confidence: 0,
+          reasoning: 'Subtotal manually included',
+          _include: true,
+        } as ReviewRow;
+      }),
+    ]);
+  };
+
+  const handleApplyToSimilar = (sourceRowIndex: number) => {
+    const source = rejectedRows.find((r) => r.rowIndex === sourceRowIndex);
+    if (!source || !source.failingCellValue) return;
+    const sig = deriveRegexSignature(source.failingCellValue);
+    const re = new RegExp(`^${sig}$`);
+    const similar = rejectedRows.filter(
+      (r) =>
+        r.reason === source.reason &&
+        r.failingCellValue != null &&
+        re.test(r.failingCellValue),
+    );
+    // For each similar row, swap in the source's edited values then attempt re-parse
+    similar.forEach((s) => {
+      const patched: RejectedRow = {
+        ...s,
+        editedCode: source.editedCode ?? s.editedCode,
+        editedName: source.editedName ?? s.editedName,
+        editedDebit: source.editedDebit ?? s.editedDebit,
+        editedCredit: source.editedCredit ?? s.editedCredit,
+      };
+      handleRejectedRowUpdate(s.rowIndex, patched);
+      handleRejectedRowReparse(s.rowIndex);
+    });
   };
 
   // ── Optional AI re-match (gated on isAiEnabled() — IMP-04) ────────────────
@@ -359,11 +623,27 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     setIsColumnMapping(false);
     setFingerprintCollision(null);
     setColumnMappingByName({ code: '', name: '', debit: '', credit: '' });
+    // Phase 7 state reset
+    setRawRows(null);
+    setHeaderDetectResult(null);
+    setHeaderRowIndex(null);
+    setIsPickingHeader(false);
+    setPickedFile(null);
+    setPickedSheetName(null);
+    setMissingCodeMode(null);
+    setRejectedRows([]);
+    setTolerantParseCount(0);
+    setLowConfidenceParseCount(0);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
   const showUploadScreen =
-    !isColumnMapping && !reviewing && !sheetPickerNames && !fingerprintCollision;
+    !isColumnMapping &&
+    !reviewing &&
+    !sheetPickerNames &&
+    !fingerprintCollision &&
+    !isPickingHeader &&
+    !missingCodeMode;
 
   return (
     <div className="space-y-6">
@@ -418,6 +698,72 @@ export const ImportTB: React.FC<ImportTBProps> = ({
           onSelect={handleSheetPick}
           onCancel={handleSheetPickCancel}
         />
+      )}
+
+      {isPickingHeader && rawRows && (
+        <HeaderRowPicker
+          rows={rawRows}
+          detectResult={headerDetectResult}
+          onPick={handleHeaderPick}
+          onCancel={resetState}
+        />
+      )}
+
+      {missingCodeMode && (
+        <div
+          data-testid="missing-code-picker"
+          className="bg-white border border-amber-200 p-4 rounded space-y-2"
+        >
+          <p className="text-sm">
+            More than half the rows are missing an account code. How would you
+            like to proceed?
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              type="button"
+              data-testid="missing-code-auto-assign"
+              onClick={() => {
+                // Auto-assign sequential codes '001', '002', ...
+                const codeKey =
+                  columnMappingByName.code || '__assigned_code';
+                setParsedRows(
+                  (parsedRows ?? []).map((r, i) => ({
+                    ...r,
+                    [codeKey]: String(i + 1).padStart(3, '0'),
+                  })),
+                );
+                setColumnMappingByName({
+                  ...columnMappingByName,
+                  code: codeKey,
+                });
+                setMissingCodeMode(null);
+                setIsColumnMapping(true);
+              }}
+              className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+            >
+              Auto-assign codes sequentially
+            </button>
+            <button
+              type="button"
+              data-testid="missing-code-name-only"
+              onClick={() => {
+                setMissingCodeMode(null);
+                setIsColumnMapping(true);
+              }}
+              className="border px-3 py-1 rounded text-sm"
+            >
+              Import name-only and map manually
+            </button>
+            <button
+              type="button"
+              data-testid="missing-code-cancel"
+              onClick={resetState}
+              className="underline text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
 
       {isColumnMapping && parsedRows && (
@@ -535,6 +881,13 @@ export const ImportTB: React.FC<ImportTBProps> = ({
             onUpdate={(rs) => setImportedRows(rs as ReviewRow[])}
             onAccept={handleAcceptImport}
             onReject={resetState}
+            rejectedRows={rejectedRows}
+            tolerantParseCount={tolerantParseCount}
+            lowConfidenceParseCount={lowConfidenceParseCount}
+            onRejectedRowUpdate={handleRejectedRowUpdate}
+            onRejectedRowReparse={handleRejectedRowReparse}
+            onIncludeAllSubtotals={handleIncludeAllSubtotals}
+            onApplyToSimilar={handleApplyToSimilar}
           />
         </div>
       )}
