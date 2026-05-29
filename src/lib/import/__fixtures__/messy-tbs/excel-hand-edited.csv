@@ -1,0 +1,12 @@
+Trial Balance - FY2026,,,
+Prepared by: Jane Smith,,,
+Date: 30/06/2026,,,
+,,,
+Code,Account Name,Debit ($),Credit ($)
+1100,Cash at Bank,"$25,000.00",$0.00
+1200,Accounts Receivable,"$5,000.00",$0.00
+,Total Current Assets,"$30,000.00",$0.00
+,,,
+4100,Sales Revenue,$0.00,"$(50,000.00)"
+4200,Service Income,$0.00,"$(10,000.00)"
+,Total Revenue,$0.00,"$(60,000.00)"
