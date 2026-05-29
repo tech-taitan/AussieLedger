@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-current_phase: Phase 7 — ImportTB UX Rework (READY TO PLAN)
-current_plan: "None — run `/gsd:plan-phase 7` to create the first v1.1 plan"
-status: unknown
-stopped_at: Phase 7 context gathered
-last_updated: "2026-05-29T21:23:46.145Z"
+milestone: v1.1
+milestone_name: importtb-ux-rework
+current_phase: Phase 7 — ImportTB UX Rework (IN PROGRESS)
+current_plan: "07-2 (Plan 1 complete)"
+status: in-progress
+stopped_at: Completed 07-1-PLAN.md (Wave 0 scaffold — stubs + fixtures committed)
+last_updated: "2026-05-30T08:22:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 1
+  completed_plans: 1
 ---
 
 # Project State: AussieLedger
@@ -33,12 +33,12 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 miles
 
 ## Current Position
 
-**Current phase:** Phase 7 — ImportTB UX Rework (READY TO PLAN)
-**Current plan:** None — run `/gsd:plan-phase 7` to create the first v1.1 plan
-**Phase 7 status:** Not started.
-**Last session:** 2026-05-29T21:23:46.142Z
-**Stopped at:** Phase 7 context gathered
-**Overall progress:** v1.1: 0/3 phases complete.
+**Current phase:** Phase 7 — ImportTB UX Rework (IN PROGRESS)
+**Current plan:** 07-2 (Plan 07-1 complete — Wave 0 scaffold committed)
+**Phase 7 status:** Plan 1 of N complete. Wave 0 scaffold in place.
+**Last session:** 2026-05-30T08:22:00.000Z
+**Stopped at:** Completed 07-1-PLAN.md (Wave 0 scaffold — stubs + fixtures committed)
+**Overall progress:** v1.1: 0/3 phases complete (Phase 7 in progress).
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -70,7 +70,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
-| (v1.1 plans not yet created) | | | | | |
+| 7 | 1 | ~20 min | 1 | 17 | 769 GREEN, 75 todo |
 
 ---
 
@@ -89,6 +89,14 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | Help text NEVER states deductibility — content lint enforced | Phase 6 CONTEXT | Phase 8 (Medicare assumption row wording) |
 | Decimal arithmetic via decimal.js — money never touches native floats | Phase 1 invariant | Phase 7 (currency parser) + Phase 9 (CSV exports) |
 | `IS_AI_ENABLED` constant deprecated; only `isAiEnabled()` function in new code | Phase 6 invariant | Phase 7 (ImportTB changes preserve AI gating exactly as shipped) |
+
+### Key Decisions Made (Phase 7 Plan 1)
+
+| Decision | Rationale | Phase |
+|----------|-----------|-------|
+| Used stub modules instead of @ts-expect-error on imports | Vite resolves imports at bundle time; @ts-expect-error only suppresses TypeScript type errors, not Vite module-resolution failures. Stub modules with throw-not-implemented bodies let all it.todo() tests be collected without error | Phase 7 Plan 1 |
+| xero-tb.csv uses name-before-code column order | Matches the research-documented Xero reversed-column shape (Account Name first, Account Code second) — critical for column-merge tests to exercise the correct fixture | Phase 7 Plan 1 |
+| Known-sum amounts in all fixtures | xero: 50000+5000=55000, myob: 25000+500+5000=30500, excel: 25000+5000=30000 — gives subtotal sum-pattern tests concrete verifiable expectations | Phase 7 Plan 1 |
 
 ### Key Decisions Made (v1.1 Roadmap)
 
