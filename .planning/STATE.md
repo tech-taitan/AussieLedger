@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: importtb-ux-rework
 current_phase: Phase 7 — ImportTB UX Rework (IN PROGRESS)
-current_plan: "07-2 (Plan 1 complete)"
+current_plan: "07-3 (Plan 2 complete)"
 status: in-progress
-stopped_at: Completed 07-1-PLAN.md (Wave 0 scaffold — stubs + fixtures committed)
-last_updated: "2026-05-30T08:22:00.000Z"
+stopped_at: Completed 07-2-PLAN.md (Pure-function heuristics implemented; csv/xlsx widened)
+last_updated: "2026-05-30T08:49:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 2
+  completed_plans: 2
 ---
 
 # Project State: AussieLedger
@@ -34,10 +34,10 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 miles
 ## Current Position
 
 **Current phase:** Phase 7 — ImportTB UX Rework (IN PROGRESS)
-**Current plan:** 07-2 (Plan 07-1 complete — Wave 0 scaffold committed)
-**Phase 7 status:** Plan 1 of N complete. Wave 0 scaffold in place.
-**Last session:** 2026-05-30T08:22:00.000Z
-**Stopped at:** Completed 07-1-PLAN.md (Wave 0 scaffold — stubs + fixtures committed)
+**Current plan:** 07-3 (Plan 07-2 complete — heuristics implemented; csv/xlsx widened)
+**Phase 7 status:** Plans 1+2 of N complete. Pure-function heuristics + csv/xlsx widening in place.
+**Last session:** 2026-05-30T08:49:00.000Z
+**Stopped at:** Completed 07-2-PLAN.md (Pure-function heuristics implemented; csv/xlsx widened)
 **Overall progress:** v1.1: 0/3 phases complete (Phase 7 in progress).
 
 ```
@@ -71,6 +71,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
 | 7 | 1 | ~20 min | 1 | 17 | 769 GREEN, 75 todo |
+| 7 | 2 | ~16 min | 3 | 12 | 821 GREEN, 28 todo |
 
 ---
 
@@ -89,6 +90,15 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | Help text NEVER states deductibility — content lint enforced | Phase 6 CONTEXT | Phase 8 (Medicare assumption row wording) |
 | Decimal arithmetic via decimal.js — money never touches native floats | Phase 1 invariant | Phase 7 (currency parser) + Phase 9 (CSV exports) |
 | `IS_AI_ENABLED` constant deprecated; only `isAiEnabled()` function in new code | Phase 6 invariant | Phase 7 (ImportTB changes preserve AI gating exactly as shipped) |
+
+### Key Decisions Made (Phase 7 Plan 2)
+
+| Decision | Rationale | Phase |
+|----------|-----------|-------|
+| mergeHeaderRows carry-forward for Xero multi-row headers | When rowA[i] is empty but rowB[i] has content, prefix with last non-empty rowA value — required for Xero "Account / Code" / "Account / Name" composites where "Account" spans two sub-columns | Phase 7 Plan 2 |
+| deriveRegexSignature uses (?<!\\) negative lookbehind in step 3 | Prevents step-3 letter generalisation from corrupting the 'd' in '\d+' inserted by step 2 — the RESEARCH.md skeleton was silently wrong on this ordering | Phase 7 Plan 2 |
+| detectSplitColumns both-unmatched fallback added | When neither CODE_HEADER_RE nor NAME_HEADER_RE match any header, fall back to pure value-shape heuristic on non-numeric columns — required for fixtures with opaque column names | Phase 7 Plan 2 |
+| new Uint8Array(nodeBuf).buffer for XLSX test ArrayBuffer | Node Buffer.buffer is a shared pool allocation in some environments; .slice() with byteOffset returns wrong data; Uint8Array copy is always safe | Phase 7 Plan 2 |
 
 ### Key Decisions Made (Phase 7 Plan 1)
 
