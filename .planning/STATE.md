@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: importtb-ux-rework
+milestone: v1.0
+milestone_name: milestone
 current_phase: Phase 8 — Family Medicare Levy Engine (NOT STARTED)
-current_plan: "08-1 (not yet planned)"
-status: in-progress
-stopped_at: "Completed 07-4-PLAN.md — Phase 7 fully complete; all 5 IMP-07..11 requirements signed off"
-last_updated: "2026-05-30T12:00:00.000Z"
+current_plan: 08-1 (not yet planned)
+status: unknown
+stopped_at: Completed 07-4-PLAN.md — Phase 7 fully complete; ready for Phase 8 planning
+last_updated: "2026-05-29T23:52:25.310Z"
 progress:
   total_phases: 3
   completed_phases: 1
