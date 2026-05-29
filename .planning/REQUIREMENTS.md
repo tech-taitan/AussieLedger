@@ -1,133 +1,93 @@
-# Requirements: AussieLedger v2.0
+# Requirements: AussieLedger v1.1
 
 **Defined:** 2026-05-29
-**Milestone:** v2.0 — Standalone App + Local Data Sovereignty
+**Milestone:** v1.1 — Polish, Closure, and TB Import Rework
 **Core Value (unchanged from v1.0):** A non-accountant business owner can take their trial balance, record their year's adjustments and journals in plain English, and walk away with a print-ready tax return — without paying for software.
 
-**v2.0 thesis:** Same product, new shell. Ship as a Tauri desktop app backed by a single-file SQLite per instance, with a hard network sandbox so every byte of tax data is provably local. v1.0's domain layer (tax engine, wizard, persona shell) is preserved untouched; v2.0 swaps the delivery mechanism.
+**v1.1 thesis:** Same shell, same stack. Close v1.0's known gaps; rebuild ImportTB to handle messy real-world TB exports; ship the family Medicare levy threshold engine that Phase 5 deferred. No architectural pivot, no new deployment shape — the standalone desktop app idea is preserved as a future v2.0 milestone (`.planning/future-milestones/v2.0-standalone-app/`).
 
-## v2 Requirements
+## v1.1 Requirements
 
-### Packaging (PKG)
+### TB Import Rework (IMP, continuing v1.0's IMP-01..06)
 
-Desktop-app delivery + cross-platform distribution.
+The deterministic CSV/XLSX parser shipped in Phase 4 handles cleanly-formatted exports. Real-world TBs from Xero/MYOB/QuickBooks/Excel come with title rows, currency symbols, parenthesised negatives, interleaved subtotals, and split account-code/name columns. v1.1 makes ImportTB robust to that.
 
-- [ ] **PKG-01**: A new user can download a single OS-native installer (`.msi` on Windows, `.dmg` on macOS, `.AppImage` on Linux) from GitHub Releases and install AussieLedger by double-clicking — no Node, no npm, no terminal
-- [ ] **PKG-02**: The desktop app enforces single-instance-per-file — opening a `.aussieledger` file that's already open in another window switches focus to the existing window rather than corrupting the file
-- [ ] **PKG-03**: The app ships with a generated updater key pair committed to the repo at scaffold time, so future v2.1+ auto-update flows can verify v2.0-issued binaries without forcing users to re-onboard (auto-update UX itself is deferred to v2.1)
-- [ ] **PKG-04**: Windows installer is signed via SignPath Foundation (free OSS code-signing); macOS installer is unsigned developer-only for v2.0 with documented Gatekeeper override; Linux AppImage requires no signing
+- [ ] **IMP-07**: ImportTB detects the header row in CSV/XLSX TB files even when it's not row 1 (trailing title/date/notes rows above the headers) and when headers span multiple rows. Auto-suggested header row(s) shown with a "this looks right" / "pick a different row" UI; user always has the final say
+- [ ] **IMP-08**: ImportTB tolerantly parses currency cells — strips `$`, `AUD`, `A$` prefixes; recognises `(1,234.56)` parentheses notation as negative; ignores thousands separators; ignores leading/trailing whitespace; preserves decimal.js precision (`"1,234.56"` parses to `Decimal("1234.56")`, never `1234.5600000000001`)
+- [ ] **IMP-09**: ImportTB detects subtotal-style rows ("Total Operating Expenses", "Net Income", "Grand Total", patterns where the value column is the sum of preceding rows in the same section) and excludes them from the import by default; user can review and re-include any row in a dedicated panel
+- [ ] **IMP-10**: ImportTB handles split account-code/name columns (e.g. column A = code "4100", column B = name "Sales — Domestic") by merging them on import; detects when account codes are absent entirely and offers "auto-assign codes sequentially" or "import name-only and map manually"
+- [ ] **IMP-11**: ImportReviewPane gains a "Rejected rows" panel listing every row dropped during parsing with a reason ("looks like a subtotal", "currency unparseable", "no code or name"); each rejected row supports inline edit + re-include; a "Apply this fix to similar rows" bulk action handles repeated patterns (e.g. all `$N,NNN` cells in one column)
 
-### File-backed persistence (FILE)
+### Family Medicare Levy Threshold Engine (MED)
 
-Single-file SQLite-per-instance with native OS file-management UX.
+Phase 5 shipped single-person Medicare levy correctly but punted on family thresholds (flat 2% with visible warning). v1.1 closes that.
 
-- [ ] **FILE-01**: User's tax data lives in a portable `*.aussieledger` SQLite file the user owns end-to-end — copy/encrypt/backup is a native OS file operation. The file is the source of truth; in-app state is a working cache
-- [ ] **FILE-02**: The `.aussieledger` file is rusqlite-managed SQLite with all money columns TEXT-affinity (preserves decimal.js round-trip; `"1234.56"` survives store→load unchanged); a `file_meta` table holds creation date, app version, last-opened timestamp
-- [ ] **FILE-03**: File menu provides File → New / Open / Save As / Close plus a Recent Files MRU list (stored in OS app-data, not in the file)
-- [ ] **FILE-04**: Default file location for new files is `~/Documents/AussieLedger/` (Tauri `BaseDirectory.Document` on Windows/macOS/Linux) — not the hidden AppData path
-- [ ] **FILE-05**: "Save As" uses SQLite `VACUUM INTO` for an atomic snapshot copy (preserves WAL state); falls back to checkpoint + file copy if `VACUUM INTO` unavailable
-- [ ] **FILE-06**: The app watches the open `.aussieledger` file for external modifications (Dropbox sync, manual replace) and prompts "File changed externally. Reload?" — does not auto-reload. Watches the main file only, not the `-wal` / `-shm` sidecars
-- [ ] **FILE-07**: The title bar shows the full file path; the status bar shows "Last saved: N minutes ago"; the File menu has "Show in Finder/Explorer" — non-accountant users never have to wonder where their data lives
-- [ ] **FILE-08**: When the user opens a `.aussieledger` file whose path contains `OneDrive`, `iCloud`, or `Dropbox`, an advisory dialog explains the WAL-corruption risk and recommends a local-disk location (soft warning, not a hard block — user can dismiss and proceed)
+- [ ] **MED-01**: Entity (Individual type only) gains `dependants?: number` and `spouseIncome?: string` (decimal string) fields — additive v5→v6 schema migration with round-trip test
+- [ ] **MED-02**: `computeIndividualReturn` switches from the flat-2% fallback to the real family Medicare levy threshold engine when `dependants > 0` or `spouseIncome` is set. Family lower threshold + family upper threshold + per-dependant-child adjustment all applied per ATO instructions for FY2026
+- [ ] **MED-03**: Form I rendering (`TaxReturnAssistant`) displays the family-threshold variant of the M1/M2 calculation with a "Family threshold applied — based on N dependants + spouse income $X" assumption row, replacing the flat-2%-warning when applicable
+- [ ] **MED-04**: EntityForm exposes the two new fields (only when entity type = Individual) with inline help-text explaining how they affect Medicare calculation; defaults are `undefined` so existing v1.0 entities continue to use single-person thresholds without any user action
 
-### Network sandbox + AI removal (SAND)
+### FND-02 Closure — Per-Report CSV Exports (FND)
 
-Hard local-only guarantee. Outbound network calls are impossible without code changes.
+The JSON full-dataset export shipped Phase 3. The per-report CSV exports promised by FND-02 ship here.
 
-- [ ] **SAND-01**: The desktop binary's Tauri capabilities allowlist omits `@tauri-apps/plugin-http` entirely — no Rust-side HTTP API is granted to any window
-- [ ] **SAND-02**: The desktop binary's CSP includes `connect-src 'none'` in `tauri.conf.json` — webview-level `fetch()` and `XMLHttpRequest` are blocked at runtime, not just discouraged
-- [ ] **SAND-03**: The app surfaces a visible "Local Only" badge confirming sandbox state — users see at a glance that no network capability is active
-- [ ] **SAND-04**: The AI-assist (Gemini) code path is removed from the v2.0 Tauri build entirely. ImportTB falls back to the deterministic fuzzy-match path only. Web SPA (deprecated branch) retains AI for users who want it; the Tauri binary's narrative is "no network calls"
+- [ ] **FND-10**: User can export the Trial Balance for the selected period as a CSV — one row per account: `code, name, type, debit, credit, balance, period_start, period_end` — usable in Excel/Sheets without further transformation
+- [ ] **FND-11**: User can export Simpler BAS labels for the selected quarter as a CSV — one row per label: `label_code, plain_english, value, source` (where `source` indicates whether the value is lodged or internal-only)
+- [ ] **FND-12**: User can export Form I (Individual return) labels for the selected FY as a CSV — one row per label: `label_code, plain_english, value, source_account_codes` (the comma-separated list of accounts whose balances aggregated into the label)
 
-### Migration from v1.0 (MIG)
+### Polish + UX (UX, continuing v1.0's UX-01..05)
 
-Existing v1.0 users get their data forward.
+- [ ] **UX-06**: Clicking a Sidebar anomaly count badge (e.g. "Journals 3") deep-links to the relevant screen AND auto-scrolls to the first offending row (e.g. the first unbalanced journal); subsequent clicks cycle through the remaining offenders. Polishes v1.0's UX-02 in-context anomaly surfacing.
 
-- [ ] **MIG-01**: v5→v6 additive SQL DDL migration creates the `file_meta` table on file initialisation; no existing entity/account/journal/audit fields are changed or removed
-- [ ] **MIG-02**: On first launch with no recent files, the welcome screen offers "Import existing v1.0 data" which accepts a v1.0 JSON export and writes a fresh v6 `.aussieledger` file at a user-chosen location
-- [ ] **MIG-03**: The JSON migration chain (`migrate(v0..v5)`) and the SQL DDL chain stay strictly separate — JSON chain runs on import only, SQL DDL runs on file-create only, no double-apply possible
+### Cleanup + Hygiene (CLEAN)
 
-### CSV per-report export (CSV) — closes v1.0 known gap FND-02
+One-shot doc-and-cosmetic sweep, no user-facing impact beyond what's noted.
 
-Per-report CSV exports the JSON full-data export does not cover.
+- [ ] **CLEAN-01**: Remove the `'US Big Law Firm'` dead string literal at `src/App.tsx:114` — never renders, leftover from the brownfield prototype, surfaced in v1.0 audit
+- [ ] **CLEAN-02**: Retroactively flip `nyquist_compliant: true` on v1.0 Phases 1, 2, 6 `VALIDATION.md` frontmatter — all tests are GREEN; the frontmatter just never got updated. One-shot doc commit.
 
-- [ ] **CSV-01**: User can export a Trial Balance for a selected period as a CSV file (one row per account: code, name, debit, credit, balance, period)
-- [ ] **CSV-02**: User can export BAS labels for a selected quarter as a CSV (one row per label: label code, plain English, value)
-- [ ] **CSV-03**: User can export Form I (Individual return) labels for a selected FY as a CSV (one row per label: label code, plain English, value, source-account list)
+## Future Requirements (deferred from v1.1)
 
-### Quality + cleanup (QUAL)
-
-Cross-cutting tests and one-line code cleanup.
-
-- [ ] **QUAL-01**: A parity round-trip test asserts that the same JSON payload round-trips bit-identically through all three StorageAdapter implementations (LocalAdapter, ServerAdapter, FileBackedAdapter)
-- [ ] **QUAL-02**: A CI lint check fails the build if any `CREATE TABLE` DDL in `src-tauri/src/` declares a money column with non-TEXT affinity
-- [ ] **QUAL-03**: A CI grep check fails the build if `vite.config.ts` contains `envPrefix.*TAURI` (CVE-2023-46115 protection)
-- [ ] **QUAL-04**: An integration test asserts the v2.0 Tauri binary's webview cannot `fetch('https://example.com')` — the network sandbox is provably enforced, not just configured
-- [ ] **QUAL-05**: `src/App.tsx:114` dead `'US Big Law Firm'` string is removed (v1.0 cosmetic cleanup, sweep folded into another phase)
-- [ ] **QUAL-06**: Retroactively flip `nyquist_compliant: true` on v1.0 Phases 1, 2, 6 VALIDATION.md frontmatter (v1.0 known gap; one-shot doc-only commit)
-
-## Future Requirements (deferred from v2.0)
-
-- **Auto-update full UX** — download + install + "an update is available" notification — v2.1
-- **Multi-window / multi-file simultaneous editing** — v2.1+
-- **Native mobile app** — v3+; responsive web SPA continues to serve mobile users
-- **macOS code signing via Apple Developer Program** ($99/yr) — v2.1+ pending funding decision
-- **Backup reminder on close** with configurable interval — v2.1
-- **Encrypted-at-rest `.aussieledger` files** (passphrase or OS keychain) — v2.1+
-- **Sync layer** (CRDT-based or otherwise) for "open same file from two machines" — explicit non-goal of v2.0; v3+
-- **Direct ATO / myGov lodgement via SBR** — v3+ (carries forward from v1.0)
-- **Bank-feed / Open Banking** — v3+ (carries forward from v1.0)
-- **Family Medicare levy threshold engine** — v2.1+
+- **Standalone desktop app (Tauri) + file-backed SQLite + hard network sandbox** — full v2.0 research preserved at `.planning/future-milestones/v2.0-standalone-app/`. Reactivate as v2.0 once v1.1 ships.
+- **Encrypted-at-rest persistence** — v2.x
+- **Multi-FY catch-up wizard** (preparing two FYs at once) — v2.x
+- **Per-user help-text overrides** — overengineered for now
+- **Live-fetched ATO instruction text** — brittle; v3+ if a stable ATO API surface exists
+- **Direct ATO / myGov lodgement via SBR** — v3+
+- **Bank-feed / Open Banking integration** — v3+
+- **CODE_OF_CONDUCT.md + SECURITY.md** — added when external contributors arrive
 
 ## Out of Scope (explicit non-goals)
 
-- **Background telemetry / version-check pings** — would violate the "local only" promise the milestone is selling. Cannot be enabled even behind a flag.
-- **Online help requiring network** — all help text is bundled into the binary
-- **Embedded browser frames pulling external content**
-- **Implicit AI network calls** — AI is removed from the v2.0 Tauri build entirely; cannot accidentally re-enable
-- **AppData / hidden file path as default** — Manager.io's most-complained-about decision; explicit non-goal
-- **"Save" button when SQLite auto-commits** — misleading affordance; status bar shows "Last modified" timestamp instead
-- **`tauri-plugin-http` installation** — installing it is how you grant HTTP access; the hard-sandbox design requires omitting it
-- **Electron-based packaging** — 10× bundle size, weaker OS integration
-- **better-sqlite3 as Node sidecar** — native-module bundling on macOS is a quarantine trap; replaced by Rust-side rusqlite
-- **`@tauri-apps/plugin-sql`** — cannot open arbitrary user file paths AND has a sqlx NUMERIC affinity bug that would corrupt BAS gold tests
-- **Cross-platform installer wrappers by hand** (NSIS, pkgbuild) — Tauri's bundler handles all three
-- **A separate React-Tauri-Native fork** — single SPA codebase serves both Tauri and web shapes; only the adapter differs
+- **AI enhancements in ImportTB** — v1.1 explicitly improves the deterministic path only; AI gating from v1.0 stays exactly as shipped (`isAiEnabled()` runtime check + `AiGateNote` inline affordance)
+- **Schema migrations beyond v5→v6** — v1.1 is one additive migration only (MED-01)
+- **New entity types** — AU-only Company / Trust / Individual / Partnership unchanged
+- **New tax forms beyond Form I / C / T / P / BAS / IAS** — out of v1
+- **Mobile-native app** — responsive web SPA continues to serve mobile users
+- **Tax-year migration (FY2026 → FY2027)** — separate concern; not a v1.1 deliverable
+- **Performance optimisation work** — v1.0 ships fast enough for the audience; defer until a real performance complaint surfaces
 
 ## Traceability
 
-Phase assignments locked by `/gsd:roadmapper` 2026-05-29. Each REQ-ID maps to exactly one phase.
+Filled by `/gsd:roadmapper` once phase assignment locks. Each REQ-ID maps to exactly one phase.
 
 | Req | Phase | Status |
 |-----|-------|--------|
-| PKG-01 | Phase 7 | Pending |
-| PKG-02 | Phase 9 | Pending |
-| PKG-03 | Phase 7 | Pending |
-| PKG-04 | Phase 12 | Pending |
-| FILE-01 | Phase 8 | Pending |
-| FILE-02 | Phase 8 | Pending |
-| FILE-03 | Phase 9 | Pending |
-| FILE-04 | Phase 9 | Pending |
-| FILE-05 | Phase 9 | Pending |
-| FILE-06 | Phase 10 | Pending |
-| FILE-07 | Phase 9 | Pending |
-| FILE-08 | Phase 9 | Pending |
-| SAND-01 | Phase 11 | Pending |
-| SAND-02 | Phase 11 | Pending |
-| SAND-03 | Phase 11 | Pending |
-| SAND-04 | Phase 11 | Pending |
-| MIG-01 | Phase 10 | Pending |
-| MIG-02 | Phase 10 | Pending |
-| MIG-03 | Phase 10 | Pending |
-| CSV-01 | Phase 12 | Pending |
-| CSV-02 | Phase 12 | Pending |
-| CSV-03 | Phase 12 | Pending |
-| QUAL-01 | Phase 8 | Pending |
-| QUAL-02 | Phase 8 | Pending |
-| QUAL-03 | Phase 7 | Pending |
-| QUAL-04 | Phase 11 | Pending |
-| QUAL-05 | Phase 12 | Pending |
-| QUAL-06 | Phase 12 | Pending |
+| IMP-07 | Phase 7 | Pending |
+| IMP-08 | Phase 7 | Pending |
+| IMP-09 | Phase 7 | Pending |
+| IMP-10 | Phase 7 | Pending |
+| IMP-11 | Phase 7 | Pending |
+| MED-01 | Phase 8 | Pending |
+| MED-02 | Phase 8 | Pending |
+| MED-03 | Phase 8 | Pending |
+| MED-04 | Phase 8 | Pending |
+| FND-10 | Phase 9 | Pending |
+| FND-11 | Phase 9 | Pending |
+| FND-12 | Phase 9 | Pending |
+| UX-06 | Phase 9 | Pending |
+| CLEAN-01 | Phase 9 | Pending |
+| CLEAN-02 | Phase 9 | Pending |
 
-**Total v2 requirements: 28**
-**Phase coverage: 7 through 12 (6 phases continuing from v1.0's 1-6)**
+**Total v1.1 requirements: 15**
+**Phase coverage: 7 through 9 (3 phases continuing from v1.0's 1–6)**

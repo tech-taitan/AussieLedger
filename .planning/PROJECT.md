@@ -6,34 +6,26 @@
 
 The brownfield prototype that existed at project init is now a real tool: the StorageAdapter hides IndexedDB (single-user) and SQLite (small-firm VPS), the tax engine produces print-ready returns for all four AU entity types, the year-end wizard walks a non-accountant from "I have a TB" to "I have a finalised working paper", and the project ships under Apache 2.0 with a clone-and-run install.
 
-## Current Milestone: v2.0 — Standalone App + Local Data Sovereignty
+## Current Milestone: v1.1 — Polish, Closure, and TB Import Rework
 
-**Goal:** Ship AussieLedger as a standalone desktop app (Tauri) backed by a single-file SQLite-per-instance model, so the target audience (non-accountant business owners) can install with a double-click AND every byte of their tax data is provably local — no browser-storage opacity, no implicit network calls, no "where's my data?" confusion.
+**Goal:** Close v1.0's known gaps, polish the in-context UX, and rebuild the TB-import path to handle real-world unformatted trial-balance exports — the friction users hit before they ever see the tax engine. No architectural pivot, no new shell, no schema-version bump for storage; v1.0's stack is preserved.
 
-**Why now:** v1.0 proves the tax engine + wizard + persona shell are correct. The remaining v1.0 friction (`npm install` install path; browser storage opacity; AI-feature network ambiguity) all stem from the web-app shell, not from the domain logic. v2.0 swaps the shell while keeping the domain layer untouched — the Phase 3 `StorageAdapter` FINAL invariant was designed for exactly this. The same change that solves the "double-click install" UX also solves the "guaranteed local data" trust requirement.
+**Why now:** v1.0 audit verdict was `tech_debt` — no critical blockers but FND-02 (CSV per-report export) and a handful of polish items are accumulating. ImportTB shipped a deterministic-only parser in Phase 4 with the explicit caveat that "messy real-world TB exports" would need a follow-up — v1.1 is that follow-up. The desktop-app idea (formerly the v2.0 candidate) is preserved under `.planning/future-milestones/v2.0-standalone-app/` and remains a strong future direction; v1.1 ships first because closing the v1.0 gaps unblocks any subsequent milestone and the TB-import friction is real today.
 
 **Target features:**
-- **Tauri 2.x desktop binary** for Windows / macOS / Linux — installable from a single OS-native installer (`.msi` / `.dmg` / `.AppImage`); no Node, no terminal, no `npm install`
-- **File-backed SQLite-per-instance** — each user's books live in a portable `*.aussieledger` file the user owns end-to-end (File → New / File → Open / File → Save As). The file IS the source of truth; the in-app SQLite handle is a working cache
-- **Hard network sandbox** — Tauri allowlist forbids any outbound HTTP by default; without an explicit allowlist entry per host, network calls are *impossible*, not just discouraged. AI features become explicit "send this batch to Google" actions, not background calls
-- **Native OS file paths** — file dialogs use the OS picker; documented default location (e.g. `~/Documents/AussieLedger/` on macOS, `Documents\AussieLedger\` on Windows); user can put the file on a USB stick, NAS, or encrypted drive
-- **`FileBackedAdapter`** behind the Phase 3 `StorageAdapter` interface — domain layer (hooks, components, tax engine) sees zero change; the swap happens at the adapter
-- **Auto-save + crash recovery** — desktop user doesn't manually save after every change; the file commits transactionally, with an explicit "Save As" for snapshots/backups
-- **Cross-platform CI build pipeline** — every push produces signed (where the cert is available) installers on GitHub Releases; the web SPA remains a build target for users who want it
-- **Migration from v1.0** — existing v1.0 IndexedDB + Express+SQLite users get a one-time "Import your v1.0 data" flow that reads the v5 JSON export and writes a v6 `.aussieledger` file
+- **TB-import UX rework** — header-row auto-detection (handles trailing title/date rows + multi-row headers); tolerant currency parser (`$1,234.56` / `(1,234.56)` parentheses-as-negative / `AUD` prefix / whitespace); subtotal-row detection (excludes "Total Operating Expenses"-style rows); account-code/name column merging; rejected-rows review panel with inline fix-it + bulk-apply
+- **Family Medicare levy threshold engine** — Entity gains `dependants` + `spouseIncome`; `computeIndividualReturn` switches from flat-2%-with-warning to real family thresholds when applicable; EntityForm extension; Form I rendering picks up the family-variant of M1/M2; v5→v6 additive schema migration
+- **FND-02 closure — CSV per-report exports** — Trial Balance CSV, BAS labels CSV, Form I labels CSV (the JSON full-dataset export already shipped Phase 3; this is the per-report companion)
+- **Anomaly fix-it deep-links** — clicking a Sidebar count badge (e.g. "Journals 3") auto-scrolls to the offending row; polishes the v1.0 UX-02 in-context anomaly flow
+- **v1.0 cosmetic + Nyquist sweep** — remove `App.tsx:114` dead `'US Big Law Firm'` string; retro-flip `nyquist_compliant: true` on Phases 1/2/6 VALIDATION.md frontmatter
 
-**Out of scope (deferred from v2.0):**
+**Out of scope (deferred from v1.1):**
+- Standalone desktop app + file-backed storage + network sandbox — preserved as `.planning/future-milestones/v2.0-standalone-app/` (research done, ready to resume as v2.0 once v1.1 ships)
+- Encrypted-at-rest persistence — v2.x
 - Direct ATO / myGov lodgement (still v3+)
-- Multi-user / firm-shared editing of a single file (single-user-per-file in v2; file-locking acceptable; concurrent edits not)
-- Cloud sync / file-sync layer (Dropbox/iCloud users can manage that themselves with the file)
-- Auto-update infrastructure (manual download for v2.0; auto-update v2.1)
-- Mobile app (responsive web SPA continues to serve mobile users; native mobile = v3+)
-- CSV per-report export (FND-02 from v1.0 carries forward as a v2 requirement, not a separate v1.1)
-
-**Carry-over from v1.0 known gaps absorbed into v2.0:**
-- FND-02 CSV per-report export (TB CSV, BAS labels CSV, Form I CSV) — natural fit alongside the file-export work
-- Cosmetic: `App.tsx:114` dead `'US Big Law Firm'` string — sweep during v2.0 SPA changes
-- Nyquist `nyquist_compliant: false` frontmatter on Phases 1/2/6 — retroactive flip via `/gsd:validate-phase` if Nyquist gating still matters going forward
+- Bank-feed / Open Banking integration (still v3+)
+- AI in ImportTB enhancements — out of scope; tolerant-parser improvements are the deterministic path only; AI gating from v1.0 stays as shipped
+- Multi-FY catch-up wizard — v2.x
 
 ## What This Is
 
