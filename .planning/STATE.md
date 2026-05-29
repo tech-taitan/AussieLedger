@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: importtb-ux-rework
 current_phase: Phase 7 — ImportTB UX Rework (IN PROGRESS)
-current_plan: "07-3 (Plan 2 complete)"
+current_plan: "07-4 (Plan 3 complete)"
 status: in-progress
-stopped_at: Completed 07-2-PLAN.md (Pure-function heuristics implemented; csv/xlsx widened)
-last_updated: "2026-05-30T08:49:00.000Z"
+stopped_at: Completed 07-3-PLAN.md (UI components + state machine wiring; 848 GREEN)
+last_updated: "2026-05-30T09:10:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 0
@@ -34,10 +34,10 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 miles
 ## Current Position
 
 **Current phase:** Phase 7 — ImportTB UX Rework (IN PROGRESS)
-**Current plan:** 07-3 (Plan 07-2 complete — heuristics implemented; csv/xlsx widened)
-**Phase 7 status:** Plans 1+2 of N complete. Pure-function heuristics + csv/xlsx widening in place.
-**Last session:** 2026-05-30T08:49:00.000Z
-**Stopped at:** Completed 07-2-PLAN.md (Pure-function heuristics implemented; csv/xlsx widened)
+**Current plan:** 07-4 (Plan 07-3 complete — UI components + state machine wiring done)
+**Phase 7 status:** Plans 1+2+3 of 4 complete. All heuristics + UI components + state machine wired. Ready for Plan 07-4 UAT.
+**Last session:** 2026-05-30T09:10:00.000Z
+**Stopped at:** Completed 07-3-PLAN.md (UI components + state machine wiring; 848 GREEN)
 **Overall progress:** v1.1: 0/3 phases complete (Phase 7 in progress).
 
 ```
@@ -72,6 +72,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 |-------|------|----------|-------|-------|-------------|
 | 7 | 1 | ~20 min | 1 | 17 | 769 GREEN, 75 todo |
 | 7 | 2 | ~16 min | 3 | 12 | 821 GREEN, 28 todo |
+| 7 | 3 | ~45 min | 4 | 8 | 848 GREEN, 11 todo |
 
 ---
 
@@ -90,6 +91,15 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | Help text NEVER states deductibility — content lint enforced | Phase 6 CONTEXT | Phase 8 (Medicare assumption row wording) |
 | Decimal arithmetic via decimal.js — money never touches native floats | Phase 1 invariant | Phase 7 (currency parser) + Phase 9 (CSV exports) |
 | `IS_AI_ENABLED` constant deprecated; only `isAiEnabled()` function in new code | Phase 6 invariant | Phase 7 (ImportTB changes preserve AI gating exactly as shipped) |
+
+### Key Decisions Made (Phase 7 Plan 3)
+
+| Decision | Rationale | Phase |
+|----------|-----------|-------|
+| AnomalyBadge uses 'message' prop (required), not 'label' | Plan interface spec and actual Phase 5 implementation differed; actual component definition is the ground truth; auto-fixed at lint time | Phase 7 Plan 3 |
+| IMP-09 test fixture uses Xero synthetic code for Total Revenue row | Empty-code subtotal rows go to no-account-code group before subtotal detection; test must use a coded row to exercise the subtotal detection path | Phase 7 Plan 3 |
+| proceedAfterHeaderPick handles both CSV and XLSX paths identically | Both paths use same split-column detection + missing-code-mode logic after parsing with headerRowIndex | Phase 7 Plan 3 |
+| All new ImportReviewPane props optional | Backward-compatible with Phase 4 callers — no props = no new UI elements rendered | Phase 7 Plan 3 |
 
 ### Key Decisions Made (Phase 7 Plan 2)
 

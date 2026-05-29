@@ -12,11 +12,11 @@
 
 The deterministic CSV/XLSX parser shipped in Phase 4 handles cleanly-formatted exports. Real-world TBs from Xero/MYOB/QuickBooks/Excel come with title rows, currency symbols, parenthesised negatives, interleaved subtotals, and split account-code/name columns. v1.1 makes ImportTB robust to that.
 
-- [ ] **IMP-07**: ImportTB detects the header row in CSV/XLSX TB files even when it's not row 1 (trailing title/date/notes rows above the headers) and when headers span multiple rows. Auto-suggested header row(s) shown with a "this looks right" / "pick a different row" UI; user always has the final say
-- [ ] **IMP-08**: ImportTB tolerantly parses currency cells — strips `$`, `AUD`, `A$` prefixes; recognises `(1,234.56)` parentheses notation as negative; ignores thousands separators; ignores leading/trailing whitespace; preserves decimal.js precision (`"1,234.56"` parses to `Decimal("1234.56")`, never `1234.5600000000001`)
-- [ ] **IMP-09**: ImportTB detects subtotal-style rows ("Total Operating Expenses", "Net Income", "Grand Total", patterns where the value column is the sum of preceding rows in the same section) and excludes them from the import by default; user can review and re-include any row in a dedicated panel
-- [ ] **IMP-10**: ImportTB handles split account-code/name columns (e.g. column A = code "4100", column B = name "Sales — Domestic") by merging them on import; detects when account codes are absent entirely and offers "auto-assign codes sequentially" or "import name-only and map manually"
-- [ ] **IMP-11**: ImportReviewPane gains a "Rejected rows" panel listing every row dropped during parsing with a reason ("looks like a subtotal", "currency unparseable", "no code or name"); each rejected row supports inline edit + re-include; a "Apply this fix to similar rows" bulk action handles repeated patterns (e.g. all `$N,NNN` cells in one column)
+- [x] **IMP-07**: ImportTB detects the header row in CSV/XLSX TB files even when it's not row 1 (trailing title/date/notes rows above the headers) and when headers span multiple rows. Auto-suggested header row(s) shown with a "this looks right" / "pick a different row" UI; user always has the final say
+- [x] **IMP-08**: ImportTB tolerantly parses currency cells — strips `$`, `AUD`, `A$` prefixes; recognises `(1,234.56)` parentheses notation as negative; ignores thousands separators; ignores leading/trailing whitespace; preserves decimal.js precision (`"1,234.56"` parses to `Decimal("1234.56")`, never `1234.5600000000001`)
+- [x] **IMP-09**: ImportTB detects subtotal-style rows ("Total Operating Expenses", "Net Income", "Grand Total", patterns where the value column is the sum of preceding rows in the same section) and excludes them from the import by default; user can review and re-include any row in a dedicated panel
+- [x] **IMP-10**: ImportTB handles split account-code/name columns (e.g. column A = code "4100", column B = name "Sales — Domestic") by merging them on import; detects when account codes are absent entirely and offers "auto-assign codes sequentially" or "import name-only and map manually"
+- [x] **IMP-11**: ImportReviewPane gains a "Rejected rows" panel listing every row dropped during parsing with a reason ("looks like a subtotal", "currency unparseable", "no code or name"); each rejected row supports inline edit + re-include; a "Apply this fix to similar rows" bulk action handles repeated patterns (e.g. all `$N,NNN` cells in one column)
 
 ### Family Medicare Levy Threshold Engine (MED)
 
@@ -73,11 +73,11 @@ Filled by `/gsd:roadmapper` once phase assignment locks. Each REQ-ID maps to exa
 
 | Req | Phase | Status |
 |-----|-------|--------|
-| IMP-07 | Phase 7 | Pending |
-| IMP-08 | Phase 7 | Pending |
-| IMP-09 | Phase 7 | Pending |
-| IMP-10 | Phase 7 | Pending |
-| IMP-11 | Phase 7 | Pending |
+| IMP-07 | Phase 7 | Complete (07-3) |
+| IMP-08 | Phase 7 | Complete (07-3) |
+| IMP-09 | Phase 7 | Complete (07-3) |
+| IMP-10 | Phase 7 | Complete (07-3) |
+| IMP-11 | Phase 7 | Complete (07-3) |
 | MED-01 | Phase 8 | Pending |
 | MED-02 | Phase 8 | Pending |
 | MED-03 | Phase 8 | Pending |

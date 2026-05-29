@@ -50,7 +50,7 @@
 
 - [x] 07-1-PLAN.md — Wave 0 scaffold: 6 test stubs (it.todo) + 4 messy-TB fixtures + XLSX build script + stub modules; 64 new it.todo() stubs; 769 GREEN, 75 todo (commit 9193931)
 - [x] 07-2-PLAN.md — Pure-function implementations: currencyParse + headerDetect + subtotalDetect + columnMerge + widen csv.ts/xlsx.ts with optional headerRowIndex; flip 4 lib test files RED → GREEN; 821 GREEN, 28 todo (commits b2142b2, cdd2951, 4b81fac)
-- [ ] 07-3-PLAN.md — Component wiring: HeaderRowPicker + RejectedRowsPanel + extend ImportTB state-machine + extend ImportReviewPane; Phase 4 clean-flow regression test added
+- [x] 07-3-PLAN.md — Component wiring: HeaderRowPicker + RejectedRowsPanel + extend ImportTB state-machine + extend ImportReviewPane; Phase 4 clean-flow regression test added; 848 GREEN, 11 todo (commits f3fe67d, 39ad609, 9274ccd, f013749, 5ce4f99)
 - [ ] 07-4-PLAN.md — Manual UAT against all 4 messy fixtures + Phase 4 clean regression; sign off all 5 IMP-07..11 requirements
 
 ### Phase 8: Family Medicare Levy Engine
