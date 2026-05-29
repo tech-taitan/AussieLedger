@@ -121,7 +121,7 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
           {(lowConfidenceParseCount ?? 0) > 0 && (
             <AnomalyBadge
               severity="warn"
-              label={`${lowConfidenceParseCount} cells low confidence`}
+              message={`${lowConfidenceParseCount} cells low confidence`}
             />
           )}
         </div>
