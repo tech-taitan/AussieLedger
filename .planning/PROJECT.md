@@ -8,22 +8,38 @@ After v1.0 + v1.1: the brownfield prototype is now a robust tool. Persistence hi
 
 **v1.1 closed every v1.0 known gap** — FND-02 CSV exports shipped, family Medicare engine shipped, cosmetic + Nyquist sweep landed, plus bonus correction of 4 stale Phase-5 single-Medicare constants to FY2025-26 values. Honest record: only ~2 days of intense work because v1.0 set up clean foundations.
 
-## Next Milestone Goals
+## Current Milestone: v1.2 — Public Hosting + IndexedDB Hardening
 
-**Strong candidate: v2.0 — Standalone Desktop App + Local Data Sovereignty** (the milestone deferred during the v2.0→v1.1 pivot). Full research preserved at `.planning/future-milestones/v2.0-standalone-app/` with HIGH-confidence findings:
+**Goal:** Put AussieLedger on a public URL so anyone can use it in a browser, backed entirely by the existing v1.0 IndexedDB persistence — zero third-party databases, zero hosted user data, zero ongoing service costs. Harden the IndexedDB-only path (persistent-storage permission, backup-nag UX, quota checks) so users who arrive at the hosted SPA cold can trust it with their tax data. Polish the open-source release surface for the new "go to the URL, start using it" audience.
 
-- Tauri 2.x desktop binary (Windows / macOS / Linux installers; ~10MB vs ~100MB Electron)
-- File-backed SQLite-per-instance (`*.aussieledger` files the user owns end-to-end)
-- Hard network sandbox (Tauri capability allowlist + CSP `connect-src 'none'`; both layers required)
-- `FileBackedAdapter` via custom Rust commands (rusqlite, NOT tauri-plugin-sql — research caught the path-restriction bug)
-- v6→v7 additive migration for file-format metadata
-- Native menus + OS file paths
-- Cross-platform CI build matrix (`tauri-apps/tauri-action`)
-- Updater key pair generated in v2.0 (full auto-update UX deferred to v2.1)
+**Why now (sequencing decision):** The user-data-sovereignty story has TWO layers — (A) the data is local to the user's machine, and (B) the data lives in a file the user can see/copy/back up. v1.2 ships layer A on the web (IndexedDB + hardening) — proving the architecture publicly and giving users immediate access. v2.0 ships layer B (sqlite-wasm + File System Access API + Tauri desktop wrapper) — upgrades to user-owned files when users want a "real file" mental model. Splitting these means v1.2 ships in 1-2 weeks (immediate public reach), and v2.0's architectural pivot is informed by real user feedback from the hosted v1.2.
 
-**Alternative: v1.2 — Lightweight polish** (smaller bump) — refactor Sidebar NavButton `<button>`-in-`<button>` warning · CSV import round-trip handling · multi-FY catch-up wizard · family-Medicare gold-test validation against ATO calculator · CODE_OF_CONDUCT.md + SECURITY.md.
+**Target features:**
+- **Public SPA hosting** — deploy to a free static-host (GitHub Pages / Cloudflare Pages / similar) with CI auto-deploy from `main`. Custom domain optional. README points users at the hosted URL.
+- **IndexedDB hardening** — `navigator.storage.persist()` request on first use (prevents browser eviction under storage pressure). Quota-check on app load with friendly "your browser allocates ~XGB" disclosure. Backup-nag UX (toast "Last JSON export: N days ago — back up now" with snooze).
+- **Pre-unload guard** — browser-native "are you sure?" if user has unsaved changes (matches the "you have edited journals but haven't exported" pattern).
+- **Open-source release polish for hosted form** — README rewrite: top-of-fold "try the live demo at [URL]" + "or clone and self-host"; demo-data seed option (`/demo` route with anonymised sample books); deployment runbook for self-hosters.
+- **AI feature gating on hosted SPA** — public build ships with no `GEMINI_API_KEY` → `AiGateNote` already shows "AI optional, configure your own key" (Phase 6); v1.2 adds an inline "paste your Gemini key" UI that stores in `localStorage` per-browser (never sent to a server; pure client-side proxy disabled when hosted-online).
+- **PWA wrapper (optional)** — service worker + manifest for offline use + installable to OS dock. Doesn't change data architecture; adds "use AussieLedger from your home screen" affordance.
 
-Run `/gsd:new-milestone` to lock direction and start questioning → research → requirements → roadmap. The v2.0 research can be reactivated via the PRD express path (`/gsd:plan-phase 10 --prd .planning/future-milestones/v2.0-standalone-app/research/SUMMARY.md`) once a milestone is opened.
+**Explicit non-goals:**
+- File System Access API · sqlite-wasm · Tauri packaging — all deferred to v2.0
+- Server-side hosting of user data — explicit non-goal of the milestone
+- Telemetry / analytics on the hosted SPA — explicit non-goal (privacy first; no third party)
+- Multi-user accounts / auth — explicit non-goal (every browser is its own instance)
+- Backend AI proxy hosted by us — explicit non-goal (user supplies their own key; client-side only)
+
+## Next Milestone (v2.0) — Pre-locked Direction
+
+**v2.0 — Local-File-Backed Data Sovereignty** ships once v1.2 has reached real users:
+
+- **sqlite-wasm in the browser** (`@sqlite.org/sqlite-wasm`) — real SQLite running entirely client-side; pure WASM; same DDL control we'd want in a Tauri rusqlite path (no `tauri-plugin-sql` NUMERIC-affinity bugs from the v2.0 research)
+- **File System Access API** (Chromium-first; OPFS fallback for Safari/Firefox; IndexedDB fallback for old browsers) — user picks a `.aussieledger` SQLite file on their disk; browser remembers permission; file is the source of truth
+- **`BrowserSqliteAdapter`** behind the FINAL Phase-3 `StorageAdapter` — additive implementation only; existing v1.0/v1.1 IndexedDB users get a one-time guided "import to a file" flow
+- **Tauri desktop wrapper** (optional v2.1 add-on) — once `BrowserSqliteAdapter` is proven in production, wrapping it in Tauri is a thinner spike (the data layer is already done; Tauri just adds the OS shell + hard network sandbox)
+- Full research preserved at `.planning/future-milestones/v2.0-standalone-app/research/` (Tauri-specific findings; needs revision against sqlite-wasm path before v2.0 planning starts — but ~60% of the architecture decisions carry forward)
+
+Run `/gsd:new-milestone` after v1.2 ships to lock v2.0 specifics. The PRD express path is available: `/gsd:plan-phase {N} --prd .planning/future-milestones/v2.0-standalone-app/research/SUMMARY.md` once a milestone is opened.
 
 ## What This Is
 

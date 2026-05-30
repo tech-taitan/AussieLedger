@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
-milestone: pending-next
-milestone_name: TBD
+milestone: v1.2
+milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: null
 current_plan: null
-status: milestone-archived
-stopped_at: v1.1 SHIPPED 2026-05-30 — awaiting /gsd:new-milestone (v2.0 standalone-app research preserved + ready)
-last_updated: "2026-05-30T19:30:00.000Z"
+status: defining-requirements
+stopped_at: v1.2 milestone goals locked — research decision next
+last_updated: "2026-05-30T19:45:00.000Z"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.1 evolution).
 
 **Core value:** A non-accountant business owner can take their trial balance, record their year's adjustments and journals in plain English, and walk away with a print-ready tax return — without paying for software.
 
-**Current focus:** Planning next milestone. Strong candidate: v2.0 Standalone Desktop App (Tauri + file-backed SQLite + hard network sandbox) — full research preserved at `.planning/future-milestones/v2.0-standalone-app/`. Alternative: v1.2 lightweight polish. Run `/gsd:new-milestone` to lock direction.
+**Current focus:** v1.2 — Public Hosting + IndexedDB Hardening. Ship the SPA on a public URL backed by the existing v1.0 IndexedDB persistence; harden the IDB-only path (persistent-storage permission, backup-nag UX, quota); polish open-source release for the new "go to URL, start using" audience. AI gating preserved (user supplies own Gemini key via in-app paste). v2.0 (sqlite-wasm + FSA + optional Tauri wrapper) pre-locked as the follow-on once v1.2 reaches real users.
 
 ---
 
