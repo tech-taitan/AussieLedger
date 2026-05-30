@@ -489,13 +489,14 @@ export const LITO_CUTOUT = '66667' as const;
 // ── Medicare levy + MLS constants ──────────────────────────────────────────
 // Source: ATO "Medicare levy" + "Medicare levy surcharge" FY2025-26
 // https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy/medicare-levy-reduction-for-low-income-earners
+// FY2025-26 values reflect 2.9% retroactive indexation (Phase 8 correction — Phase 5 shipped FY2024-25 stale values).
 
 /** Medicare levy: 2% of taxable income above the shade-in upper threshold. */
 export const MEDICARE_LEVY_RATE = '0.02' as const;
-/** Single (no dependants) lower threshold — no levy below this. FY2026 value. */
-export const MEDICARE_LEVY_SINGLE_LOWER = '27222' as const;
-/** Single upper threshold — full 2% levy above this. FY2026 value. */
-export const MEDICARE_LEVY_SINGLE_UPPER = '34028' as const;
+/** Single (no dependants) lower threshold — no levy below this. FY2025-26 value (Phase 8 corrected from FY2024-25). */
+export const MEDICARE_LEVY_SINGLE_LOWER = '28011' as const;
+/** Single upper threshold — full 2% levy above this. FY2025-26 value (Phase 8 corrected from FY2024-25). */
+export const MEDICARE_LEVY_SINGLE_UPPER = '35014' as const;
 /** Shade-in rate: 10c per $1 between lower and upper thresholds. */
 export const MEDICARE_LEVY_SINGLE_SHADING_RATE = '0.10' as const;
 
@@ -503,7 +504,7 @@ export const MEDICARE_LEVY_SINGLE_SHADING_RATE = '0.10' as const;
 // Source: ATO "Medicare levy surcharge" FY2025-26
 export const MLS_SINGLE_TIER_1 = '101000' as const;
 export const MLS_SINGLE_TIER_2 = '118000' as const;
-export const MLS_SINGLE_TIER_3 = '144000' as const;
+export const MLS_SINGLE_TIER_3 = '158000' as const;
 export const MLS_SINGLE_RATE_1 = '0.01' as const;   // 1.0%
 export const MLS_SINGLE_RATE_2 = '0.0125' as const; // 1.25%
 export const MLS_SINGLE_RATE_3 = '0.015' as const;  // 1.5%
@@ -511,7 +512,19 @@ export const MLS_SINGLE_RATE_3 = '0.015' as const;  // 1.5%
 // Family MLS thresholds (Medicare levy surcharge)
 export const MLS_FAMILY_TIER_1 = '202000' as const;
 export const MLS_FAMILY_TIER_2 = '236000' as const;
-export const MLS_FAMILY_TIER_3 = '288000' as const;
+export const MLS_FAMILY_TIER_3 = '316000' as const;
+
+// Family Medicare levy thresholds (Phase 8 — MED-02)
+/** Family Medicare levy lower threshold — no levy if combined family income ≤ this. FY2025-26 (Phase 8 — MED-02). */
+export const MEDICARE_LEVY_FAMILY_LOWER = '47238' as const;
+/** Family Medicare levy upper threshold — full 2% if combined ≥ this. FY2025-26. */
+export const MEDICARE_LEVY_FAMILY_UPPER = '59047' as const;
+/** Per-dependant-child increment applied to the LOWER family threshold (each dependant). FY2025-26. */
+export const MEDICARE_LEVY_FAMILY_DEPENDANT_INCREMENT_LOWER = '4338' as const;
+/** Per-dependant-child increment applied to the UPPER family threshold (each dependant). Note: differs from LOWER ($5,422 vs $4,338) — shading band widens slightly per dependant. */
+export const MEDICARE_LEVY_FAMILY_DEPENDANT_INCREMENT_UPPER = '5422' as const;
+/** Per-dependant-child MLS family threshold increment — applied to ALL 3 family tier thresholds for each dependant AFTER the first (max(0, dependants - 1) × 1500). FY2025-26. */
+export const MLS_FAMILY_DEPENDANT_INCREMENT = '1500' as const;
 
 // ── Small Business Income Tax Offset (IND-04) ─────────────────────────────
 // Source: ITAA 1997 Subdiv 328-F
