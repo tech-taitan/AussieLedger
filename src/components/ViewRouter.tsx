@@ -446,9 +446,12 @@ function JournalsView({ journals }: JournalsViewProps) {
 interface TrialBalanceViewProps {
   accounts: Account[];
   journals: JournalsHook;
+  entityName?: string;
+  entityId?: string;
+  addLog?: (action: AuditAction, details: string, entityId?: string) => void;
 }
 
-function TrialBalanceView({ accounts, journals }: TrialBalanceViewProps) {
+function TrialBalanceView({ accounts, journals, entityName, entityId, addLog }: TrialBalanceViewProps) {
   const { filteredEntries, dateFrom, setDateFrom, dateTo, setDateTo } = journals;
 
   return (
@@ -486,7 +489,13 @@ function TrialBalanceView({ accounts, journals }: TrialBalanceViewProps) {
           </button>
         )}
       </div>
-      <TrialBalance accounts={accounts} entries={filteredEntries} />
+      <TrialBalance
+          accounts={accounts}
+          entries={filteredEntries}
+          entityName={entityName}
+          entityId={entityId}
+          addLog={addLog}
+        />
     </div>
   );
 }
@@ -617,14 +626,22 @@ export function ViewRouter({
           {view === 'journals' && <JournalsView journals={journals} />}
 
           {view === 'trial-balance' && (
-            <TrialBalanceView accounts={accounts} journals={journals} />
+            <TrialBalanceView
+              accounts={accounts}
+              journals={journals}
+              entityName={activeEntity?.name}
+              entityId={activeEntity?.id}
+              addLog={addLog}
+            />
           )}
 
           {view === 'tax-return' && (
             <TaxReturnAssistant
+              entity={activeEntity}
               accounts={accounts}
               entries={journals.filteredEntries}
               onUpdateAccount={onUpdateAccount}
+              addLog={addLog}
             />
           )}
 
@@ -657,6 +674,7 @@ export function ViewRouter({
               entity={activeEntity}
               accounts={accounts}
               entries={journals.filteredEntries}
+              addLog={addLog}
             />
           )}
 

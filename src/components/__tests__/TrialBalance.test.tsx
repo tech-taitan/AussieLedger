@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * BOOK-07 (parent subtotals) + BOOK-09 (period filter, status-aware filtering)
+ * Phase 9 FND-10 (Export CSV button + audit log + empty-period toast)
  */
 import React from 'react';
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { TrialBalance } from '../TrialBalance';
 import type { Account, JournalEntry, JournalLine } from '../../types';
 
@@ -291,5 +292,98 @@ describe('TrialBalance — Plan 06-3 AnomalyBadge + overflow-x-auto (UX-02 + UX-
     );
     const wrapper = document.querySelector('.overflow-x-auto');
     expect(wrapper).toBeTruthy();
+  });
+});
+
+// ── Phase 9 FND-10: Export CSV button ────────────────────────────────────────
+
+describe('TrialBalance — Phase 9 FND-10 Export CSV', () => {
+  const cashAccount = makeAccount('a-cash', '1000', 'Cash at Bank', 'Asset');
+  const revenueAccount = makeAccount('a-rev', '4100', 'Revenue', 'Revenue');
+  const basicEntry = makeEntry('e1', '2025-08-15', [
+    makeLine('a-rev', 0, 1000),
+    makeLine('a-cash', 1000, 0),
+  ]);
+
+  let createObjectURLSpy: ReturnType<typeof vi.fn>;
+  let revokeObjectURLSpy: ReturnType<typeof vi.fn>;
+  let anchorClickSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    createObjectURLSpy = vi.fn(() => 'blob:mock-url');
+    revokeObjectURLSpy = vi.fn();
+    anchorClickSpy = vi.fn();
+    vi.stubGlobal('URL', {
+      createObjectURL: createObjectURLSpy,
+      revokeObjectURL: revokeObjectURLSpy,
+    });
+    HTMLAnchorElement.prototype.click = anchorClickSpy;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('TB.1: renders Export CSV button with correct data-testid', () => {
+    render(
+      <TrialBalance
+        accounts={[cashAccount, revenueAccount]}
+        entries={[basicEntry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+        entityName="Acme Pty Ltd"
+        entityId="ent-1"
+      />,
+    );
+    expect(screen.getByTestId('export-csv-button-tb')).toBeDefined();
+    expect(screen.getByTestId('export-csv-button-tb').textContent).toBe('Export CSV');
+  });
+
+  it('TB.2: clicking Export CSV calls addLog with EXPORT_DATA and type:"csv"', () => {
+    const addLog = vi.fn();
+    render(
+      <TrialBalance
+        accounts={[cashAccount, revenueAccount]}
+        entries={[basicEntry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+        entityName="Acme Pty Ltd"
+        entityId="ent-1"
+        addLog={addLog}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('export-csv-button-tb'));
+    expect(addLog).toHaveBeenCalledWith(
+      'EXPORT_DATA',
+      expect.stringContaining('"type":"csv"'),
+      'ent-1',
+    );
+    expect(addLog.mock.calls[0][1]).toContain('"report":"tb"');
+  });
+
+  it('TB.3: empty period shows toast with correct message', () => {
+    // No entries → tbData is empty → isEmpty=true → toast shown
+    render(
+      <TrialBalance
+        accounts={[cashAccount, revenueAccount]}
+        entries={[]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+        entityName="Acme Pty Ltd"
+        entityId="ent-1"
+      />,
+    );
+    fireEvent.click(screen.getByTestId('export-csv-button-tb'));
+    expect(screen.getByTestId('toast').textContent).toBe('No data in selected period for export');
+  });
+
+  it('TB.4: addLog NOT called when addLog prop is undefined', () => {
+    // Should not throw — uses optional chaining
+    render(
+      <TrialBalance
+        accounts={[cashAccount, revenueAccount]}
+        entries={[basicEntry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+        entityName="Acme Pty Ltd"
+      />,
+    );
+    expect(() => fireEvent.click(screen.getByTestId('export-csv-button-tb'))).not.toThrow();
   });
 });

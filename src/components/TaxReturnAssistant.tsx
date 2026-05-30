@@ -13,10 +13,13 @@
  * Prop contract backward-compatible with Phase 2 (entity/accounts/entries/period/addLog).
  * Phase 5 adds optional `fy?: FyLabel` and `entity` (required for compute).
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { Account, Entity, JournalEntry, AuditAction } from '../types';
 import type { FyLabel, Period } from '../lib/period';
 import { currentFy, today } from '../lib/period';
+import { exportFormILabelsCsv, fmtPeriodSlug } from '../lib/export/csv';
+import type { ReturnLabel } from '../lib/tax/returns/fy2026/types';
+import { Toast } from './Toast';
 import { computeIndividualReturn } from '../lib/tax/returns/fy2026/individual';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
 import { AnomalyBadge } from './AnomalyBadge';
@@ -111,6 +114,40 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({
 
   const isLocked = result.meta.locked;
 
+  const [toast, setToast] = useState<string | null>(null);
+  const csvPeriod: Period = { type: 'fy', fy: effectiveFy };
+
+  const handleExportCsv = () => {
+    const { filename, csv, isEmpty } = exportFormILabelsCsv(
+      result.labels as Partial<Record<string, ReturnLabel>>,
+      accounts,
+      csvPeriod,
+      entity.name,
+    );
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    addLog?.(
+      'EXPORT_DATA',
+      JSON.stringify({
+        entityId: entity.id,
+        type: 'csv',
+        report: 'form-i',
+        period: fmtPeriodSlug(csvPeriod),
+        filename,
+        timestamp: today().toISOString(),
+      }),
+      entity.id,
+    );
+    if (isEmpty) setToast('No data in selected period for export');
+  };
+
   const handlePrint = () => {
     addLog?.(
       'EXPORT_DATA',
@@ -145,13 +182,23 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({
       {/* Screen header — hidden on print */}
       <header className="no-print flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Form I — {entity.name} ({effectiveFy})</h2>
-        <button
-          onClick={handlePrint}
-          className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-        >
-          {isLocked ? 'Print finalised return' : 'Print working paper'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportCsv}
+            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+            data-testid="export-csv-button-form-i"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={handlePrint}
+            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+          >
+            {isLocked ? 'Print finalised return' : 'Print working paper'}
+          </button>
+        </div>
       </header>
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
 
       {/* Main Return — Item 15 flow-through */}
       <section className="mb-6">

@@ -23,6 +23,9 @@ import React, { useState, useMemo } from 'react';
 import type { Account, AuditAction, Entity, JournalEntry } from '../types';
 import type { Period, FyLabel } from '../lib/period';
 import { currentFy, today } from '../lib/period';
+import { exportBasLabelsCsv, fmtPeriodSlug } from '../lib/export/csv';
+import type { ReturnLabel } from '../lib/tax/returns/fy2026/types';
+import { Toast } from './Toast';
 import { computeBas } from '../lib/tax/returns/fy2026/bas';
 import { computeIas } from '../lib/tax/returns/fy2026/ias';
 import type { BasReturn } from '../lib/tax/returns/fy2026/bas';
@@ -120,6 +123,38 @@ export function BasIasAssistant({
     [entity, accounts, entries, shape, periodChoice, fy],
   );
 
+  const [toast, setToast] = useState<string | null>(null);
+
+  const handleExportCsv = () => {
+    const { filename, csv, isEmpty } = exportBasLabelsCsv(
+      result.labels as Partial<Record<string, ReturnLabel>>,
+      period,
+      entity.name,
+    );
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    addLog?.(
+      'EXPORT_DATA',
+      JSON.stringify({
+        entityId: entity.id,
+        type: 'csv',
+        report: 'bas',
+        period: fmtPeriodSlug(period),
+        filename,
+        timestamp: today().toISOString(),
+      }),
+      entity.id,
+    );
+    if (isEmpty) setToast('No data in selected period for export');
+  };
+
   const handlePrint = () => {
     const quarterStr = periodChoice !== 'fy' ? `Q${periodChoice}` : undefined;
     addLog?.(
@@ -170,6 +205,13 @@ export function BasIasAssistant({
             <option value={4}>Q4 (Apr–Jun)</option>
           </select>
           <button
+            onClick={handleExportCsv}
+            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            data-testid="export-csv-button-bas"
+          >
+            Export CSV
+          </button>
+          <button
             onClick={handlePrint}
             className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
           >
@@ -177,6 +219,7 @@ export function BasIasAssistant({
           </button>
         </div>
       </header>
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
 
       {/* ── BAS shape ── */}
       {shape === 'BAS' && (

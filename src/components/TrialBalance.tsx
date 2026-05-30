@@ -13,15 +13,33 @@
  * the parent row renders an aggregated subtotal across all its children.
  */
 import React, { useMemo, useState } from 'react';
-import type { Account, JournalEntry, TrialBalanceRow } from '../types';
-import { isInPeriod, currentFy, type Period } from '../lib/period';
+import type { Account, JournalEntry, TrialBalanceRow, AuditAction } from '../types';
+import { isInPeriod, currentFy, today, type Period } from '../lib/period';
 import { AnomalyBadge } from './AnomalyBadge';
+import { exportTrialBalanceCsv, fmtPeriodSlug } from '../lib/export/csv';
+import { Toast } from './Toast';
 
 interface TrialBalanceProps {
   accounts: Account[];
   entries: JournalEntry[];
   period?: Period;
   onPeriodChange?: (period: Period) => void;
+  // Phase 9 additions (FND-10):
+  entityName?: string;
+  entityId?: string;
+  addLog?: (action: AuditAction, details: string, entityId?: string) => void;
+}
+
+function triggerCsvDownload(csv: string, filename: string): void {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 /** BOOK-09 status filter — only posted + reversed entries roll into the TB.
@@ -41,15 +59,43 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
   entries,
   period: periodProp,
   onPeriodChange,
+  entityName,
+  entityId,
+  addLog,
 }) => {
   const [internalPeriod, setInternalPeriod] = useState<Period>(
     periodProp ?? { type: 'fy', fy: currentFy() },
   );
   const period = periodProp ?? internalPeriod;
+  const [toast, setToast] = useState<string | null>(null);
 
   const setPeriod = (p: Period) => {
     if (onPeriodChange) onPeriodChange(p);
     else setInternalPeriod(p);
+  };
+
+  const handleExportCsv = () => {
+    const { filename, csv, isEmpty } = exportTrialBalanceCsv(
+      tbData,
+      period,
+      entityName ?? 'unknown-entity',
+    );
+    triggerCsvDownload(csv, filename);
+    addLog?.(
+      'EXPORT_DATA',
+      JSON.stringify({
+        entityId: entityId ?? 'unknown',
+        type: 'csv',
+        report: 'tb',
+        period: fmtPeriodSlug(period),
+        filename,
+        timestamp: today().toISOString(),
+      }),
+      entityId,
+    );
+    if (isEmpty) {
+      setToast('No data in selected period for export');
+    }
   };
 
   const tbData = useMemo(() => {
@@ -137,13 +183,20 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
   const isBalanced = Math.abs(totalDebits - totalCredits) < 0.005;
 
   return (
-    <div className="bg-white p-4 lg:p-6 shadow-sm border border-[var(--line-strong)]">
+    <div className="relative bg-white p-4 lg:p-6 shadow-sm border border-[var(--line-strong)]">
       <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3 mb-4">
         <h2 className="text-xl font-medium">Trial Balance</h2>
         <div
           className="flex gap-2 items-center text-sm"
           data-testid="tb-period-controls"
         >
+          <button
+            onClick={handleExportCsv}
+            className="no-print px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            data-testid="export-csv-button-tb"
+          >
+            Export CSV
+          </button>
           <label className="flex items-center gap-1">
             <span className="text-[10px] font-bold uppercase text-gray-500">
               Period
@@ -291,6 +344,7 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
           </table>
         </div>
       </div>
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   );
 };

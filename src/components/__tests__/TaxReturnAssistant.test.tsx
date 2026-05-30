@@ -222,3 +222,74 @@ describe('TaxReturnAssistant — Phase 8 family Medicare integration (MED-03)', 
     expect(screen.getByText(/Spouse income data invalid/i)).toBeInTheDocument();
   });
 });
+
+// ── Phase 9 FND-12: Export CSV button ────────────────────────────────────────
+
+describe('TaxReturnAssistant — Phase 9 FND-12 Export CSV', () => {
+  let createObjectURLSpy: ReturnType<typeof vi.fn>;
+  let revokeObjectURLSpy: ReturnType<typeof vi.fn>;
+  let anchorClickSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    createObjectURLSpy = vi.fn(() => 'blob:mock-url');
+    revokeObjectURLSpy = vi.fn();
+    anchorClickSpy = vi.fn();
+    vi.stubGlobal('URL', {
+      createObjectURL: createObjectURLSpy,
+      revokeObjectURL: revokeObjectURLSpy,
+    });
+    HTMLAnchorElement.prototype.click = anchorClickSpy;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('TR.1: renders Export CSV button with correct data-testid', () => {
+    render(
+      <TaxReturnAssistant
+        entity={fixtureEntity}
+        accounts={fixtureAccounts}
+        entries={fixtureEntries}
+        fy="FY2026"
+      />,
+    );
+    expect(screen.getByTestId('export-csv-button-form-i')).toBeDefined();
+    expect(screen.getByTestId('export-csv-button-form-i').textContent).toBe('Export CSV');
+  });
+
+  it('TR.2: clicking Export CSV calls addLog with type:"csv" and report:"form-i"', () => {
+    const addLog = vi.fn();
+    render(
+      <TaxReturnAssistant
+        entity={fixtureEntity}
+        accounts={fixtureAccounts}
+        entries={fixtureEntries}
+        fy="FY2026"
+        addLog={addLog}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('export-csv-button-form-i'));
+    expect(addLog).toHaveBeenCalledWith(
+      'EXPORT_DATA',
+      expect.stringContaining('"type":"csv"'),
+      fixtureEntity.id,
+    );
+    expect(addLog.mock.calls[0][1]).toContain('"report":"form-i"');
+    expect(addLog.mock.calls[0][1]).toContain('"period":"2026"');
+  });
+
+  it('TR.3: clicking creates a Blob and triggers download', () => {
+    render(
+      <TaxReturnAssistant
+        entity={fixtureEntity}
+        accounts={fixtureAccounts}
+        entries={fixtureEntries}
+        fy="FY2026"
+      />,
+    );
+    fireEvent.click(screen.getByTestId('export-csv-button-form-i'));
+    expect(createObjectURLSpy).toHaveBeenCalled();
+    expect(anchorClickSpy).toHaveBeenCalled();
+  });
+});
