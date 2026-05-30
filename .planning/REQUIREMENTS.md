@@ -31,20 +31,20 @@ Phase 5 shipped single-person Medicare levy correctly but punted on family thres
 
 The JSON full-dataset export shipped Phase 3. The per-report CSV exports promised by FND-02 ship here.
 
-- [ ] **FND-10**: User can export the Trial Balance for the selected period as a CSV — one row per account: `code, name, type, debit, credit, balance, period_start, period_end` — usable in Excel/Sheets without further transformation
-- [ ] **FND-11**: User can export Simpler BAS labels for the selected quarter as a CSV — one row per label: `label_code, plain_english, value, source` (where `source` indicates whether the value is lodged or internal-only)
-- [ ] **FND-12**: User can export Form I (Individual return) labels for the selected FY as a CSV — one row per label: `label_code, plain_english, value, source_account_codes` (the comma-separated list of accounts whose balances aggregated into the label)
+- [x] **FND-10**: User can export the Trial Balance for the selected period as a CSV — one row per account: `code, name, type, debit, credit, balance, period_start, period_end` — usable in Excel/Sheets without further transformation
+- [x] **FND-11**: User can export Simpler BAS labels for the selected quarter as a CSV — one row per label: `label_code, plain_english, value, source` (where `source` indicates whether the value is lodged or internal-only)
+- [x] **FND-12**: User can export Form I (Individual return) labels for the selected FY as a CSV — one row per label: `label_code, plain_english, value, source_account_codes` (the comma-separated list of accounts whose balances aggregated into the label)
 
 ### Polish + UX (UX, continuing v1.0's UX-01..05)
 
-- [ ] **UX-06**: Clicking a Sidebar anomaly count badge (e.g. "Journals 3") deep-links to the relevant screen AND auto-scrolls to the first offending row (e.g. the first unbalanced journal); subsequent clicks cycle through the remaining offenders. Polishes v1.0's UX-02 in-context anomaly surfacing.
+- [x] **UX-06**: Clicking a Sidebar anomaly count badge (e.g. "Journals 3") deep-links to the relevant screen AND auto-scrolls to the first offending row (e.g. the first unbalanced journal); subsequent clicks cycle through the remaining offenders. Polishes v1.0's UX-02 in-context anomaly surfacing.
 
 ### Cleanup + Hygiene (CLEAN)
 
 One-shot doc-and-cosmetic sweep, no user-facing impact beyond what's noted.
 
-- [ ] **CLEAN-01**: Remove the `'US Big Law Firm'` dead string literal at `src/App.tsx:114` — never renders, leftover from the brownfield prototype, surfaced in v1.0 audit
-- [ ] **CLEAN-02**: Retroactively flip `nyquist_compliant: true` on v1.0 Phases 1, 2, 6 `VALIDATION.md` frontmatter — all tests are GREEN; the frontmatter just never got updated. One-shot doc commit.
+- [x] **CLEAN-01**: Remove the `'US Big Law Firm'` dead string literal at `src/App.tsx:114` — **Complete — already fixed in Phase 1 (stale audit entry from v1.0 review); negative assertion in `src/__tests__/App.test.tsx:28` GREEN confirms the absence.**
+- [x] **CLEAN-02**: Retroactively flip `nyquist_compliant: true` on v1.0 Phases 1, 2, 6 `VALIDATION.md` frontmatter — all tests are GREEN; the frontmatter just never got updated. One-shot doc commit.
 
 ## Future Requirements (deferred from v1.1)
 
@@ -82,12 +82,12 @@ Filled by `/gsd:roadmapper` once phase assignment locks. Each REQ-ID maps to exa
 | MED-02 | Phase 8 | Complete (08-1 + 08-2 + UAT) |
 | MED-03 | Phase 8 | Complete (08-2 + UAT) |
 | MED-04 | Phase 8 | Complete (08-2 + UAT) |
-| FND-10 | Phase 9 | Pending |
-| FND-11 | Phase 9 | Pending |
-| FND-12 | Phase 9 | Pending |
-| UX-06 | Phase 9 | Pending |
-| CLEAN-01 | Phase 9 | Pending |
-| CLEAN-02 | Phase 9 | Pending |
+| FND-10 | Phase 9 | Complete (09-1) |
+| FND-11 | Phase 9 | Complete (09-1) |
+| FND-12 | Phase 9 | Complete (09-1) |
+| UX-06 | Phase 9 | Complete (09-1) |
+| CLEAN-01 | Phase 9 | Complete (09-1) |
+| CLEAN-02 | Phase 9 | Complete (09-1) |
 
 **Total v1.1 requirements: 15**
 **Phase coverage: 7 through 9 (3 phases continuing from v1.0's 1–6)**
