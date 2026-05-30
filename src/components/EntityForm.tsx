@@ -486,6 +486,67 @@ export const EntityForm: React.FC<EntityFormProps> = ({
                 Method 1: enter the pre-calculated instalment amount from your ATO portal. The BAS T7 label reads this value.
               </p>
             </div>
+
+            {/* Phase 8 — Individual-only family Medicare fields (MED-04) */}
+            {formData.type === 'Individual' && (
+              <>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="entity-dependants"
+                    className="text-xs font-bold uppercase text-gray-500 tracking-wider block"
+                  >
+                    Dependant children
+                  </label>
+                  <input
+                    id="entity-dependants"
+                    type="number"
+                    min={0}
+                    step={1}
+                    aria-label="Dependant children count"
+                    value={formData.dependants ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFormData({
+                        ...formData,
+                        dependants: v === '' ? undefined : Math.max(0, parseInt(v, 10) || 0),
+                      });
+                    }}
+                    placeholder="0"
+                    className="w-full p-2 border border-[var(--line)] focus:ring-1 focus:ring-[var(--ink)] outline-none font-mono transition-colors"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Number of children under 18 you supported (used for Medicare levy family thresholds).
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="entity-spouse-income"
+                    className="text-xs font-bold uppercase text-gray-500 tracking-wider block"
+                  >
+                    Spouse taxable income ($)
+                  </label>
+                  <input
+                    id="entity-spouse-income"
+                    type="text"
+                    aria-label="Spouse taxable income ($)"
+                    value={formData.spouseIncome ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFormData({
+                        ...formData,
+                        spouseIncome: v === '' ? undefined : v,
+                      });
+                    }}
+                    placeholder="0.00"
+                    className="w-full p-2 border border-[var(--line)] focus:ring-1 focus:ring-[var(--ink)] outline-none font-mono transition-colors"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Your spouse&apos;s taxable income for the financial year. Required if you had a spouse for any part of the year.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { EntityForm } from '../EntityForm';
+import type { Entity } from '../../types';
 
 describe('EntityForm — Phase 1 ABN validation (ENT-02)', () => {
   it('ABN warning — invalid ABN shows inline warning text but submit still succeeds (warn-but-allow)', () => {
@@ -158,5 +159,119 @@ describe('EntityForm — Phase 5 wiring (v4 fields)', () => {
     expect(onSave).toHaveBeenCalled();
     const saved = onSave.mock.calls[0][0] as Record<string, unknown>;
     expect(saved.paygInstalmentAmount).toBe('2500');
+  });
+});
+
+describe('EntityForm — Phase 8 family Medicare fields (MED-04)', () => {
+  it('EF-FAM-1: Individual entity renders dependants + spouseIncome fields', () => {
+    const individual: Entity = {
+      _v: 6,
+      id: 'i1',
+      name: 'Jane Doe',
+      type: 'Individual',
+      status: 'Active',
+    };
+    render(<EntityForm entity={individual} onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByLabelText('Dependant children count')).toBeInTheDocument();
+    expect(screen.getByLabelText('Spouse taxable income ($)')).toBeInTheDocument();
+  });
+
+  it('EF-FAM-2: Company entity (default new) does NOT render the 2 Individual-only family fields', () => {
+    render(<EntityForm onSave={vi.fn()} onCancel={vi.fn()} />);
+    // Default new entity is Company
+    expect(screen.queryByLabelText('Dependant children count')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Spouse taxable income ($)')).not.toBeInTheDocument();
+  });
+
+  it('EF-FAM-3: Switching type Individual → Company hides both fields; switching back reveals them', () => {
+    const individual: Entity = {
+      _v: 6, id: 'i1', name: 'Jane', type: 'Individual', status: 'Active',
+      dependants: 2, spouseIncome: '60000',
+    };
+    render(<EntityForm entity={individual} onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByLabelText('Dependant children count')).toBeInTheDocument();
+    const typeSelect = screen.getByLabelText('entity-type-select');
+    fireEvent.change(typeSelect, { target: { value: 'Company' } });
+    expect(screen.queryByLabelText('Dependant children count')).not.toBeInTheDocument();
+    fireEvent.change(typeSelect, { target: { value: 'Individual' } });
+    // Restored from formData (was preserved through the hide)
+    const dependantsInput = screen.getByLabelText('Dependant children count') as HTMLInputElement;
+    expect(dependantsInput.value).toBe('2');
+    const spouseInput = screen.getByLabelText('Spouse taxable income ($)') as HTMLInputElement;
+    expect(spouseInput.value).toBe('60000');
+  });
+
+  it('EF-FAM-4: typing "3" in dependants → onSave called with dependants: 3', () => {
+    const onSave = vi.fn();
+    const individual: Entity = { _v: 6, id: 'i1', name: 'Jane', type: 'Individual', status: 'Active' };
+    render(<EntityForm entity={individual} onSave={onSave} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Dependant children count'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: /save|update entity/i }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ dependants: 3 }));
+  });
+
+  it('EF-FAM-5: clearing dependants input → onSave called with dependants: undefined (NOT 0)', () => {
+    const onSave = vi.fn();
+    const individual: Entity = { _v: 6, id: 'i1', name: 'Jane', type: 'Individual', status: 'Active', dependants: 2 };
+    render(<EntityForm entity={individual} onSave={onSave} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Dependant children count'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /save|update entity/i }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ dependants: undefined }));
+  });
+
+  it('EF-FAM-6: typing "60000.50" in spouseIncome → onSave called with spouseIncome: "60000.50"', () => {
+    const onSave = vi.fn();
+    const individual: Entity = { _v: 6, id: 'i1', name: 'Jane', type: 'Individual', status: 'Active' };
+    render(<EntityForm entity={individual} onSave={onSave} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Spouse taxable income ($)'), { target: { value: '60000.50' } });
+    fireEvent.click(screen.getByRole('button', { name: /save|update entity/i }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ spouseIncome: '60000.50' }));
+  });
+
+  it('EF-FAM-7: clearing spouseIncome → onSave called with spouseIncome: undefined (NOT empty string)', () => {
+    const onSave = vi.fn();
+    const individual: Entity = { _v: 6, id: 'i1', name: 'Jane', type: 'Individual', status: 'Active', spouseIncome: '60000' };
+    render(<EntityForm entity={individual} onSave={onSave} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Spouse taxable income ($)'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /save|update entity/i }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ spouseIncome: undefined }));
+  });
+
+  it('EF-FAM-8: negative dependants input "-2" clamped to 0', () => {
+    const onSave = vi.fn();
+    const individual: Entity = { _v: 6, id: 'i1', name: 'Jane', type: 'Individual', status: 'Active' };
+    render(<EntityForm entity={individual} onSave={onSave} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Dependant children count'), { target: { value: '-2' } });
+    fireEvent.click(screen.getByRole('button', { name: /save|update entity/i }));
+    // Math.max(0, parseInt('-2',10)||0) = Math.max(0,-2) = 0
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ dependants: 0 }));
+  });
+
+  it('EF-FAM-9: dependants + spouseIncome help text rendered exactly', () => {
+    const individual: Entity = { _v: 6, id: 'i1', name: 'Jane', type: 'Individual', status: 'Active' };
+    render(<EntityForm entity={individual} onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByText('Number of children under 18 you supported (used for Medicare levy family thresholds).')).toBeInTheDocument();
+    expect(screen.getByText(/Your spouse('|')s taxable income for the financial year\. Required if you had a spouse for any part of the year\./)).toBeInTheDocument();
+  });
+
+  it('EF-FAM-10: help text does NOT mention "deductible" or "deduction" (Phase 6 content lint)', () => {
+    const individual: Entity = { _v: 6, id: 'i1', name: 'Jane', type: 'Individual', status: 'Active' };
+    render(<EntityForm entity={individual} onSave={vi.fn()} onCancel={vi.fn()} />);
+    const dependantsHelp = screen.getByText(/Number of children under 18/).textContent ?? '';
+    const spouseHelp = screen.getByText(/Your spouse/).textContent ?? '';
+    expect(dependantsHelp.toLowerCase()).not.toMatch(/deductib|deduction/);
+    expect(spouseHelp.toLowerCase()).not.toMatch(/deductib|deduction/);
+  });
+
+  it('EF-FAM-11: prefilled Individual entity round-trip — values survive type-switch hide/show', () => {
+    const individual: Entity = {
+      _v: 6, id: 'i1', name: 'Jane', type: 'Individual', status: 'Active',
+      dependants: 4, spouseIncome: '99999.99',
+    };
+    render(<EntityForm entity={individual} onSave={vi.fn()} onCancel={vi.fn()} />);
+    const deps = screen.getByLabelText('Dependant children count') as HTMLInputElement;
+    const spouse = screen.getByLabelText('Spouse taxable income ($)') as HTMLInputElement;
+    expect(deps.value).toBe('4');
+    expect(spouse.value).toBe('99999.99');
   });
 });
