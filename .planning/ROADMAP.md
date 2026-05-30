@@ -92,7 +92,7 @@
 **Plans:** 1 plan
 
 Plans:
-- [ ] 09-1-PLAN.md — FND-10/11/12 CSV exports (TB+BAS+Form I) + UX-06 anomaly badge deep-links + CLEAN-01/02 doc sweep + lightweight UAT
+- [x] 09-1-PLAN.md — FND-10/11/12 CSV exports (TB+BAS+Form I) + UX-06 anomaly badge deep-links + CLEAN-01/02 doc sweep + lightweight UAT (983 GREEN, UAT pending)
 
 ## Progress
 
@@ -106,7 +106,7 @@ Plans:
 | 6. Personas, Wizard, and Deployment | v1.0 | 4/4 | Complete | 2026-05-29 |
 | 7. ImportTB UX Rework | v1.1 | 4/4 | Complete | 2026-05-30 |
 | 8. Family Medicare Levy Engine | v1.1 | 3/3 | Complete | 2026-05-30 |
-| 9. Exports + Polish + Cleanup | v1.1 | 0/1 | Not started | — |
+| 9. Exports + Polish + Cleanup | v1.1 | 1/1 | UAT pending | 2026-05-30 (code) |
 
 ## Research Flags
 

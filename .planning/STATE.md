@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-current_phase: Phase 9 — Exports + Polish + Cleanup (NOT STARTED)
-current_plan: 09-1 (not yet planned)
-status: unknown
-stopped_at: Phase 9 context gathered
-last_updated: "2026-05-30T07:20:26.491Z"
+milestone: v1.1
+milestone_name: Polish, Closure, and TB Import Rework
+current_phase: Phase 9 — Exports + Polish + Cleanup
+current_plan: 09-1 (complete — paused at UAT checkpoint)
+status: checkpoint:human-verify
+stopped_at: "Completed 09-1 Tasks 1-4; paused at UAT — 10 manual checks needed"
+last_updated: "2026-05-30T18:19:30.000Z"
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 7
+  total_plans: 8
   completed_plans: 7
 ---
 
@@ -33,16 +33,17 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 miles
 
 ## Current Position
 
-**Current phase:** Phase 9 — Exports + Polish + Cleanup (NOT STARTED)
-**Current plan:** 09-1 (not yet planned)
+**Current phase:** Phase 9 — Exports + Polish + Cleanup
+**Current plan:** 09-1 (complete — paused at UAT checkpoint)
 **Phase 7 status:** COMPLETE — all 4 plans shipped; all 5 IMP-07..11 requirements verified by user UAT on 2026-05-30. Final test counts: 848 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
 **Phase 8 status:** COMPLETE — all 3 plans shipped; all 4 MED-01..04 requirements verified by user UAT on 2026-05-30. Final test counts: 910 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
+**Phase 9 Plan 1 status:** Tasks 1-4 COMPLETE — FND-10/11/12 CSV exports + UX-06 anomaly deep-links + CLEAN-01/02 doc sweep. 983 SPA GREEN (910 baseline + 73 new), 0 RED, 11 todo. Paused at UAT checkpoint (10 manual UAT checks needed).
 **Phase 8 Plan 1 status:** COMPLETE — v5→v6 migration + stale-constants fix + 5 new family constants + medicareLevyFamily + medicareLevySurchargeFamily + isFamilyFiling. 884 SPA GREEN (848 + 36 new), 0 RED.
 **Phase 8 Plan 2 status:** COMPLETE — computeIndividualReturn family branch + AssumptionsBlock dynamic prop + TaxReturnAssistant wiring + EntityForm 2 Individual-conditional fields. 910 SPA GREEN (884 + 26 new), 0 RED.
 **Phase 8 Plan 3 status:** COMPLETE — 5-scenario manual UAT approved 2026-05-30; MED-01..04 signed off in REQUIREMENTS.md.
-**Last session:** 2026-05-30T07:20:26.488Z
-**Stopped at:** Phase 9 context gathered
-**Overall progress:** v1.1: 2/3 phases complete (Phase 7 + Phase 8 done, Phase 9 next).
+**Last session:** 2026-05-30T18:19:30.000Z
+**Stopped at:** Completed 09-1 Tasks 1-4; paused at UAT — 10 manual checks needed
+**Overall progress:** v1.1: 2.5/3 phases complete (Phase 7 + Phase 8 done; Phase 9 Plan 1 code complete, awaiting UAT).
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -62,14 +63,14 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 |-------|------|-------------|--------|
 | 7 | ImportTB UX Rework | Header detection + tolerant currency parser + subtotal exclusion + split-column merging + rejected-rows review panel | COMPLETE (2026-05-30) |
 | 8 | Family Medicare Levy Engine | v5→v6 additive schema (Entity gains `dependants` + `spouseIncome`) + real FY2025-26 family Medicare/MLS engine + EntityForm 2 conditional fields + Form I family assumption row + stale-constants correction | COMPLETE (2026-05-30) |
-| 9 | Exports + Polish + Cleanup | FND-02 closure (TB/BAS/Form-I CSV) + anomaly fix-it deep-links + cosmetic + Nyquist frontmatter flip | NOT STARTED |
+| 9 | Exports + Polish + Cleanup | FND-02 closure (TB/BAS/Form-I CSV) + anomaly fix-it deep-links + cosmetic + Nyquist frontmatter flip | IN PROGRESS — Plan 1 code complete, UAT pending |
 
 ---
 
 ## Performance Metrics
 
-- Plans completed: 7 / Plans total: TBD (phase 9 not yet planned)
-- Phases complete: 2/3 (v1.1 phases) — Phase 7 + Phase 8 COMPLETE
+- Plans completed: 7 / Plans total: 8 (Phase 9 has 1 plan)
+- Phases complete: 2/3 (v1.1 phases) — Phase 7 + Phase 8 COMPLETE; Phase 9 in progress
 - Requirements mapped: 15/15 v1.1 requirements — all phases 7–9 covered
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
@@ -81,6 +82,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | 8 | 1 | ~40 min | 3/3 | 11 | 884 GREEN, 11 todo, 0 RED |
 | 8 | 2 | ~12 min | 3/3 | 8 | 910 GREEN, 11 todo, 0 RED |
 | 8 | 3 | ~25 min | 3/3 | 4 | 910 GREEN, 11 todo, 0 RED (UAT sign-off) |
+| 9 | 1 | ~3h | 4/4 | 22 | 983 GREEN, 11 todo, 0 RED (UAT pending) |
 
 ---
 
@@ -196,5 +198,15 @@ None.
 
 ## Next Steps
 
-1. Plan Phase 9 — Exports + Polish + Cleanup: `/gsd:plan-phase 9`
-2. Execute Phase 9 plans (FND-10/11/12 CSV exports + UX-06 anomaly deep-links + CLEAN-01/02 hygiene)
+1. UAT: Run the app (`npm run dev`), open at http://localhost:5173, and perform the 10 manual UAT checks listed in the CHECKPOINT REACHED message.
+2. After UAT sign-off: mark Phase 9 complete, close v1.1 milestone via `/gsd:complete-milestone v1.1`.
+
+### Key Decisions Made (Phase 9 Plan 1)
+
+| Decision | Rationale | Phase |
+|----------|-----------|-------|
+| Papa.unparse object form `{fields:[...], data:[]}` for all 3 serialisers | Guarantees header row even when data is empty — `Papa.unparse([], opts)` returns empty string | Phase 9 Plan 1 |
+| UTF-8 BOM (U+FEFF) prepended to all CSV blobs | Excel on Windows silently strips leading zeros and misinterprets encoding without BOM | Phase 9 Plan 1 |
+| UX-06 scroll state lifted to App.tsx | Sidebar and ViewRouter are siblings under MainLayout; state must live in their common ancestor | Phase 9 Plan 1 |
+| CSS-first @keyframes in index.css | Tailwind v4 has no tailwind.config.js; `safelist` approach unavailable | Phase 9 Plan 1 |
+| CLEAN-01 documented as already-fixed-in-Phase-1 | Honest traceability — audit entry was stale; Phase 1 commit `4e8eb3c` already removed the dead string | Phase 9 Plan 1 |
