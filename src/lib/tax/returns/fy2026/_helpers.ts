@@ -8,7 +8,7 @@
  */
 
 import { Decimal } from '../../../money';
-import type { Account, JournalEntry } from '../../../../types';
+import type { Account, Entity, JournalEntry } from '../../../../types';
 
 /**
  * Filter entries to those that contribute to a posted tax return.
@@ -80,4 +80,23 @@ export function rollupByLabel<LabelKey extends string>(
   }
 
   return totals as Record<LabelKey, Decimal>;
+}
+
+/**
+ * Phase 8 — Family filing eligibility predicate (MED-02).
+ *
+ * Family iff:
+ *   - `dependants ?? 0 >= 1` (at least one dependant child), OR
+ *   - `spouseIncome !== undefined` (any spouse income field present — including explicit "0")
+ *
+ * Both undefined → single filing (Phase 5 behaviour preserved; zero regression for v1.0 entities
+ * per MED-04 default-undefined preservation).
+ *
+ * Critical: `spouseIncome: "0"` triggers family (spouse exists but earned $0).
+ * Use explicit `!== undefined` check — do NOT use falsy/truthy on the string.
+ */
+export function isFamilyFiling(entity: Entity): boolean {
+  const hasDependants = (entity.dependants ?? 0) >= 1;
+  const hasSpouseIncome = entity.spouseIncome !== undefined;
+  return hasDependants || hasSpouseIncome;
 }

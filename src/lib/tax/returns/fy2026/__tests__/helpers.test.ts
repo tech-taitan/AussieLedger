@@ -2,13 +2,13 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Wave 0 GREEN tests for _helpers.ts — filterPostedEntries + rollupByLabel.
+ * Wave 0 GREEN tests for _helpers.ts — filterPostedEntries + rollupByLabel + isFamilyFiling.
  * These tests are GREEN immediately (no dependency on Plans 05-2/05-3/05-4).
  */
 import { describe, it, expect } from 'vitest';
 import { Decimal } from '../../../../money';
-import { filterPostedEntries, rollupByLabel } from '../_helpers';
-import type { Account, JournalEntry } from '../../../../../types';
+import { filterPostedEntries, rollupByLabel, isFamilyFiling } from '../_helpers';
+import type { Account, Entity, JournalEntry } from '../../../../../types';
 
 const makeEntry = (
   id: string,
@@ -154,5 +154,40 @@ describe('rollupByLabel — Revenue polarity', () => {
     const entries = [entryWithLines('j1', 'rev1', 8000, 0)];
     const result = rollupByLabel<'6A'>(entries, [companyAccount], 'companyTaxLabel');
     expect(result['6A']?.toFixed(2)).toBe('8000.00');
+  });
+});
+
+describe('isFamilyFiling (Phase 8 — MED-02)', () => {
+  const baseEntity: Entity = {
+    _v: 6,
+    id: 'e1',
+    name: 'Test',
+    type: 'Individual',
+    status: 'Active',
+  };
+
+  it('Test HELP-1: returns false when both dependants and spouseIncome are undefined', () => {
+    expect(isFamilyFiling(baseEntity)).toBe(false);
+  });
+
+  it('Test HELP-2: returns true when dependants >= 1 (single parent)', () => {
+    expect(isFamilyFiling({ ...baseEntity, dependants: 1 })).toBe(true);
+    expect(isFamilyFiling({ ...baseEntity, dependants: 3 })).toBe(true);
+  });
+
+  it('Test HELP-3: returns true when spouseIncome is set (DINK or otherwise)', () => {
+    expect(isFamilyFiling({ ...baseEntity, spouseIncome: '60000' })).toBe(true);
+  });
+
+  it('Test HELP-4: returns true when spouseIncome is explicit "0" (spouse exists, earned zero)', () => {
+    expect(isFamilyFiling({ ...baseEntity, spouseIncome: '0' })).toBe(true);
+  });
+
+  it('Test HELP-5: returns false when dependants is 0 and spouseIncome is undefined', () => {
+    expect(isFamilyFiling({ ...baseEntity, dependants: 0 })).toBe(false);
+  });
+
+  it('Test HELP-6: returns true when both dependants and spouseIncome present', () => {
+    expect(isFamilyFiling({ ...baseEntity, dependants: 2, spouseIncome: '80000' })).toBe(true);
   });
 });
