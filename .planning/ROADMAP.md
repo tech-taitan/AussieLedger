@@ -89,7 +89,10 @@
 4. `.planning/milestones/v1.0-phases/01-safety-net/01-VALIDATION.md`, `02-decompose-and-tax-engine/02-VALIDATION.md`, and `06-personas-wizard-and-deployment/06-VALIDATION.md` all have `nyquist_compliant: true` in frontmatter (one-shot doc commit; no test changes)
 5. Full SPA test suite (existing 763 + ~25 new v1.1 tests across phases 7-9) GREEN; lint + build EXIT 0; UAT signs off all 6 v1.1 requirements end-to-end
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 09-1-PLAN.md — FND-10/11/12 CSV exports (TB+BAS+Form I) + UX-06 anomaly badge deep-links + CLEAN-01/02 doc sweep + lightweight UAT
 
 ## Progress
 
@@ -103,7 +106,7 @@
 | 6. Personas, Wizard, and Deployment | v1.0 | 4/4 | Complete | 2026-05-29 |
 | 7. ImportTB UX Rework | v1.1 | 4/4 | Complete | 2026-05-30 |
 | 8. Family Medicare Levy Engine | v1.1 | 3/3 | Complete | 2026-05-30 |
-| 9. Exports + Polish + Cleanup | v1.1 | 0/? | Not started | — |
+| 9. Exports + Polish + Cleanup | v1.1 | 0/1 | Not started | — |
 
 ## Research Flags
 
