@@ -1,11 +1,11 @@
 # Roadmap: AussieLedger
 
-**Last updated:** 2026-05-30
+**Last updated:** 2026-05-30 (v1.1 fully implemented — pending /gsd:complete-milestone)
 
 ## Milestones
 
 - ✅ **v1.0** — Phases 1–6 (shipped 2026-05-29) — see [.planning/milestones/v1.0-ROADMAP.md](./milestones/v1.0-ROADMAP.md)
-- 🔄 **v1.1** — Phases 7–9 (in progress) — Polish, Closure, and TB Import Rework
+- ✅ **v1.1** — Phases 7–9 (fully implemented 2026-05-30) — Polish, Closure, and TB Import Rework (pending /gsd:complete-milestone)
 - 📋 **v2.0** — Standalone desktop app + file-backed SQLite + hard network sandbox — research at [.planning/future-milestones/v2.0-standalone-app/](./future-milestones/v2.0-standalone-app/) (deferred; reactivate after v1.1 ships)
 
 ## Phases
@@ -26,7 +26,7 @@
 
 - [x] **Phase 7: ImportTB UX Rework** — header-row detection + tolerant currency parser + subtotal exclusion + split-column merging + extended ImportReviewPane with rejected-rows panel
 - [x] **Phase 8: Family Medicare Levy Engine** — v5→v6 additive schema (Entity gains `dependants` + `spouseIncome`) + real family threshold engine in `medicare.ts` + EntityForm extension + Form I family-variant rendering
-- [ ] **Phase 9: Exports + Polish + Cleanup** — FND-02 closure (TB/BAS/Form-I CSV exports) + anomaly fix-it deep-links + cosmetic sweep (`App.tsx:114` + Nyquist frontmatter)
+- [x] **Phase 9: Exports + Polish + Cleanup** — FND-02 closure (TB/BAS/Form-I CSV exports) + anomaly fix-it deep-links + cosmetic sweep (`App.tsx:114` + Nyquist frontmatter)
 
 ## Phase Details
 
@@ -92,7 +92,7 @@
 **Plans:** 1 plan
 
 Plans:
-- [x] 09-1-PLAN.md — FND-10/11/12 CSV exports (TB+BAS+Form I) + UX-06 anomaly badge deep-links + CLEAN-01/02 doc sweep + lightweight UAT (983 GREEN, UAT pending)
+- [x] 09-1-PLAN.md — FND-10/11/12 CSV exports (TB+BAS+Form I) + UX-06 anomaly badge deep-links + CLEAN-01/02 doc sweep + lightweight UAT (983 GREEN, UAT signed off 2026-05-30)
 
 ## Progress
 
@@ -106,7 +106,7 @@ Plans:
 | 6. Personas, Wizard, and Deployment | v1.0 | 4/4 | Complete | 2026-05-29 |
 | 7. ImportTB UX Rework | v1.1 | 4/4 | Complete | 2026-05-30 |
 | 8. Family Medicare Levy Engine | v1.1 | 3/3 | Complete | 2026-05-30 |
-| 9. Exports + Polish + Cleanup | v1.1 | 1/1 | UAT pending | 2026-05-30 (code) |
+| 9. Exports + Polish + Cleanup | v1.1 | 1/1 | Complete | 2026-05-30 |
 
 ## Research Flags
 

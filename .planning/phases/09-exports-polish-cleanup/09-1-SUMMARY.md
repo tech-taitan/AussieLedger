@@ -1,6 +1,7 @@
 ---
 phase: 09-exports-polish-cleanup
 plan: 1
+status: complete
 subsystem: export,ux,cleanup
 tags: [csv-export, anomaly-ux, toast, sidebar, trial-balance, bas, form-i, nyquist]
 dependency_graph:
@@ -162,6 +163,23 @@ REQUIREMENTS.md traceability table updated: FND-10/11/12, UX-06, CLEAN-01, CLEAN
 **Test files:** 101 (all passing)
 **Build:** EXIT 0 (Vite build clean, pre-existing chunk-size warning only)
 **TypeScript:** EXIT 0 (tsc --noEmit)
+
+## UAT Outcome
+
+**UAT approved:** 2026-05-30
+**UAT log:** `.planning/phases/09-exports-polish-cleanup/09-UAT.md`
+
+All 10 UAT checks PASSED (FND-10/11/12 CSV exports, UX-06 anomaly badge deep-links, CLEAN-01/02 doc sweep). User signed off 2026-05-30.
+
+**Final test counts:**
+- SPA: 983 GREEN + 11 todo + 0 RED (983 is ~48 above the planning estimate of ~935 — significantly more comprehensive coverage than projected; 73 new tests vs ~25 planned)
+- Server: 18 GREEN
+- Lint: EXIT 0
+- Build: EXIT 0 (Vite, pre-existing chunk-size warning only)
+
+**Plan status:** COMPLETE
+
+---
 
 ## Self-Check: PASSED
 

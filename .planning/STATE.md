@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Polish, Closure, and TB Import Rework
 current_phase: Phase 9 — Exports + Polish + Cleanup
-current_plan: 09-1 (complete — paused at UAT checkpoint)
-status: checkpoint:human-verify
-stopped_at: "Completed 09-1 Tasks 1-4; paused at UAT — 10 manual checks needed"
-last_updated: "2026-05-30T18:19:30.000Z"
+current_plan: 09-1 (complete)
+status: complete
+stopped_at: "Completed 09-1 UAT sign-off — Phase 9 complete; v1.1 milestone fully implemented"
+last_updated: "2026-05-30T19:00:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State: AussieLedger
@@ -34,23 +34,24 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 miles
 ## Current Position
 
 **Current phase:** Phase 9 — Exports + Polish + Cleanup
-**Current plan:** 09-1 (complete — paused at UAT checkpoint)
+**Current plan:** 09-1 (COMPLETE — UAT signed off 2026-05-30)
 **Phase 7 status:** COMPLETE — all 4 plans shipped; all 5 IMP-07..11 requirements verified by user UAT on 2026-05-30. Final test counts: 848 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
 **Phase 8 status:** COMPLETE — all 3 plans shipped; all 4 MED-01..04 requirements verified by user UAT on 2026-05-30. Final test counts: 910 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
-**Phase 9 Plan 1 status:** Tasks 1-4 COMPLETE — FND-10/11/12 CSV exports + UX-06 anomaly deep-links + CLEAN-01/02 doc sweep. 983 SPA GREEN (910 baseline + 73 new), 0 RED, 11 todo. Paused at UAT checkpoint (10 manual UAT checks needed).
+**Phase 9 status:** COMPLETE — 1/1 plans shipped; all 6 FND-10/11/12 + UX-06 + CLEAN-01/02 requirements verified by user UAT on 2026-05-30. Final test counts: 983 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
+**Phase 9 Plan 1 status:** COMPLETE — FND-10/11/12 CSV exports + UX-06 anomaly deep-links + CLEAN-01/02 doc sweep. 983 SPA GREEN (910 baseline + 73 new), 0 RED, 11 todo. UAT signed off 2026-05-30.
 **Phase 8 Plan 1 status:** COMPLETE — v5→v6 migration + stale-constants fix + 5 new family constants + medicareLevyFamily + medicareLevySurchargeFamily + isFamilyFiling. 884 SPA GREEN (848 + 36 new), 0 RED.
 **Phase 8 Plan 2 status:** COMPLETE — computeIndividualReturn family branch + AssumptionsBlock dynamic prop + TaxReturnAssistant wiring + EntityForm 2 Individual-conditional fields. 910 SPA GREEN (884 + 26 new), 0 RED.
 **Phase 8 Plan 3 status:** COMPLETE — 5-scenario manual UAT approved 2026-05-30; MED-01..04 signed off in REQUIREMENTS.md.
-**Last session:** 2026-05-30T18:19:30.000Z
-**Stopped at:** Completed 09-1 Tasks 1-4; paused at UAT — 10 manual checks needed
-**Overall progress:** v1.1: 2.5/3 phases complete (Phase 7 + Phase 8 done; Phase 9 Plan 1 code complete, awaiting UAT).
+**Last session:** 2026-05-30T19:00:00.000Z
+**Stopped at:** Completed 09-1 UAT sign-off — Phase 9 complete; v1.1 milestone fully implemented
+**Overall progress:** v1.1: 3/3 phases COMPLETE (Phase 7 + Phase 8 + Phase 9 all done). v1.1 milestone fully implemented; next action: /gsd:audit-milestone v1.1 → /gsd:complete-milestone v1.1.
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
        [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ]
 
 v1.1:  [Phase 7] [Phase 8] [Phase 9]
-       [ DONE  ] [ DONE  ] [ NEXT  ]
+       [ DONE  ] [ DONE  ] [ DONE  ]  <-- v1.1 MILESTONE FULLY IMPLEMENTED
 
 v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 ```
@@ -63,15 +64,15 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 |-------|------|-------------|--------|
 | 7 | ImportTB UX Rework | Header detection + tolerant currency parser + subtotal exclusion + split-column merging + rejected-rows review panel | COMPLETE (2026-05-30) |
 | 8 | Family Medicare Levy Engine | v5→v6 additive schema (Entity gains `dependants` + `spouseIncome`) + real FY2025-26 family Medicare/MLS engine + EntityForm 2 conditional fields + Form I family assumption row + stale-constants correction | COMPLETE (2026-05-30) |
-| 9 | Exports + Polish + Cleanup | FND-02 closure (TB/BAS/Form-I CSV) + anomaly fix-it deep-links + cosmetic + Nyquist frontmatter flip | IN PROGRESS — Plan 1 code complete, UAT pending |
+| 9 | Exports + Polish + Cleanup | FND-02 closure (TB/BAS/Form-I CSV) + anomaly fix-it deep-links + cosmetic + Nyquist frontmatter flip | COMPLETE (2026-05-30) |
 
 ---
 
 ## Performance Metrics
 
-- Plans completed: 7 / Plans total: 8 (Phase 9 has 1 plan)
-- Phases complete: 2/3 (v1.1 phases) — Phase 7 + Phase 8 COMPLETE; Phase 9 in progress
-- Requirements mapped: 15/15 v1.1 requirements — all phases 7–9 covered
+- Plans completed: 8 / Plans total: 8 (v1.1 complete)
+- Phases complete: 3/3 (v1.1 phases) — Phase 7 + Phase 8 + Phase 9 all COMPLETE
+- Requirements mapped: 15/15 v1.1 requirements — all phases 7–9 covered and signed off
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
@@ -82,7 +83,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | 8 | 1 | ~40 min | 3/3 | 11 | 884 GREEN, 11 todo, 0 RED |
 | 8 | 2 | ~12 min | 3/3 | 8 | 910 GREEN, 11 todo, 0 RED |
 | 8 | 3 | ~25 min | 3/3 | 4 | 910 GREEN, 11 todo, 0 RED (UAT sign-off) |
-| 9 | 1 | ~3h | 4/4 | 22 | 983 GREEN, 11 todo, 0 RED (UAT pending) |
+| 9 | 1 | ~3h | 4/4 | 22 | 983 GREEN, 11 todo, 0 RED (UAT signed off 2026-05-30) |
 
 ---
 
@@ -198,8 +199,9 @@ None.
 
 ## Next Steps
 
-1. UAT: Run the app (`npm run dev`), open at http://localhost:5173, and perform the 10 manual UAT checks listed in the CHECKPOINT REACHED message.
-2. After UAT sign-off: mark Phase 9 complete, close v1.1 milestone via `/gsd:complete-milestone v1.1`.
+1. v1.1 milestone is fully implemented (all 3 phases, 8 plans, 15 requirements COMPLETE).
+2. Run `/gsd:audit-milestone v1.1` to verify all requirements and cross-check deliverables.
+3. Run `/gsd:complete-milestone v1.1` to close the milestone and update ROADMAP.md.
 
 ### Key Decisions Made (Phase 9 Plan 1)
 
