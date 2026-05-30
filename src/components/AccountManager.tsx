@@ -22,6 +22,10 @@ interface AccountManagerProps {
     id: string,
     allEntries: Record<string, JournalEntry[]>,
   ) => boolean;
+  // Phase 9 UX-06 additions (all optional)
+  filterMissingMappings?: boolean;
+  scrollToAccountIdx?: number;
+  onClearAnomalyFilter?: () => void;
 }
 
 export const AccountManager: React.FC<AccountManagerProps> = ({
@@ -31,6 +35,9 @@ export const AccountManager: React.FC<AccountManagerProps> = ({
   allEntries,
   onArchiveAccount,
   onIsAccountInUse,
+  filterMissingMappings,
+  scrollToAccountIdx,
+  onClearAnomalyFilter,
 }) => {
   const [localAccounts, setLocalAccounts] = useState<Account[]>([...accounts]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -197,6 +204,9 @@ export const AccountManager: React.FC<AccountManagerProps> = ({
               }}
               selectedId={editingId ?? undefined}
               showArchived={showArchived}
+              filterMissingMappings={filterMissingMappings}
+              scrollToAccountIdx={scrollToAccountIdx}
+              onClearAnomalyFilter={onClearAnomalyFilter}
             />
           </div>
         )}

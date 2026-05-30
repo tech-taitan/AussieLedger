@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Calculator,
@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { View, Entity } from '../../types';
+import { Toast } from '../Toast';
 
 interface AnomalyCounts {
   journals: number;
@@ -42,6 +43,8 @@ interface SidebarProps {
   mode: 'owner' | 'agent' | null;
   /** Anomaly counts for badge display. */
   anomalyCounts: AnomalyCounts;
+  /** Phase 9 UX-06 — invoked when a clickable anomaly badge is clicked. */
+  onAnomalyScroll?: (target: 'journals' | 'accounts', cycleIdx: number) => void;
 }
 
 function NavButton({
@@ -50,12 +53,14 @@ function NavButton({
   icon,
   label,
   badge,
+  onBadgeClick,
 }: {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
   badge?: number;
+  onBadgeClick?: () => void; // when present, badge becomes a clickable button
 }) {
   return (
     <button
@@ -68,9 +73,19 @@ function NavButton({
       {icon}
       <span className="flex-1 text-left">{label}</span>
       {badge != null && badge > 0 && (
-        <span className="ml-auto text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold">
-          {badge}
-        </span>
+        onBadgeClick ? (
+          <button
+            onClick={(e) => { e.stopPropagation(); onBadgeClick(); }}
+            className="ml-auto text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold hover:bg-red-600"
+            data-testid={`nav-${label.toLowerCase().replace(/\s+/g, '-')}-badge`}
+          >
+            {badge}
+          </button>
+        ) : (
+          <span className="ml-auto text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold">
+            {badge}
+          </span>
+        )
       )}
     </button>
   );
@@ -86,7 +101,38 @@ export function Sidebar({
   setActiveEntityId,
   mode,
   anomalyCounts,
+  onAnomalyScroll,
 }: SidebarProps) {
+  const [journalCycleIdx, setJournalCycleIdx] = useState(0);
+  const [accountCycleIdx, setAccountCycleIdx] = useState(0);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Reset cycle when navigating away from the relevant view (S.6)
+  useEffect(() => {
+    if (view !== 'journals') setJournalCycleIdx(0);
+    if (view !== 'coa-manager') setAccountCycleIdx(0);
+  }, [view]);
+
+  const handleJournalsBadgeClick = () => {
+    const total = anomalyCounts.journals;
+    if (total === 0) return;
+    const next = journalCycleIdx % total;
+    setView('journals');
+    onAnomalyScroll?.('journals', next);
+    setJournalCycleIdx((i) => (i + 1) % total);
+    setToast(`Showing anomaly ${next + 1} of ${total} in Journal Entries`);
+  };
+
+  const handleAccountsBadgeClick = () => {
+    const total = anomalyCounts.accounts;
+    if (total === 0) return;
+    const next = accountCycleIdx % total;
+    setView('coa-manager');
+    onAnomalyScroll?.('accounts', next);
+    setAccountCycleIdx((i) => (i + 1) % total);
+    setToast(`Showing anomaly ${next + 1} of ${total} in Accounts`);
+  };
+
   return (
     <>
       {/* Mobile Sidebar Overlay */}
@@ -127,6 +173,7 @@ export function Sidebar({
           </button>
         </div>
 
+        {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {/* ── Agent mode: top-level "Clients" (replaces Master Dashboard) ── */}
           {mode === 'agent' && (
@@ -203,6 +250,7 @@ export function Sidebar({
                 icon={<BookOpen size={18} />}
                 label="Journal Entries"
                 badge={anomalyCounts.journals}
+                onBadgeClick={anomalyCounts.journals > 0 ? handleJournalsBadgeClick : undefined}
               />
               <NavButton
                 active={view === 'trial-balance'}
@@ -216,6 +264,7 @@ export function Sidebar({
                 icon={<ListTree size={18} />}
                 label="Accounts"
                 badge={anomalyCounts.accounts}
+                onBadgeClick={anomalyCounts.accounts > 0 ? handleAccountsBadgeClick : undefined}
               />
               <NavButton
                 active={view === 'tax-return'}

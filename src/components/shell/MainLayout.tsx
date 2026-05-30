@@ -25,6 +25,8 @@ interface MainLayoutProps {
   allEntries: Record<string, JournalEntry[]>;
   setShowNewJournal: (show: boolean) => void;
   children: React.ReactNode;
+  /** Phase 9 UX-06 — wired from Sidebar badge clicks up to App state */
+  onAnomalyScroll?: (target: 'journals' | 'accounts', cycleIdx: number) => void;
 }
 
 export function MainLayout({
@@ -39,6 +41,7 @@ export function MainLayout({
   allEntries,
   setShowNewJournal,
   children,
+  onAnomalyScroll,
 }: MainLayoutProps) {
   const activeEntity = entities.find((e) => e.id === activeEntityId);
   const { settings } = useSettings();
@@ -56,6 +59,7 @@ export function MainLayout({
         setActiveEntityId={setActiveEntityId}
         mode={settings?.mode ?? null}
         anomalyCounts={anomalyCounts}
+        onAnomalyScroll={onAnomalyScroll}
       />
 
       {/* Main Content */}

@@ -343,4 +343,22 @@ describe('AccountManager', () => {
       expect(editedAccount?._needsReview).toBeUndefined();
     });
   });
+
+  describe('Phase 9 UX-06 — AccountManager passes anomaly filter props to CoaTreeView', () => {
+    it('A.1: filterMissingMappings=true — anomaly-filter-banner rendered inside tree view', () => {
+      const unmappedAccount: Account = {
+        id: 'acc-unmapped', code: '5100', name: 'Misc Expense',
+        type: 'Expense', gstCode: undefined as never,
+      };
+      render(
+        <AccountManager
+          accounts={[unmappedAccount]}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+          filterMissingMappings={true}
+        />
+      );
+      expect(screen.getByTestId('anomaly-filter-banner')).toBeTruthy();
+    });
+  });
 });

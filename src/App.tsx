@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuditLog } from './hooks/useAuditLog';
 import { useAccounts } from './hooks/useAccounts';
 import { useJournals } from './hooks/useJournals';
@@ -17,6 +17,22 @@ export default function App() {
   const [view, setView] = useState<View>('master-dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showNewJournal, setShowNewJournal] = useState(false);
+
+  // Phase 9 UX-06 — anomaly badge deep-link state
+  const [scrollToJournalIdx, setScrollToJournalIdx] = useState<number | undefined>(undefined);
+  const [scrollToAccountIdx, setScrollToAccountIdx] = useState<number | undefined>(undefined);
+  const [filterUnbalanced, setFilterUnbalanced] = useState(false);
+  const [filterMissingMappings, setFilterMissingMappings] = useState(false);
+
+  const handleAnomalyScroll = useCallback((target: 'journals' | 'accounts', cycleIdx: number) => {
+    if (target === 'journals') {
+      setFilterUnbalanced(true);
+      setScrollToJournalIdx(cycleIdx);
+    } else {
+      setFilterMissingMappings(true);
+      setScrollToAccountIdx(cycleIdx);
+    }
+  }, []);
 
   // Hooks own state slices; addLog flows downward (no context provider).
   // Adapter init happens in main.tsx before render; legacy localStorage
@@ -57,6 +73,7 @@ export default function App() {
       accounts={accounts}
       allEntries={journalsHook.allEntries}
       setShowNewJournal={setShowNewJournal}
+      onAnomalyScroll={handleAnomalyScroll}
     >
       <ViewRouter
         view={view}
@@ -88,6 +105,12 @@ export default function App() {
         setSettings={setSettings}
         clearSettings={clearSettings}
         addLog={(action, details, entityId) => addLog(action, details, entityId)}
+        scrollToJournalIdx={scrollToJournalIdx}
+        scrollToAccountIdx={scrollToAccountIdx}
+        filterUnbalanced={filterUnbalanced}
+        filterMissingMappings={filterMissingMappings}
+        onClearJournalFilter={() => { setFilterUnbalanced(false); setScrollToJournalIdx(undefined); }}
+        onClearAccountFilter={() => { setFilterMissingMappings(false); setScrollToAccountIdx(undefined); }}
       />
     </MainLayout>
   );

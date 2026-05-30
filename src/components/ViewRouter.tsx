@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   TrendingUp,
@@ -70,6 +70,13 @@ interface ViewRouterProps {
   setSettings?: (s: SettingsType) => void;
   clearSettings?: () => void;
   addLog?: (action: AuditAction, details: string, entityId?: string) => void;
+  /** Phase 9 UX-06 — anomaly badge deep-link props (provided by App, wired from Sidebar) */
+  scrollToJournalIdx?: number;
+  scrollToAccountIdx?: number;
+  filterUnbalanced?: boolean;
+  filterMissingMappings?: boolean;
+  onClearJournalFilter?: () => void;
+  onClearAccountFilter?: () => void;
 }
 
 // ─── Helper: compute lockedFy for a given entity + date ──────────────────────
@@ -341,14 +348,62 @@ function EntityDashboardView({
 
 interface JournalsViewProps {
   journals: JournalsHook;
+  filterUnbalanced?: boolean;
+  scrollToJournalIdx?: number;
+  onClearAnomalyFilter?: () => void;
 }
 
-function JournalsView({ journals }: JournalsViewProps) {
+function JournalsView({ journals, filterUnbalanced, scrollToJournalIdx, onClearAnomalyFilter }: JournalsViewProps) {
   const { filteredEntries, searchQuery, setSearchQuery, dateFrom, setDateFrom, dateTo, setDateTo } =
     journals;
 
+  // Unbalanced entries: abs(sumDebits - sumCredits) > 0.005
+  const unbalancedEntries = useMemo(() => {
+    return filteredEntries.filter((e) => {
+      const d = e.lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
+      const c = e.lines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
+      return Math.abs(d - c) > 0.005;
+    });
+  }, [filteredEntries]);
+
+  const visibleEntries = filterUnbalanced ? unbalancedEntries : filteredEntries;
+
+  const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
+
+  useEffect(() => {
+    if (scrollToJournalIdx === undefined) return;
+    const target = unbalancedEntries[scrollToJournalIdx];
+    if (!target) return;
+    const el = rowRefs.current.get(target.id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Re-trigger flash via void-reflow trick
+    el.classList.remove('anomaly-flash');
+    void el.offsetWidth; // synchronous reflow — restarts CSS animation
+    el.classList.add('anomaly-flash');
+    const t = setTimeout(() => el.classList.remove('anomaly-flash'), 300);
+    return () => clearTimeout(t);
+  }, [scrollToJournalIdx, unbalancedEntries]);
+
   return (
     <div className="space-y-4">
+      {/* Anomaly filter banner (UX-06) */}
+      {filterUnbalanced && (
+        <div
+          className="flex items-center gap-2 text-xs bg-yellow-50 border border-yellow-200 px-3 py-1.5"
+          data-testid="anomaly-filter-banner"
+        >
+          <span>Filtered to anomalies</span>
+          <button
+            onClick={onClearAnomalyFilter}
+            className="underline text-yellow-800 hover:text-yellow-900"
+            data-testid="anomaly-filter-clear"
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
+
       {/* Filter Bar */}
       <div className="bg-white border border-[var(--line-strong)] p-4 flex flex-col sm:flex-row gap-4 items-end sm:items-center">
         <div className="flex-1 w-full">
@@ -400,7 +455,7 @@ function JournalsView({ journals }: JournalsViewProps) {
         <div className="p-4 border-b border-[var(--line-strong)] flex justify-between items-center">
           <h3 className="col-header">Journal Ledger</h3>
           <span className="text-[10px] font-bold text-gray-400 uppercase">
-            {filteredEntries.length} entries FOUND
+            {visibleEntries.length} entries FOUND
           </span>
         </div>
         <div className="overflow-x-auto -mx-4 sm:mx-0">
@@ -416,8 +471,15 @@ function JournalsView({ journals }: JournalsViewProps) {
                 </tr>
               </thead>
               <tbody>
-                {filteredEntries.map((entry) => (
-                  <tr key={entry.id} className="data-row">
+                {visibleEntries.map((entry) => (
+                  <tr
+                    key={entry.id}
+                    className="data-row"
+                    ref={(el) => {
+                      if (el) rowRefs.current.set(entry.id, el);
+                      else rowRefs.current.delete(entry.id);
+                    }}
+                  >
                     <td className="p-4 data-value whitespace-nowrap">{entry.date}</td>
                     <td className="p-4 font-medium whitespace-nowrap">{entry.reference}</td>
                     <td className="p-4 text-gray-600 hidden md:table-cell">{entry.description}</td>
@@ -521,6 +583,12 @@ export function ViewRouter({
   setSettings,
   clearSettings,
   addLog,
+  scrollToJournalIdx,
+  scrollToAccountIdx,
+  filterUnbalanced,
+  filterMissingMappings,
+  onClearJournalFilter,
+  onClearAccountFilter,
 }: ViewRouterProps) {
   const activeEntity = entities.find((e) => e.id === activeEntityId);
 
@@ -623,7 +691,14 @@ export function ViewRouter({
             />
           )}
 
-          {view === 'journals' && <JournalsView journals={journals} />}
+          {view === 'journals' && (
+            <JournalsView
+              journals={journals}
+              filterUnbalanced={filterUnbalanced}
+              scrollToJournalIdx={scrollToJournalIdx}
+              onClearAnomalyFilter={onClearJournalFilter}
+            />
+          )}
 
           {view === 'trial-balance' && (
             <TrialBalanceView
@@ -706,6 +781,9 @@ export function ViewRouter({
               accounts={accounts}
               onSave={onSaveCOA}
               onCancel={() => setView('master-dashboard')}
+              filterMissingMappings={filterMissingMappings}
+              scrollToAccountIdx={scrollToAccountIdx}
+              onClearAnomalyFilter={onClearAccountFilter}
             />
           )}
 

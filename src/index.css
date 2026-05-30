@@ -45,3 +45,13 @@ body {
   font-family: var(--font-mono);
   letter-spacing: -0.02em;
 }
+
+/* Phase 9 UX-06 — anomaly-row flash. CSS-first (Tailwind v4; no tailwind.config.js). */
+@keyframes flash-yellow {
+  from { background-color: #fef9c3; }   /* Tailwind yellow-100 */
+  to   { background-color: transparent; }
+}
+
+.anomaly-flash {
+  animation: flash-yellow 300ms ease-out forwards;
+}

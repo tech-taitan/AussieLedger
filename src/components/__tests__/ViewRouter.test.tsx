@@ -5,9 +5,10 @@
  * Phase 5 Plan 05-4 test for ViewRouter Partnership routing.
  * Plan 06-3: VR.1–VR.6 persona-mode gating, owner-mode auto-select,
  *            year-end/settings routes, lockedFy threading.
+ * Plan 09-1: J.1–J.4 JournalsView UX-06 anomaly filter.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { ViewRouter } from '../ViewRouter';
 import type { Entity, Account } from '../../types';
@@ -291,5 +292,152 @@ describe('ViewRouter — Plan 06-3 persona gating + routing', () => {
     // JournalForm is rendered — test checks it appears (lockedFy prop threading)
     // Since JournalForm is the real component we check for key form elements
     expect(screen.getByTestId('post-journal-button')).toBeTruthy();
+  });
+});
+
+// ── Plan 09-1: J.1–J.4 JournalsView UX-06 anomaly filter ────────────────
+
+function makeJournalsWithEntries(): JournalsHook {
+  return {
+    ...makeFullJournals(),
+    filteredEntries: [
+      {
+        id: 'j1',
+        date: '2026-01-01',
+        reference: 'REF-001',
+        description: 'Balanced entry',
+        entityId: 'e1',
+        lines: [
+          { id: 'l1', accountId: 'a-rev', debit: 100, credit: 0 },
+          { id: 'l2', accountId: 'a-rev', debit: 0, credit: 100 },
+        ],
+      },
+      {
+        id: 'j2',
+        date: '2026-01-02',
+        reference: 'REF-002',
+        description: 'Unbalanced entry',
+        entityId: 'e1',
+        lines: [
+          { id: 'l3', accountId: 'a-rev', debit: 200, credit: 0 },
+          { id: 'l4', accountId: 'a-rev', debit: 0, credit: 150 }, // $50 diff
+        ],
+      },
+    ],
+  } as unknown as JournalsHook;
+}
+
+describe('ViewRouter JournalsView — Plan 09-1 UX-06 anomaly filter', () => {
+  it('J.1: filterUnbalanced=false — both entries rendered', () => {
+    render(
+      <ViewRouter
+        view="journals"
+        setView={noop}
+        showNewJournal={false}
+        setShowNewJournal={noop}
+        accounts={[]}
+        entities={[baseEntity]}
+        activeEntityId="e1"
+        setActiveEntityId={noop}
+        selectedEntityIds={[]}
+        auditLogs={[]}
+        journals={makeJournalsWithEntries()}
+        entityActions={makeEA()}
+        onSaveCOA={noop}
+        onUpdateAccount={noop}
+        settings={{ mode: 'owner' }}
+        setSettings={noop}
+        clearSettings={noop}
+        addLog={noop}
+        filterUnbalanced={false}
+      />
+    );
+    expect(screen.queryByText('REF-001')).toBeTruthy();
+    expect(screen.queryByText('REF-002')).toBeTruthy();
+  });
+
+  it('J.2: filterUnbalanced=true — only unbalanced entry rendered', () => {
+    render(
+      <ViewRouter
+        view="journals"
+        setView={noop}
+        showNewJournal={false}
+        setShowNewJournal={noop}
+        accounts={[]}
+        entities={[baseEntity]}
+        activeEntityId="e1"
+        setActiveEntityId={noop}
+        selectedEntityIds={[]}
+        auditLogs={[]}
+        journals={makeJournalsWithEntries()}
+        entityActions={makeEA()}
+        onSaveCOA={noop}
+        onUpdateAccount={noop}
+        settings={{ mode: 'owner' }}
+        setSettings={noop}
+        clearSettings={noop}
+        addLog={noop}
+        filterUnbalanced={true}
+      />
+    );
+    expect(screen.queryByText('REF-001')).toBeNull();
+    expect(screen.queryByText('REF-002')).toBeTruthy();
+  });
+
+  it('J.3: filterUnbalanced=true — anomaly-filter-banner shown', () => {
+    render(
+      <ViewRouter
+        view="journals"
+        setView={noop}
+        showNewJournal={false}
+        setShowNewJournal={noop}
+        accounts={[]}
+        entities={[baseEntity]}
+        activeEntityId="e1"
+        setActiveEntityId={noop}
+        selectedEntityIds={[]}
+        auditLogs={[]}
+        journals={makeJournalsWithEntries()}
+        entityActions={makeEA()}
+        onSaveCOA={noop}
+        onUpdateAccount={noop}
+        settings={{ mode: 'owner' }}
+        setSettings={noop}
+        clearSettings={noop}
+        addLog={noop}
+        filterUnbalanced={true}
+      />
+    );
+    expect(screen.getByTestId('anomaly-filter-banner')).toBeTruthy();
+  });
+
+  it('J.4: clicking clear-filter button calls onClearJournalFilter', () => {
+    const onClearJournalFilter = vi.fn();
+    render(
+      <ViewRouter
+        view="journals"
+        setView={noop}
+        showNewJournal={false}
+        setShowNewJournal={noop}
+        accounts={[]}
+        entities={[baseEntity]}
+        activeEntityId="e1"
+        setActiveEntityId={noop}
+        selectedEntityIds={[]}
+        auditLogs={[]}
+        journals={makeJournalsWithEntries()}
+        entityActions={makeEA()}
+        onSaveCOA={noop}
+        onUpdateAccount={noop}
+        settings={{ mode: 'owner' }}
+        setSettings={noop}
+        clearSettings={noop}
+        addLog={noop}
+        filterUnbalanced={true}
+        onClearJournalFilter={onClearJournalFilter}
+      />
+    );
+    fireEvent.click(screen.getByTestId('anomaly-filter-clear'));
+    expect(onClearJournalFilter).toHaveBeenCalledOnce();
   });
 });
