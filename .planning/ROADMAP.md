@@ -68,7 +68,11 @@
 4. EntityForm shows `dependants` + `spouseIncome` only for Individual entities; both fields optional; defaults are `undefined` (no migration required for existing v1.0 entities to remain valid)
 5. Existing v1.0 individual entities (no `dependants` / no `spouseIncome`) continue to use single-person Medicare exactly as Phase 5 shipped — zero regression in the 30+ existing IND/COY/TRT/PSP tests
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+- [ ] 08-1-PLAN.md — Wave 1 foundations: v5→v6 migration + types/Zod widening + 5 new FY2025-26 family constants + 4 stale-constants corrections + medicareLevyFamily + medicareLevySurchargeFamily + isFamilyFiling pure functions + tests
+- [ ] 08-2-PLAN.md — Wave 2 integration: computeIndividualReturn family branch + family-medicare assumption row + bad-data anomaly + AssumptionsBlock dynamic prop + TaxReturnAssistant wiring + EntityForm 2 Individual-conditional fields
+- [ ] 08-3-PLAN.md — Wave 3 UAT: 5 manual scenarios (single-parent, DINK, 2-kid family, legacy v1.0 entity, bad spouseIncome) signed off + MED-01..04 marked Complete
 
 ### Phase 9: Exports + Polish + Cleanup
 
