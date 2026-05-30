@@ -22,7 +22,7 @@ The deterministic CSV/XLSX parser shipped in Phase 4 handles cleanly-formatted e
 
 Phase 5 shipped single-person Medicare levy correctly but punted on family thresholds (flat 2% with visible warning). v1.1 closes that.
 
-- [ ] **MED-01**: Entity (Individual type only) gains `dependants?: number` and `spouseIncome?: string` (decimal string) fields — additive v5→v6 schema migration with round-trip test
+- [x] **MED-01**: Entity (Individual type only) gains `dependants?: number` and `spouseIncome?: string` (decimal string) fields — additive v5→v6 schema migration with round-trip test
 - [ ] **MED-02**: `computeIndividualReturn` switches from the flat-2% fallback to the real family Medicare levy threshold engine when `dependants > 0` or `spouseIncome` is set. Family lower threshold + family upper threshold + per-dependant-child adjustment all applied per ATO instructions for FY2026
 - [ ] **MED-03**: Form I rendering (`TaxReturnAssistant`) displays the family-threshold variant of the M1/M2 calculation with a "Family threshold applied — based on N dependants + spouse income $X" assumption row, replacing the flat-2%-warning when applicable
 - [ ] **MED-04**: EntityForm exposes the two new fields (only when entity type = Individual) with inline help-text explaining how they affect Medicare calculation; defaults are `undefined` so existing v1.0 entities continue to use single-person thresholds without any user action
@@ -78,7 +78,7 @@ Filled by `/gsd:roadmapper` once phase assignment locks. Each REQ-ID maps to exa
 | IMP-09 | Phase 7 | Complete (07-3) |
 | IMP-10 | Phase 7 | Complete (07-3) |
 | IMP-11 | Phase 7 | Complete (07-3) |
-| MED-01 | Phase 8 | Pending |
+| MED-01 | Phase 8 | Complete (08-1) |
 | MED-02 | Phase 8 | Pending |
 | MED-03 | Phase 8 | Pending |
 | MED-04 | Phase 8 | Pending |
