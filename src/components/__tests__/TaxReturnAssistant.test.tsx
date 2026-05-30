@@ -166,3 +166,59 @@ describe('TaxReturnAssistant — Phase 5 wiring', () => {
     expect(badges.length).toBeGreaterThan(0);
   });
 });
+
+describe('TaxReturnAssistant — Phase 8 family Medicare integration (MED-03)', () => {
+  it('TRA-FAM-1: family entity renders the family-medicare assumption row (not the flat-2% warning)', () => {
+    const familyEntity: Entity = {
+      ...fixtureEntity,
+      dependants: 2,
+      spouseIncome: '60000',
+    };
+    render(
+      <TaxReturnAssistant
+        entity={familyEntity}
+        accounts={fixtureAccounts}
+        entries={fixtureEntries}
+        fy="FY2026"
+      />,
+    );
+    const block = screen.getByTestId('assumptions-block');
+    expect(block.textContent).toContain('Family Medicare levy applied — 2 dependants, spouse income $60000.');
+    expect(block.textContent).not.toContain('Medicare exemption: none');
+    expect(block.textContent).not.toContain('Marital status: single');
+    expect(block.textContent).not.toContain('Dependants: zero');
+  });
+
+  it('TRA-FAM-2: non-family entity (Phase 5 regression) renders all 5 original static assumption rows', () => {
+    render(
+      <TaxReturnAssistant
+        entity={fixtureEntity}
+        accounts={fixtureAccounts}
+        entries={fixtureEntries}
+        fy="FY2026"
+      />,
+    );
+    const block = screen.getByTestId('assumptions-block');
+    expect(block.textContent).toContain('Marital status: single (no spouse income captured)');
+    expect(block.textContent).toContain('Age: under 65');
+    expect(block.textContent).toContain('Medicare exemption: none');
+    expect(block.textContent).toContain('Private health cover: assumed');
+    expect(block.textContent).toContain('Dependants: zero');
+    expect(block.textContent).not.toContain('Family Medicare levy applied');
+  });
+
+  it('TRA-FAM-3: family entity with bad spouseIncome shows family assumption row AND family-data-warn in Notices section', () => {
+    render(
+      <TaxReturnAssistant
+        entity={{ ...fixtureEntity, dependants: 2, spouseIncome: 'abc' }}
+        accounts={fixtureAccounts}
+        entries={fixtureEntries}
+        fy="FY2026"
+      />,
+    );
+    const block = screen.getByTestId('assumptions-block');
+    expect(block.textContent).toContain('Family Medicare levy applied');
+    // Bad-data warn appears in consolidated Notices & Anomalies section (rendered via AnomalyBadge)
+    expect(screen.getByText(/Spouse income data invalid/i)).toBeInTheDocument();
+  });
+});

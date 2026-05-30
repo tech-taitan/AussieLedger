@@ -128,6 +128,12 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({
     }
   }
 
+  // Phase 8 — derive assumption rows from engine anomalies, family-aware (MED-03)
+  const assumptionRows = useMemo(
+    () => result.meta.anomalies.filter((a) => a.id.startsWith('assumption-')).map((a) => a.message),
+    [result.meta.anomalies],
+  );
+
   const getLabel = (code: IndividualLabel) => INDIVIDUAL_LABELS_FULL[code];
   const L = result.labels;
 
@@ -244,8 +250,8 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({
         </div>
       </section>
 
-      {/* Assumptions block — always shown for Individual */}
-      <AssumptionsBlock />
+      {/* Assumptions block — Phase 8: derived from engine anomalies, family-aware */}
+      <AssumptionsBlock assumptions={assumptionRows} />
 
       {/* Consolidated Anomalies section */}
       {result.meta.anomalies.length > 0 && (

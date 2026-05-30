@@ -5,8 +5,9 @@
 import React from 'react';
 
 /**
- * The 5 fixed assumptions used in Phase 5 v1 Individual tax return computations.
- * Phase 6 wizard will capture real values from the user.
+ * The 5 fixed assumptions used in Phase 5 v1 Individual tax return computations
+ * (single-filing default). Phase 8 — when the engine emits dynamic assumptions
+ * (e.g. family Medicare row), TaxReturnAssistant passes them via the `assumptions` prop.
  */
 export const ASSUMPTIONS: readonly string[] = [
   'Marital status: single (no spouse income captured)',
@@ -16,12 +17,21 @@ export const ASSUMPTIONS: readonly string[] = [
   'Dependants: zero',
 ] as const;
 
+export interface AssumptionsBlockProps {
+  /**
+   * Phase 8 — optional dynamic assumptions list. When provided, REPLACES the static ASSUMPTIONS
+   * constant (empty array means render no rows). When omitted (legacy callers), falls back to
+   * the static ASSUMPTIONS list for backward compat.
+   */
+  assumptions?: string[];
+}
+
 /**
  * Form I "Assumptions used" boxed section.
- * Renders the 5 Phase 5 v1 fixed assumptions with a header and Phase 6 caveat.
- * Displayed on the Individual Tax Return surface below the disclaimer banner.
+ * Phase 8: accepts optional `assumptions` prop; defaults to Phase 5 static ASSUMPTIONS.
  */
-export function AssumptionsBlock(): React.JSX.Element {
+export function AssumptionsBlock({ assumptions }: AssumptionsBlockProps = {}): React.JSX.Element {
+  const rows = assumptions ?? ASSUMPTIONS;
   return (
     <section
       className="border border-gray-400 rounded p-4 my-4"
@@ -29,7 +39,7 @@ export function AssumptionsBlock(): React.JSX.Element {
     >
       <h3 className="text-sm font-bold mb-2">Assumptions used by this working paper</h3>
       <ul className="text-xs text-gray-700 space-y-1">
-        {ASSUMPTIONS.map((a, i) => (
+        {rows.map((a, i) => (
           <li key={i}>· {a}</li>
         ))}
       </ul>
