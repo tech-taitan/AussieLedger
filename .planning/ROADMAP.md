@@ -25,7 +25,7 @@
 ### v1.1 (In Progress)
 
 - [x] **Phase 7: ImportTB UX Rework** — header-row detection + tolerant currency parser + subtotal exclusion + split-column merging + extended ImportReviewPane with rejected-rows panel
-- [ ] **Phase 8: Family Medicare Levy Engine** — v5→v6 additive schema (Entity gains `dependants` + `spouseIncome`) + real family threshold engine in `medicare.ts` + EntityForm extension + Form I family-variant rendering
+- [x] **Phase 8: Family Medicare Levy Engine** — v5→v6 additive schema (Entity gains `dependants` + `spouseIncome`) + real family threshold engine in `medicare.ts` + EntityForm extension + Form I family-variant rendering
 - [ ] **Phase 9: Exports + Polish + Cleanup** — FND-02 closure (TB/BAS/Form-I CSV exports) + anomaly fix-it deep-links + cosmetic sweep (`App.tsx:114` + Nyquist frontmatter)
 
 ## Phase Details
@@ -72,7 +72,7 @@
 
 - [x] 08-1-PLAN.md — Wave 1 foundations: v5→v6 migration + types/Zod widening + 5 new FY2025-26 family constants + 4 stale-constants corrections + medicareLevyFamily + medicareLevySurchargeFamily + isFamilyFiling pure functions + tests (884 GREEN, commits c9f4252 + 113d0d8 + 3b1654a)
 - [x] 08-2-PLAN.md — Wave 2 integration: computeIndividualReturn family branch + family-medicare assumption row + bad-data anomaly + AssumptionsBlock dynamic prop + TaxReturnAssistant wiring + EntityForm 2 Individual-conditional fields (910 GREEN, commits a2886f1 + 6910396 + f3a746e)
-- [ ] 08-3-PLAN.md — Wave 3 UAT: 5 manual scenarios (single-parent, DINK, 2-kid family, legacy v1.0 entity, bad spouseIncome) signed off + MED-01..04 marked Complete
+- [x] 08-3-PLAN.md — Wave 3 UAT: 5 manual scenarios (single-parent, DINK, 2-kid family, legacy v1.0 entity, bad spouseIncome) signed off + MED-01..04 marked Complete
 
 ### Phase 9: Exports + Polish + Cleanup
 
@@ -102,7 +102,7 @@
 | 5. Tax Outputs | v1.0 | 4/4 | Complete | 2026-05-28 |
 | 6. Personas, Wizard, and Deployment | v1.0 | 4/4 | Complete | 2026-05-29 |
 | 7. ImportTB UX Rework | v1.1 | 4/4 | Complete | 2026-05-30 |
-| 8. Family Medicare Levy Engine | v1.1 | 0/? | Not started | — |
+| 8. Family Medicare Levy Engine | v1.1 | 3/3 | Complete | 2026-05-30 |
 | 9. Exports + Polish + Cleanup | v1.1 | 0/? | Not started | — |
 
 ## Research Flags

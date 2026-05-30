@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-current_phase: Phase 8 — Family Medicare Levy Engine (IN PROGRESS)
-current_plan: 08-3
+current_phase: Phase 9 — Exports + Polish + Cleanup (NOT STARTED)
+current_plan: 09-1 (not yet planned)
 status: active
-stopped_at: 08-3 Task 2 checkpoint — pre-gate PASSED (910 GREEN/0 RED); awaiting manual UAT (5 scenarios)
-last_updated: "2026-05-30T15:00:00.000Z"
+stopped_at: Completed 08-3-PLAN.md — Phase 8 COMPLETE; Phase 9 next
+last_updated: "2026-05-30T18:00:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 6
+  completed_phases: 2
+  total_plans: 7
+  completed_plans: 7
 ---
 
 # Project State: AussieLedger
@@ -33,22 +33,23 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 miles
 
 ## Current Position
 
-**Current phase:** Phase 8 — Family Medicare Levy Engine (IN PROGRESS — Plan 08-2 complete)
-**Current plan:** 08-3 (next to execute)
+**Current phase:** Phase 9 — Exports + Polish + Cleanup (NOT STARTED)
+**Current plan:** 09-1 (not yet planned)
 **Phase 7 status:** COMPLETE — all 4 plans shipped; all 5 IMP-07..11 requirements verified by user UAT on 2026-05-30. Final test counts: 848 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
+**Phase 8 status:** COMPLETE — all 3 plans shipped; all 4 MED-01..04 requirements verified by user UAT on 2026-05-30. Final test counts: 910 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
 **Phase 8 Plan 1 status:** COMPLETE — v5→v6 migration + stale-constants fix + 5 new family constants + medicareLevyFamily + medicareLevySurchargeFamily + isFamilyFiling. 884 SPA GREEN (848 + 36 new), 0 RED.
 **Phase 8 Plan 2 status:** COMPLETE — computeIndividualReturn family branch + AssumptionsBlock dynamic prop + TaxReturnAssistant wiring + EntityForm 2 Individual-conditional fields. 910 SPA GREEN (884 + 26 new), 0 RED.
-**Phase 8 Plan 3 status:** IN PROGRESS — Task 1 (pre-gate) PASSED. 910 GREEN / 0 RED confirmed. Paused at Task 2 human-verify checkpoint.
-**Last session:** 2026-05-30T15:00:00.000Z
-**Stopped at:** 08-3 Task 2 checkpoint — pre-gate PASSED (910 SPA GREEN / 0 RED / 11 todo); awaiting manual UAT (5 scenarios)
-**Overall progress:** v1.1: 1/3 phases complete (Phase 7 done, Phase 8 in progress — 2/3 plans done).
+**Phase 8 Plan 3 status:** COMPLETE — 5-scenario manual UAT approved 2026-05-30; MED-01..04 signed off in REQUIREMENTS.md.
+**Last session:** 2026-05-30T18:00:00.000Z
+**Stopped at:** Completed 08-3-PLAN.md — Phase 8 COMPLETE; Phase 9 next
+**Overall progress:** v1.1: 2/3 phases complete (Phase 7 + Phase 8 done, Phase 9 next).
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
        [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ] [ DONE  ]
 
 v1.1:  [Phase 7] [Phase 8] [Phase 9]
-       [ DONE  ] [ NEXT  ] [      ]
+       [ DONE  ] [ DONE  ] [ NEXT  ]
 
 v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 ```
@@ -60,15 +61,15 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | Phase | Name | Key Outcome | Status |
 |-------|------|-------------|--------|
 | 7 | ImportTB UX Rework | Header detection + tolerant currency parser + subtotal exclusion + split-column merging + rejected-rows review panel | COMPLETE (2026-05-30) |
-| 8 | Family Medicare Levy Engine | v5→v6 additive schema (Entity gains `dependants` + `spouseIncome`) + real family threshold engine + EntityForm extension + Form I family-variant rendering | IN PROGRESS — Plan 2/3 complete |
+| 8 | Family Medicare Levy Engine | v5→v6 additive schema (Entity gains `dependants` + `spouseIncome`) + real FY2025-26 family Medicare/MLS engine + EntityForm 2 conditional fields + Form I family assumption row + stale-constants correction | COMPLETE (2026-05-30) |
 | 9 | Exports + Polish + Cleanup | FND-02 closure (TB/BAS/Form-I CSV) + anomaly fix-it deep-links + cosmetic + Nyquist frontmatter flip | NOT STARTED |
 
 ---
 
 ## Performance Metrics
 
-- Plans completed: 4 / Plans total: TBD (phases 8–9 not yet planned)
-- Phases complete: 1/3 (v1.1 phases) — Phase 7 COMPLETE
+- Plans completed: 7 / Plans total: TBD (phase 9 not yet planned)
+- Phases complete: 2/3 (v1.1 phases) — Phase 7 + Phase 8 COMPLETE
 - Requirements mapped: 15/15 v1.1 requirements — all phases 7–9 covered
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
@@ -79,7 +80,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | 7 | 4 | ~10 min | 2/2 | 1 | 848 GREEN, 11 todo (UAT sign-off) |
 | 8 | 1 | ~40 min | 3/3 | 11 | 884 GREEN, 11 todo, 0 RED |
 | 8 | 2 | ~12 min | 3/3 | 8 | 910 GREEN, 11 todo, 0 RED |
-| 8 | 3 | IN PROGRESS | 1/3 | 1 | 910 GREEN, 11 todo, 0 RED (pre-gate) |
+| 8 | 3 | ~25 min | 3/3 | 4 | 910 GREEN, 11 todo, 0 RED (UAT sign-off) |
 
 ---
 
@@ -98,6 +99,16 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | Help text NEVER states deductibility — content lint enforced | Phase 6 CONTEXT | Phase 8 (Medicare assumption row wording) |
 | Decimal arithmetic via decimal.js — money never touches native floats | Phase 1 invariant | Phase 7 (currency parser) + Phase 9 (CSV exports) |
 | `IS_AI_ENABLED` constant deprecated; only `isAiEnabled()` function in new code | Phase 6 invariant | Phase 7 (ImportTB changes preserve AI gating exactly as shipped) |
+
+### Key Decisions Made (Phase 8 — Phase-Level Summary)
+
+| Decision | Rationale | Phase |
+|----------|-----------|-------|
+| Two separate per-dependant increments (LOWER=$4,338 / UPPER=$5,422) for family Medicare levy shading | ATO intentionally widens shading band per dependant; single constant would compute wrong shade-in zone | Phase 8 Plan 1 |
+| MLS per-dependant increment applies max(0, dependants-1) after-first rule to all 3 tier thresholds | After-first semantics: 1 child is already implicit in the $202k base; increment starts at 2nd child | Phase 8 Plan 1 |
+| AssumptionsBlock widened additively with optional `assumptions?: string[]` prop; static ASSUMPTIONS kept | Backward compat preserved for all existing callers — 3 Phase 5 tests GREEN unchanged | Phase 8 Plan 2 |
+| Family assumption row absorbs marital/medicare-exempt/dependants rows (replaces, not duplicates) | Single cohesive disclosure: user sees one family-context row, not 3 individual-context rows plus 1 family row | Phase 8 Plan 2 |
+| 4 stale FY2024-25 constants corrected as bonus Wave 0 deliverable — Phase 5 latent bug closed | MEDICARE_LEVY_SINGLE_LOWER/UPPER + MLS_SINGLE/FAMILY_TIER_3 were FY2024-25 values; corrections bundled atomically with new family constants to avoid a partial-update commit | Phase 8 Plan 1 |
 
 ### Key Decisions Made (Phase 8 Plan 2)
 
@@ -172,7 +183,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 - v1.0 cosmetic `App.tsx:114` dead string → planned for v1.1 Phase 9 (CLEAN-01)
 - v1.0 Nyquist `nyquist_compliant: false` on Phases 1/2/6 → planned for v1.1 Phase 9 (CLEAN-02)
 - v1.0 FND-02 CSV per-report export deferred → planned for v1.1 Phase 9 (FND-10/11/12)
-- v1.0 family Medicare levy threshold engine deferred → planned for v1.1 Phase 8 (MED-01..04)
+- v1.0 family Medicare levy threshold engine — SHIPPED Phase 8 (MED-01..04 complete 2026-05-30)
 - v1.0 ImportTB "messy real-world TB" friction → planned for v1.1 Phase 7 (IMP-07..11)
 
 ---
@@ -185,5 +196,5 @@ None.
 
 ## Next Steps
 
-1. Execute `08-3-PLAN.md` — Phase 8 Wave 3: Form I family-threshold variant rendering + integration + UAT
-2. (After Phase 8 complete) Execute Phase 9 — Exports + Polish + Cleanup
+1. Plan Phase 9 — Exports + Polish + Cleanup: `/gsd:plan-phase 9`
+2. Execute Phase 9 plans (FND-10/11/12 CSV exports + UX-06 anomaly deep-links + CLEAN-01/02 hygiene)

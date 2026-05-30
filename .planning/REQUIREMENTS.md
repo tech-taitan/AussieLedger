@@ -78,10 +78,10 @@ Filled by `/gsd:roadmapper` once phase assignment locks. Each REQ-ID maps to exa
 | IMP-09 | Phase 7 | Complete (07-3) |
 | IMP-10 | Phase 7 | Complete (07-3) |
 | IMP-11 | Phase 7 | Complete (07-3) |
-| MED-01 | Phase 8 | Complete (08-1) |
-| MED-02 | Phase 8 | Implemented (08-2); UAT pending (08-3) |
-| MED-03 | Phase 8 | Implemented (08-2); UAT pending (08-3) |
-| MED-04 | Phase 8 | Implemented (08-2); UAT pending (08-3) |
+| MED-01 | Phase 8 | Complete (08-1 + UAT) |
+| MED-02 | Phase 8 | Complete (08-1 + 08-2 + UAT) |
+| MED-03 | Phase 8 | Complete (08-2 + UAT) |
+| MED-04 | Phase 8 | Complete (08-2 + UAT) |
 | FND-10 | Phase 9 | Pending |
 | FND-11 | Phase 9 | Pending |
 | FND-12 | Phase 9 | Pending |
