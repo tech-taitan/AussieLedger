@@ -7,6 +7,7 @@ import { migrateV1ToV2 } from './v1-to-v2.js';
 import { migrateV2ToV3 } from './v2-to-v3.js';
 import { migrateV3ToV4 } from './v3-to-v4.js';
 import { migrateV4ToV5 } from './v4-to-v5.js';
+import { migrateV5ToV6 } from './v5-to-v6.js';
 
 /**
  * Root shape of all persisted state. The `_v` field is the schema version.
@@ -45,9 +46,11 @@ const MIGRATIONS: Record<number, MigrationFn> = {
   3: migrateV3ToV4,
   // 4 → 5: additive Phase 6 widening (Entity.returnStatusByFy + wizardState).
   4: migrateV4ToV5,
+  // 5 → 6: additive Phase 8 widening (Entity.dependants + spouseIncome for family Medicare levy engine).
+  5: migrateV5ToV6,
 };
 
-export const CURRENT_VERSION = 5;
+export const CURRENT_VERSION = 6;
 
 /**
  * Run all pending migrations on the given state.

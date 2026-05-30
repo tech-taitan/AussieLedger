@@ -43,7 +43,7 @@ describe('Migration round-trip (success criterion #5)', () => {
     expect(exported.auditLogs).toEqual(migrated.auditLogs ?? []);
   });
 
-  it('v0 to v5 round-trip (Test 2.1 — Phase 6 extension)', () => {
+  it('v0 to v6 round-trip (Test 2.1 — Phase 8 extension)', () => {
     // Hand-built _v:0 blob (no _v field at all — pre-versioning prototype shape)
     const v0blob = {
       entities: [{ id: 'e1', name: 'Old Co', type: 'Company', status: 'Active' }],
@@ -77,6 +77,9 @@ describe('Migration round-trip (success criterion #5)', () => {
     // v4→v5 new fields are undefined (not present)
     expect((out.entities as Array<{ returnStatusByFy?: unknown }>)[0].returnStatusByFy).toBeUndefined();
     expect((out.entities as Array<{ wizardState?: unknown }>)[0].wizardState).toBeUndefined();
+    // v5→v6 new fields are undefined (not present)
+    expect((out.entities as Array<{ dependants?: number }>)[0].dependants).toBeUndefined();
+    expect((out.entities as Array<{ spouseIncome?: string }>)[0].spouseIncome).toBeUndefined();
   });
 
   it('Test 2.2: migrate rejects data newer than CURRENT_VERSION (refuse downgrade)', () => {

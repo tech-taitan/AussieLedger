@@ -59,6 +59,11 @@ export interface Entity {
   returnStatusByFy?: Record<string, 'draft' | 'finalised'>;
   /** Per-FY wizard resume state. */
   wizardState?: Record<string, WizardStateFy>;
+  // _v:6 additions (Phase 8 — Family Medicare Levy Engine)
+  /** Dependant-child count for Medicare family threshold calculation (MED-01). Optional; undefined = single-person thresholds applied. */
+  dependants?: number;
+  /** Spouse's taxable income for the FY as decimal string (MED-01). Optional; undefined = no spouse data captured. Explicit "0" triggers family with $0 spouse income. */
+  spouseIncome?: string;
 }
 
 export interface BeneficiaryRow {

@@ -63,6 +63,9 @@ export const EntitySchema = z.object({
     dismissedAnomalies: z.array(z.string()),
     completedAt: z.string().optional(),
   })).optional(),
+  // v6 additions (Phase 8)
+  dependants: z.number().int().nonnegative().optional(),
+  spouseIncome: z.string().optional(),
 });
 
 export const AccountSchema = z.object({
