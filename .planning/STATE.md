@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: milestone
-current_phase: Phase 9 — Exports + Polish + Cleanup
-current_plan: 09-1 (COMPLETE — UAT signed off 2026-05-30)
-status: unknown
-stopped_at: Completed 09-1 UAT sign-off — Phase 9 complete; v1.1 milestone fully implemented
-last_updated: "2026-05-30T08:45:52.345Z"
+milestone: pending-next
+milestone_name: TBD
+current_phase: null
+current_plan: null
+status: milestone-archived
+stopped_at: v1.1 SHIPPED 2026-05-30 — awaiting /gsd:new-milestone (v2.0 standalone-app research preserved + ready)
+last_updated: "2026-05-30T19:30:00.000Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State: AussieLedger
@@ -23,11 +23,11 @@ progress:
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 milestone goal).
+See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.1 evolution).
 
 **Core value:** A non-accountant business owner can take their trial balance, record their year's adjustments and journals in plain English, and walk away with a print-ready tax return — without paying for software.
 
-**Current focus:** v1.1 — Polish, Closure, and TB Import Rework. 3 phases (7–9); 15 requirements. Standalone desktop app preserved at `.planning/future-milestones/v2.0-standalone-app/` for reactivation as v2.0 after v1.1 ships.
+**Current focus:** Planning next milestone. Strong candidate: v2.0 Standalone Desktop App (Tauri + file-backed SQLite + hard network sandbox) — full research preserved at `.planning/future-milestones/v2.0-standalone-app/`. Alternative: v1.2 lightweight polish. Run `/gsd:new-milestone` to lock direction.
 
 ---
 

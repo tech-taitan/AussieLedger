@@ -2,30 +2,28 @@
 
 ## Current State
 
-**v1.0 shipped 2026-05-29.** 6 phases, 23 plans, ~27k LOC TypeScript, 763 SPA + 18 server tests GREEN. Audit verdict: `tech_debt` (no critical blockers; FND-02 CSV per-report export consciously deferred to v2).
+**v1.1 shipped 2026-05-30.** Cumulative: 9 phases · 31 plans · ~32k LOC TypeScript · 983 SPA + 18 server tests GREEN. v1.1 audit verdict: `passed` (15/15 v1.1 requirements satisfied; 3 non-blocking tech-debt items documented).
 
-The brownfield prototype that existed at project init is now a real tool: the StorageAdapter hides IndexedDB (single-user) and SQLite (small-firm VPS), the tax engine produces print-ready returns for all four AU entity types, the year-end wizard walks a non-accountant from "I have a TB" to "I have a finalised working paper", and the project ships under Apache 2.0 with a clone-and-run install.
+After v1.0 + v1.1: the brownfield prototype is now a robust tool. Persistence hides IndexedDB + SQLite behind the FINAL StorageAdapter. The tax engine produces print-ready returns for all four AU entity types with correct family Medicare levy + MLS. The year-end wizard walks a non-accountant from messy real-world TB import to finalised working paper. Per-report CSV exports + Sidebar anomaly fix-it deep-links + Apache 2.0 LICENSE + clone-and-run.
 
-## Current Milestone: v1.1 — Polish, Closure, and TB Import Rework
+**v1.1 closed every v1.0 known gap** — FND-02 CSV exports shipped, family Medicare engine shipped, cosmetic + Nyquist sweep landed, plus bonus correction of 4 stale Phase-5 single-Medicare constants to FY2025-26 values. Honest record: only ~2 days of intense work because v1.0 set up clean foundations.
 
-**Goal:** Close v1.0's known gaps, polish the in-context UX, and rebuild the TB-import path to handle real-world unformatted trial-balance exports — the friction users hit before they ever see the tax engine. No architectural pivot, no new shell, no schema-version bump for storage; v1.0's stack is preserved.
+## Next Milestone Goals
 
-**Why now:** v1.0 audit verdict was `tech_debt` — no critical blockers but FND-02 (CSV per-report export) and a handful of polish items are accumulating. ImportTB shipped a deterministic-only parser in Phase 4 with the explicit caveat that "messy real-world TB exports" would need a follow-up — v1.1 is that follow-up. The desktop-app idea (formerly the v2.0 candidate) is preserved under `.planning/future-milestones/v2.0-standalone-app/` and remains a strong future direction; v1.1 ships first because closing the v1.0 gaps unblocks any subsequent milestone and the TB-import friction is real today.
+**Strong candidate: v2.0 — Standalone Desktop App + Local Data Sovereignty** (the milestone deferred during the v2.0→v1.1 pivot). Full research preserved at `.planning/future-milestones/v2.0-standalone-app/` with HIGH-confidence findings:
 
-**Target features:**
-- **TB-import UX rework** — header-row auto-detection (handles trailing title/date rows + multi-row headers); tolerant currency parser (`$1,234.56` / `(1,234.56)` parentheses-as-negative / `AUD` prefix / whitespace); subtotal-row detection (excludes "Total Operating Expenses"-style rows); account-code/name column merging; rejected-rows review panel with inline fix-it + bulk-apply
-- **Family Medicare levy threshold engine** — Entity gains `dependants` + `spouseIncome`; `computeIndividualReturn` switches from flat-2%-with-warning to real family thresholds when applicable; EntityForm extension; Form I rendering picks up the family-variant of M1/M2; v5→v6 additive schema migration
-- **FND-02 closure — CSV per-report exports** — Trial Balance CSV, BAS labels CSV, Form I labels CSV (the JSON full-dataset export already shipped Phase 3; this is the per-report companion)
-- **Anomaly fix-it deep-links** — clicking a Sidebar count badge (e.g. "Journals 3") auto-scrolls to the offending row; polishes the v1.0 UX-02 in-context anomaly flow
-- **v1.0 cosmetic + Nyquist sweep** — remove `App.tsx:114` dead `'US Big Law Firm'` string; retro-flip `nyquist_compliant: true` on Phases 1/2/6 VALIDATION.md frontmatter
+- Tauri 2.x desktop binary (Windows / macOS / Linux installers; ~10MB vs ~100MB Electron)
+- File-backed SQLite-per-instance (`*.aussieledger` files the user owns end-to-end)
+- Hard network sandbox (Tauri capability allowlist + CSP `connect-src 'none'`; both layers required)
+- `FileBackedAdapter` via custom Rust commands (rusqlite, NOT tauri-plugin-sql — research caught the path-restriction bug)
+- v6→v7 additive migration for file-format metadata
+- Native menus + OS file paths
+- Cross-platform CI build matrix (`tauri-apps/tauri-action`)
+- Updater key pair generated in v2.0 (full auto-update UX deferred to v2.1)
 
-**Out of scope (deferred from v1.1):**
-- Standalone desktop app + file-backed storage + network sandbox — preserved as `.planning/future-milestones/v2.0-standalone-app/` (research done, ready to resume as v2.0 once v1.1 ships)
-- Encrypted-at-rest persistence — v2.x
-- Direct ATO / myGov lodgement (still v3+)
-- Bank-feed / Open Banking integration (still v3+)
-- AI in ImportTB enhancements — out of scope; tolerant-parser improvements are the deterministic path only; AI gating from v1.0 stays as shipped
-- Multi-FY catch-up wizard — v2.x
+**Alternative: v1.2 — Lightweight polish** (smaller bump) — refactor Sidebar NavButton `<button>`-in-`<button>` warning · CSV import round-trip handling · multi-FY catch-up wizard · family-Medicare gold-test validation against ATO calculator · CODE_OF_CONDUCT.md + SECURITY.md.
+
+Run `/gsd:new-milestone` to lock direction and start questioning → research → requirements → roadmap. The v2.0 research can be reactivated via the PRD express path (`/gsd:plan-phase 10 --prd .planning/future-milestones/v2.0-standalone-app/research/SUMMARY.md`) once a milestone is opened.
 
 ## What This Is
 
@@ -39,18 +37,19 @@ A non-accountant business owner can take their trial balance, record their year'
 
 ## Requirements
 
-### Validated (shipped v1.0)
+### Validated (shipped v1.0 + v1.1)
 
 **Foundation (FND)**
 - ✓ FND-01 — Durable persistence (browser cache survives) — v1.0
-- ~ FND-02 — JSON export/import shipped; CSV per-report **partial, deferred to v2** — v1.0
+- ✓ FND-02 — **CSV per-report exports CLOSED** (TB CSV + BAS labels CSV + Form I labels CSV via FND-10/11/12) — v1.0 partial → v1.1 full
 - ✓ FND-03 — JSON import round-trip — v1.0
 - ✓ FND-04 — Self-hostable without paid API keys — v1.0
 - ✓ FND-05 — No misleading "ATO Connected" theatre — v1.0
 - ✓ FND-06 — Always-visible "not tax advice" disclaimer — v1.0
 - ✓ FND-07 — Vitest + golden tests per return type — v1.0
 - ✓ FND-08 — Decimal arithmetic (decimal.js) end-to-end — v1.0
-- ✓ FND-09 — Schema version + migration runner (v0→v5 chain) — v1.0
+- ✓ FND-09 — Schema version + migration runner (v0→v6 chain) — v1.0 + v1.1 (v5→v6 added)
+- ✓ FND-10, FND-11, FND-12 — TB / BAS labels / Form I CSV exports with UTF-8 BOM + quote-all + CRLF + apostrophe-prefix leading-zero codes — v1.1
 
 **Bookkeeping (BOOK)**
 - ✓ BOOK-01..12 — All shipped v1.0 (journal lifecycle, CoA hierarchy, GST codes, period model, audit trail, search) — v1.0
@@ -60,15 +59,20 @@ A non-accountant business owner can take their trial balance, record their year'
 
 **Trial Balance Import (IMP)**
 - ✓ IMP-01..06 — CSV/XLSX import + column-mapping UI + fuzzy match + AI gate + fingerprint dedup — v1.0
+- ✓ IMP-07..11 — Real-world unformatted TB handling: header-row auto-detection + tolerant currency parser + subtotal detection + split-column merge + RejectedRowsPanel with apply-to-similar — v1.1
 
-**Tax shared + per-form (TAX, IND, COY, TRT, PSP, BAS)**
+**Tax shared + per-form (TAX, IND, COY, TRT, PSP, BAS, MED)**
 - ✓ TAX-01..05 (TAX-04 stale-checkbox-only; work delivered Phase 2) — v1.0
 - ✓ IND-01..04, COY-01..03 (COY-04 obsoleted → IND-04), TRT-01..03, PSP-01..02, BAS-01..06 — v1.0
+- ✓ MED-01..04 — Family Medicare levy + family MLS threshold engines; v5→v6 additive migration; Form I family assumption row — v1.1
+- ✓ **Bonus: 4 stale FY2024-25 single-Medicare/MLS constants** corrected to FY2025-26 values (Phase 8 scope expansion) — v1.1
 
-**UX, Personas, Deployment**
+**UX, Personas, Deployment, Polish**
 - ✓ UX-01..05 — Year-end wizard + inline anomalies + tooltips + mobile responsive + persona toggle — v1.0
+- ✓ UX-06 — Sidebar anomaly count badges deep-link with cycle + 300ms yellow flash + position toast — v1.1
 - ✓ PERS-01..03 — Owner/agent landing + per-instance setting — v1.0
 - ✓ DEP-01, DEP-02, DEP-03, DEP-04, DEP-05 — Clone-and-run + dual-shape + Apache 2.0 + CONTRIBUTING + CI — v1.0
+- ✓ CLEAN-01, CLEAN-02 — Cosmetic + Nyquist sweep (App.tsx already fixed in Phase 1; v1.0 phases 1/2/6 Nyquist frontmatter flipped; v1.1 phases 7/8/9 also flipped at milestone close) — v1.1
 
 ### Active
 

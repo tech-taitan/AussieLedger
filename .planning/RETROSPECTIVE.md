@@ -66,15 +66,67 @@ Compressed from per-phase SUMMARY one-liners:
 
 ---
 
+## Milestone: v1.1 — Polish, Closure, and TB Import Rework
+
+**Shipped:** 2026-05-30
+**Phases:** 3 | **Plans:** 8 | **Tasks:** 17
+**Duration:** ~2 days (intense, sequential phases) — vs v1.0's 22 days
+
+### What Was Built
+
+- **Phase 7 — ImportTB UX Rework** — Real-world unformatted TB handling (Xero/MYOB/QuickBooks/Excel). Header-row auto-detection with low-confidence fallback. Tolerant currency parser preserving decimal.js precision. Subtotal detection (keyword + sum-pattern). Split-column merge. RejectedRowsPanel with apply-to-similar diff preview.
+- **Phase 8 — Family Medicare Levy Engine** — Real Australian family Medicare levy + family MLS threshold engines replacing Phase 5's flat-2%-with-warning fallback. v5→v6 additive migration. Bonus: 4 stale Phase-5 single-Medicare/MLS constants corrected to FY2025-26.
+- **Phase 9 — Exports + Polish + Cleanup** — FND-02 CSV exports (TB/BAS/Form-I). UX-06 Sidebar anomaly fix-it deep-links with cycle state + 300ms flash + position toast. Nyquist hygiene sweep (v1.0 phases 1/2/6 + v1.1 phases 7/8/9 at milestone-close).
+
+### What Worked
+
+- **CONTEXT-driven planning paid off again.** All 3 v1.1 phase plan-checkers PASSED first-try (no revision loops) — vs v1.0's improving-over-time pattern. Interactive discuss-phase + locked CONTEXT decisions consistently translated to plans the checker had nothing to add to.
+- **Discovery during pre-flight saved cycle time.** Phase 9 discuss-phase pre-flight discovered CLEAN-01 (`App.tsx:114` dead string) was already fixed in Phase 1 — the v1.0 audit was wrong. Caught BEFORE planning a code-change task; resolved as REQUIREMENTS doc-only update. Spending 2 minutes grepping the codebase before discussion saved ~30 minutes of unnecessary planning + execution.
+- **Bonus scope expansions when surfaced by research.** Phase 8 research discovered 4 stale Phase-5 single-Medicare/MLS constants. Folded into Wave 0 of Phase 8 instead of punting to a separate phase. Trivial fix (~15 min) avoided shipping v1.1 with internal inconsistency (correct family thresholds + wrong single thresholds). User approval for the scope expansion took one round of questions.
+- **Pre-existing-issue acknowledgement.** Phase 9 verifier surfaced a `<button>`-in-`<button>` warning in Sidebar NavButton from Phase 6. Honestly logged as pre-existing (not Phase 9's fault), all tests pass, carried as v1.2 polish candidate. Cleaner audit trail than silently fixing it OR ignoring it.
+- **Audit-recommended cleanup folded into milestone-close.** Phase 9 explicitly fixed v1.0's Nyquist drift via CLEAN-02. v1.1 audit caught the same drift on Phases 7/8/9 — orchestrator folded the 3 frontmatter flips into the milestone-close commit so v1.1 doesn't carry the drift forward. Net-zero drift after milestone close.
+- **Research-time pitfall catches.** Phase 9 research caught that `JournalSearch` is NOT mounted in `JournalsView` (the scroll target lives in the parent component) — saving the planner from putting the deep-link logic in the wrong file. Also caught `Papa.unparse([])` returns `""` not header-only — saving the implementer from a runtime gotcha.
+
+### What Was Inefficient
+
+- **v1.1 had its OWN Nyquist drift** despite v1.0's experience. The "flip frontmatter at end of phase" muscle didn't carry through to v1.1's authors. Action: bake into the phase-close template (or executor's STATE-update task list) that `nyquist_compliant: true` is part of phase close, not a separate sweep.
+- **Phase 7 plan check borderline** — 4 tasks per plan triggered a soft warning. Acceptable in context (splitting would've created partially-typed inter-wave props) but worth a planner heuristic: when a plan justifies > 3 tasks, document the rationale in the plan-checker call so the soft warning is contextualised, not just flagged.
+- **Stale audit entries** like CLEAN-01 (App.tsx already-fixed string) waste planning time when discovered late. v1.0 milestone-audit could've caught it. Action: when generating audit reports, include a `git grep` verification step for any "remove/delete X" requirement before listing it as pending.
+- **Phase 9's "lightweight UAT" still required 10 manual checks** including ones that could've been automated (e.g. CSV-in-Excel verification could be replaced by an automated test that parses the CSV bytes and asserts shape). Reasonable trade-off for v1.1; v2.0 should consider a Tauri-end-to-end harness that runs the export-then-parse flow as a unit test.
+
+### Patterns Established (codify these)
+
+- **Pre-flight discovery before discuss-phase** — Run quick `git grep` / `ls` / `wc -l` checks on REQUIREMENTS items before asking gray-area questions. Catches stale audit entries and confirms the scope is real. Phase 9 used this; it should be standard.
+- **Audit-recommended fixes folded into milestone-close** — When the milestone audit identifies trivial hygiene items (like Nyquist drift), fold them into the milestone-close commit rather than carrying to the next milestone. v1.1 milestone-close did this for v1.1's own drift; pattern worth keeping.
+- **Bonus scope expansion only when research surfaces it** — Research-time discoveries (e.g. stale constants) can be folded into the in-flight phase with user approval; "let me audit the whole codebase for more wins" should not. Phase 8's scope expansion (4 stale constants) was the right shape; an open-ended "fix everything" sweep would not be.
+- **Per-phase Nyquist frontmatter flip at phase close** — should be a standard step in the phase-completion procedure, not a per-milestone sweep.
+- **Honesty over silent fixes** — Phase 9 verifier surfaced the pre-existing button-in-button warning; instead of silently fixing it (out of scope) or ignoring it (incomplete record), the audit explicitly carries it as v1.2 polish candidate.
+
+### Key Lessons
+
+- **CONTEXT investment compounds.** v1.0 took 22 days for 6 phases. v1.1 took 2 days for 3 phases. The difference isn't just smaller scope; it's that v1.1's discuss-phase output (locked CONTEXT decisions) translated directly to plans the planner could write in one pass and the checker could pass first-try. The v1.0 phases that struggled (Phase 2/3 multi-session) were the ones with shorter or skipped CONTEXTs.
+- **The integration-checker agent caught the cross-phase wiring that single-phase verifiers can't see.** v1.1 audit's integration check confirmed the Phase 7 import → Phase 8 family-Medicare → Phase 9 CSV-export chain end-to-end. Cross-phase wiring is invisible to plan-checker (which sees one phase) and visible to integration-checker (which sees all). Should run integration-checker BEFORE every milestone close, every time.
+- **Tech debt is fine if documented.** v1.0 shipped `tech_debt` (FND-02 partial). v1.1 closed FND-02. Both verdicts were honest. v1.1 ships `passed` with 3 documented tech-debt items — none blocking. Carrying named, sized, scoped debt is healthy; carrying unnamed debt is the failure mode.
+
+### Cost Observations
+
+- **Model mix:** Sonnet for executor/verifier/checker; Opus inheritance on planner. Same as v1.0.
+- **Sessions:** v1.1 ran across ~2 days with one continuation session per phase (for human-verify UAT). Continuity via STATE.md + per-phase SUMMARYs worked cleanly.
+- **Notable:** Single-plan Phase 9 (CONTEXT decision #13: "single Plan 09-1") shipped 6 small-to-medium requirements in one cohesive plan with 4 tasks. Confirms small phases don't need multi-plan structure. The plan-checker accepted it without issue. For polish phases, single-plan is the right granularity.
+
+---
+
 ## Cross-Milestone Trends
 
-(One milestone in. Trends emerge from v1.1 onward.)
-
-| Metric | v1.0 |
-|--------|------|
-| Phases | 6 |
-| Plans | 23 |
-| Plan-checker first-try pass rate | Last 2 of 6 phases (33%) — improving over time |
-| Verifier first-try pass rate | 5 of 6 phases (83%) — Phase 6 caught the LOCK_FY gap |
-| Stale-checkbox rate at milestone audit | 4/70 (5.7%) — target 0% by v1.1 |
-| Critical-blocker gaps at milestone audit | 0 |
+| Metric | v1.0 | v1.1 | Trend |
+|--------|------|------|-------|
+| Phases | 6 | 3 | smaller follow-on |
+| Plans | 23 | 8 | smaller follow-on |
+| Duration | 22 days | 2 days | 11× faster (cleaner foundations) |
+| Plan-checker first-try pass rate | 2/6 (33%) | 3/3 (100%) | improved |
+| Verifier first-try pass rate | 5/6 (83%) | 3/3 (100%) | improved |
+| Stale-checkbox rate at milestone audit | 4/70 (5.7%) | 0/15 (0%) | target hit |
+| Critical-blocker gaps at milestone audit | 0 | 0 | maintained |
+| Audit verdict | tech_debt | passed | improved |
+| Tests GREEN (cumulative) | 763 | 983 (+220) | growing |
+| Nyquist-compliant phases at milestone close | 3/6 (50%) | 6/6 v1.0 fixed via CLEAN-02 + 3/3 v1.1 fixed in milestone-close | 100% after v1.1 |
