@@ -5,8 +5,8 @@ milestone_name: milestone
 current_phase: Phase 8 — Family Medicare Levy Engine (IN PROGRESS)
 current_plan: 08-3
 status: active
-stopped_at: Completed 08-2-PLAN.md (Wave 2 application wiring complete)
-last_updated: "2026-05-30T14:37:00.000Z"
+stopped_at: 08-3 Task 2 checkpoint — pre-gate PASSED (910 GREEN/0 RED); awaiting manual UAT (5 scenarios)
+last_updated: "2026-05-30T15:00:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 1
@@ -38,8 +38,9 @@ See: `.planning/PROJECT.md` (updated 2026-05-29 with v1.0 evolution + v1.1 miles
 **Phase 7 status:** COMPLETE — all 4 plans shipped; all 5 IMP-07..11 requirements verified by user UAT on 2026-05-30. Final test counts: 848 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
 **Phase 8 Plan 1 status:** COMPLETE — v5→v6 migration + stale-constants fix + 5 new family constants + medicareLevyFamily + medicareLevySurchargeFamily + isFamilyFiling. 884 SPA GREEN (848 + 36 new), 0 RED.
 **Phase 8 Plan 2 status:** COMPLETE — computeIndividualReturn family branch + AssumptionsBlock dynamic prop + TaxReturnAssistant wiring + EntityForm 2 Individual-conditional fields. 910 SPA GREEN (884 + 26 new), 0 RED.
-**Last session:** 2026-05-30T14:37:00.000Z
-**Stopped at:** Completed 08-2-PLAN.md (Wave 2 application wiring complete)
+**Phase 8 Plan 3 status:** IN PROGRESS — Task 1 (pre-gate) PASSED. 910 GREEN / 0 RED confirmed. Paused at Task 2 human-verify checkpoint.
+**Last session:** 2026-05-30T15:00:00.000Z
+**Stopped at:** 08-3 Task 2 checkpoint — pre-gate PASSED (910 SPA GREEN / 0 RED / 11 todo); awaiting manual UAT (5 scenarios)
 **Overall progress:** v1.1: 1/3 phases complete (Phase 7 done, Phase 8 in progress — 2/3 plans done).
 
 ```
@@ -78,6 +79,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | 7 | 4 | ~10 min | 2/2 | 1 | 848 GREEN, 11 todo (UAT sign-off) |
 | 8 | 1 | ~40 min | 3/3 | 11 | 884 GREEN, 11 todo, 0 RED |
 | 8 | 2 | ~12 min | 3/3 | 8 | 910 GREEN, 11 todo, 0 RED |
+| 8 | 3 | IN PROGRESS | 1/3 | 1 | 910 GREEN, 11 todo, 0 RED (pre-gate) |
 
 ---
 
