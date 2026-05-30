@@ -159,3 +159,125 @@ describe('computeIndividualReturn', () => {
     expect(warnAnomalies.length).toBe(0);
   });
 });
+
+describe('computeIndividualReturn — family Medicare engine (Phase 8 — MED-02)', () => {
+  const familyEntity: Entity = {
+    ...fixtureEntity,
+    dependants: 2,
+    spouseIncome: '60000',
+  };
+
+  it('IND-FAM-1: family entity with dependants=2 + spouseIncome=60000 → M1 uses family engine (income 30000 combined 90000 above effUpper → 600.00)', () => {
+    const r = computeIndividualReturn({
+      entity: familyEntity,
+      accounts: fixtureAccounts,
+      entries: fixtureEntries,
+      fy: 'FY2026',
+    });
+    expect(r.labels.M1?.value.toFixed(2)).toBe('600.00');
+  });
+
+  it('IND-FAM-2: single-parent (dependants=2, spouseIncome=undefined) → spouse treated as 0 → M1 = 0 (combined 30000 ≤ effLower 55914)', () => {
+    const r = computeIndividualReturn({
+      entity: { ...fixtureEntity, dependants: 2 },
+      accounts: fixtureAccounts,
+      entries: fixtureEntries,
+      fy: 'FY2026',
+    });
+    expect(r.labels.M1?.value.toFixed(2)).toBe('0.00');
+  });
+
+  it('IND-FAM-3: DINK (dependants=undefined, spouseIncome=80000) → effLower=47238; combined 110000 ≥ effUpper 59047 → M1 = 600.00', () => {
+    const r = computeIndividualReturn({
+      entity: { ...fixtureEntity, spouseIncome: '80000' },
+      accounts: fixtureAccounts,
+      entries: fixtureEntries,
+      fy: 'FY2026',
+    });
+    expect(r.labels.M1?.value.toFixed(2)).toBe('600.00');
+  });
+
+  it('IND-FAM-4: family-medicare assumption row present with exact text', () => {
+    const r = computeIndividualReturn({
+      entity: familyEntity,
+      accounts: fixtureAccounts,
+      entries: fixtureEntries,
+      fy: 'FY2026',
+    });
+    const familyRow = r.meta.anomalies.find((a) => a.id === 'assumption-family-medicare');
+    expect(familyRow).toBeDefined();
+    expect(familyRow?.severity).toBe('info');
+    expect(familyRow?.message).toBe(
+      'Family Medicare levy applied — 2 dependants, spouse income $60000. Family threshold $47238; per-dependant adjustment $4338.',
+    );
+  });
+
+  it('IND-FAM-5: family entity DOES NOT include assumption-marital, assumption-medicare-exempt, or assumption-dependants rows', () => {
+    const r = computeIndividualReturn({
+      entity: familyEntity,
+      accounts: fixtureAccounts,
+      entries: fixtureEntries,
+      fy: 'FY2026',
+    });
+    const ids = r.meta.anomalies.map((a) => a.id);
+    expect(ids).not.toContain('assumption-marital');
+    expect(ids).not.toContain('assumption-medicare-exempt');
+    expect(ids).not.toContain('assumption-dependants');
+    expect(ids).toContain('assumption-age');
+    expect(ids).toContain('assumption-phc');
+  });
+
+  it('IND-FAM-6: non-family entity (Phase 5 regression) → all 5 original static assumption rows present', () => {
+    const r = computeIndividualReturn({
+      entity: fixtureEntity, // both family fields undefined
+      accounts: fixtureAccounts,
+      entries: fixtureEntries,
+      fy: 'FY2026',
+    });
+    const ids = r.meta.anomalies.map((a) => a.id);
+    expect(ids).toContain('assumption-marital');
+    expect(ids).toContain('assumption-medicare-exempt');
+    expect(ids).toContain('assumption-dependants');
+    expect(ids).not.toContain('assumption-family-medicare');
+  });
+
+  it('IND-FAM-7: bad spouseIncome "abc" → family-data-warn anomaly emitted with severity warn + label M1', () => {
+    const r = computeIndividualReturn({
+      entity: { ...fixtureEntity, dependants: 2, spouseIncome: 'abc' },
+      accounts: fixtureAccounts,
+      entries: fixtureEntries,
+      fy: 'FY2026',
+    });
+    const warn = r.meta.anomalies.find((a) => a.id === 'family-data-warn');
+    expect(warn).toBeDefined();
+    expect(warn?.severity).toBe('warn');
+    expect(warn?.label).toBe('M1');
+    expect(warn?.message).toBe('Spouse income data invalid; family thresholds applied with $0 — verify input');
+    // M1 computed with spouse=0; combined 30000 ≤ effLower(55914 for 2 deps) → 0
+    expect(r.labels.M1?.value.toFixed(2)).toBe('0.00');
+  });
+
+  it('IND-FAM-8: negative spouseIncome "-1000" → same anomaly + spouse treated as 0', () => {
+    const r = computeIndividualReturn({
+      entity: { ...fixtureEntity, dependants: 2, spouseIncome: '-1000' },
+      accounts: fixtureAccounts,
+      entries: fixtureEntries,
+      fy: 'FY2026',
+    });
+    const warn = r.meta.anomalies.find((a) => a.id === 'family-data-warn');
+    expect(warn).toBeDefined();
+  });
+
+  it('IND-FAM-9: Phase 5 regression — entity with no family fields produces identical M1/M2 to Phase 5', () => {
+    const r = computeIndividualReturn({
+      entity: fixtureEntity,
+      accounts: fixtureAccounts,
+      entries: fixtureEntries,
+      fy: 'FY2026',
+    });
+    // P8 = 30000 → single threshold path → in shade-in zone
+    // shaded = (30000 - 28011) × 0.10 = 1989 × 0.10 = 198.90
+    expect(r.labels.M1?.value.toFixed(2)).toBe('198.90');
+    expect(r.labels.M2?.value.toFixed(2)).toBe('0.00'); // no MLS, hasPHC=true
+  });
+});

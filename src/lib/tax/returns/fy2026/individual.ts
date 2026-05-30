@@ -13,13 +13,13 @@ import { Decimal } from '../../../money';
 import type { Account, Entity, JournalEntry } from '../../../../types';
 import type { FyLabel } from '../../../period';
 import type { ComputedReturn, IndividualReturnLabels, ReturnLabel, Anomaly } from './types';
-import { rollupByLabel } from './_helpers';
+import { rollupByLabel, isFamilyFiling } from './_helpers';
 import { computeAggregatedTurnover } from '../../aggregatedTurnover';
 import { marginalTaxFY2026 } from '../../rates/fy2026/marginal';
 import { litoFY2026 } from '../../rates/fy2026/lito';
 import { medicareLevyFY2026 } from '../../rates/fy2026/medicare';
 import { smallBusinessIncomeOffset } from '../../rates/fy2026/smallBizOffset';
-import { INDIVIDUAL_LABELS_FULL } from '../../labels/fy2026';
+import { INDIVIDUAL_LABELS_FULL, MEDICARE_LEVY_FAMILY_LOWER, MEDICARE_LEVY_FAMILY_DEPENDANT_INCREMENT_LOWER } from '../../labels/fy2026';
 import type { IndividualLabel } from '../../labels/fy2026';
 
 export type IndividualReturn = ComputedReturn<IndividualReturnLabels>;
@@ -75,13 +75,43 @@ export function computeIndividualReturn(input: ComputeIndividualInput): Individu
   const p8 = p1.minus(p2);
   const item15 = p8;
 
+  // Phase 8 — family Medicare eligibility + tolerant spouseIncome parse (MED-02)
+  const isFamily = isFamilyFiling(entity);
+  const familyDependants = entity.dependants ?? 0;
+  let familyBadDataAnomaly: Anomaly | undefined;
+  let familySpouseIncomeForCall: string | undefined;
+  if (isFamily) {
+    if (entity.spouseIncome === undefined) {
+      familySpouseIncomeForCall = '0';
+    } else {
+      // Tolerant parse: invalid or negative → treat as '0' + emit warn anomaly
+      try {
+        const parsed = new Decimal(entity.spouseIncome);
+        if (parsed.isNaN() || !parsed.isFinite() || parsed.isNegative()) {
+          throw new Error('invalid');
+        }
+        familySpouseIncomeForCall = entity.spouseIncome;
+      } catch {
+        familySpouseIncomeForCall = '0';
+        familyBadDataAnomaly = {
+          id: 'family-data-warn',
+          severity: 'warn',
+          label: 'M1',
+          message: 'Spouse income data invalid; family thresholds applied with $0 — verify input',
+        };
+      }
+    }
+  }
+
   // Step 4: tax computation
   const taxBeforeOffsets = marginalTaxFY2026(item15);
   const lito = litoFY2026(item15);
   const medicare = medicareLevyFY2026({
     taxableIncome: item15,
     hasPHC: true,
-    filingStatus: 'single',
+    filingStatus: isFamily ? 'family' : 'single',
+    dependants: isFamily ? familyDependants : undefined,
+    spouseIncome: isFamily ? familySpouseIncomeForCall : undefined,
   });
   const sbOffset = smallBusinessIncomeOffset({
     netSbIncome: p8,
@@ -98,16 +128,33 @@ export function computeIndividualReturn(input: ComputeIndividualInput): Individu
   // Step 5: anomalies
   const anomalies: Anomaly[] = [];
 
-  // 5 fixed assumptions
-  const assumptionTexts: [string, string][] = [
-    ['assumption-marital',        'Marital status: single (no spouse income captured)'],
-    ['assumption-age',            'Age: under 65 (no Seniors and Pensioners Tax Offset applied)'],
-    ['assumption-medicare-exempt','Medicare exemption: none (full 2% levy applied unless shading applies)'],
-    ['assumption-phc',            'Private health cover: assumed (no Medicare Levy Surcharge applied)'],
-    ['assumption-dependants',     'Dependants: zero'],
-  ];
-  for (const [id, message] of assumptionTexts) {
-    anomalies.push({ id, severity: 'info', message });
+  // Phase 8 — assumption rows; family entity REPLACES marital/medicare-exempt/dependants with one family row
+  if (isFamily) {
+    const familySpouseDisplay = entity.spouseIncome ?? '0';
+    const familyMessage =
+      `Family Medicare levy applied — ${familyDependants} dependants, spouse income $${familySpouseDisplay}. ` +
+      `Family threshold $${MEDICARE_LEVY_FAMILY_LOWER}; per-dependant adjustment $${MEDICARE_LEVY_FAMILY_DEPENDANT_INCREMENT_LOWER}.`;
+    anomalies.push({ id: 'assumption-family-medicare', severity: 'info', message: familyMessage });
+    // age + phc still apply (independent concerns)
+    anomalies.push({ id: 'assumption-age', severity: 'info', message: 'Age: under 65 (no Seniors and Pensioners Tax Offset applied)' });
+    anomalies.push({ id: 'assumption-phc', severity: 'info', message: 'Private health cover: assumed (no Medicare Levy Surcharge applied)' });
+  } else {
+    // Phase 5 baseline: 5 static rows preserved (regression-safe for v1.0 entities)
+    const assumptionTexts: [string, string][] = [
+      ['assumption-marital',        'Marital status: single (no spouse income captured)'],
+      ['assumption-age',            'Age: under 65 (no Seniors and Pensioners Tax Offset applied)'],
+      ['assumption-medicare-exempt','Medicare exemption: none (full 2% levy applied unless shading applies)'],
+      ['assumption-phc',            'Private health cover: assumed (no Medicare Levy Surcharge applied)'],
+      ['assumption-dependants',     'Dependants: zero'],
+    ];
+    for (const [id, message] of assumptionTexts) {
+      anomalies.push({ id, severity: 'info', message });
+    }
+  }
+
+  // Phase 8 — emit bad-data anomaly if spouseIncome failed parse
+  if (familyBadDataAnomaly) {
+    anomalies.push(familyBadDataAnomaly);
   }
 
   // SBI offset anomaly (e.g. ineligible message)
