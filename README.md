@@ -46,6 +46,20 @@ Set env vars: `PORT` (default 4000), `DB_PATH` (default ./data/ledger.db), `GEMI
 
 Windows dev note: `npm run dev:full` requires Visual Studio Build Tools for the native `better-sqlite3` compile.
 
+### Public hosting (Vercel)
+
+Try the live demo at **https://aussieledger.techtaitan.com**.
+
+To self-host your own public deploy on Vercel:
+
+1. Fork this repo on GitHub.
+2. In the [Vercel dashboard](https://vercel.com/new), import your fork as a new project. Vercel auto-detects the Vite preset — no build-command override needed.
+3. (Optional) Set `VITE_HOSTED_MODE` to `true` in Project Settings → Environment Variables. This enables the hosted-mode UI paths (user-supplied Gemini key in Settings, iOS ITP banner, etc.). Leave unset for the self-host paths described above.
+4. Push to `main` — Vercel auto-deploys. CSP + security headers ship via `vercel.json`; SPA deep-link fallback also configured there.
+5. (Optional) Add a custom domain in Project Settings → Domains.
+
+Never set a `VITE_GEMINI_API_KEY` build-time env var — the `npm run build` script greps the bundle for Gemini-key shapes (`scripts/scan-aiza.mjs`) and exits non-zero if any are found. Hosted users supply their own key in Settings (stored only in their browser).
+
 ## How It Works
 
 - **Persistence:** StorageAdapter abstracts the storage layer. LocalAdapter (IndexedDB) + ServerAdapter (HTTP → Express → SQLite). Same SPA bundle, runtime probe picks the shape.
