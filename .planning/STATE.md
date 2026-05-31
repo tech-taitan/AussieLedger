@@ -3,21 +3,21 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: 10
-current_plan: null
-status: ready-to-plan
-stopped_at: v1.2 roadmap created (5 phases, 16 requirements) — next action /gsd:plan-phase 10
+current_plan: 10-1
+status: ready-to-execute
+stopped_at: Phase 10 planned (2 plans, 8 tasks) — checker PASS — next action /gsd:execute-phase 10
 last_updated: "2026-05-31T00:00:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
+  total_plans: 2
   completed_plans: 0
 ---
 
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
-**Last updated:** 2026-05-31 (v1.2 roadmap created — 5 phases 10–14, ready for planning)
+**Last updated:** 2026-05-31 (Phase 10 planned — 2 plans, 8 tasks, checker PASS round 2)
 
 ---
 
@@ -33,16 +33,16 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 10 — Public Build + CI/CD to Cloudflare Pages (not yet started)
-**Current plan:** None (roadmap just created; planning Phase 10 next)
-**Phase 10 status:** Not started
+**Current phase:** Phase 10 — Public Build + CI/CD to Cloudflare Pages (planned, ready to execute)
+**Current plan:** 10-1 (build-flag + static config files)
+**Phase 10 status:** Planned (2 plans, 8 tasks, checker PASS round 2)
 **Phase 11 status:** Not started
 **Phase 12 status:** Not started
 **Phase 13 status:** Not started
 **Phase 14 status:** Not started
 **Last session:** 2026-05-31T00:00:00.000Z
-**Stopped at:** v1.2 roadmap created — 5 phases (10–14), 16 requirements mapped, all phases pending planning
-**Overall progress:** v1.2: 0/5 phases complete. Run `/gsd:plan-phase 10` to begin.
+**Stopped at:** Phase 10 plans landed (10-1 + 10-2 + 10-VERIFICATION.md committed `1913363`); awaiting `/gsd:execute-phase 10`
+**Overall progress:** v1.2: 0/5 phases complete; Phase 10 planned. Run `/gsd:execute-phase 10` to begin execution.
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
