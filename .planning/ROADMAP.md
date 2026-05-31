@@ -113,7 +113,7 @@
 **Plans:** 2 plans
 
 Plans:
-- [ ] 10-1-build-flag-and-static-config-files.md — isHostedMode() helper + public/_redirects + public/_headers + AIza fixture+regex test (HOST-03 + HOST-01/02 prep)
+- [x] 10-1-build-flag-and-static-config-files.md — isHostedMode() helper + public/_redirects + public/_headers + AIza fixture+regex test (HOST-03 + HOST-01/02 prep) — completed 2026-05-31
 - [ ] 10-2-ci-widening-and-cloudflare-deploy-job.md — extend ci.yml with AIza scan + artifact + Cloudflare deploy job + concise README self-host section (HOST-01, HOST-02, HOST-03)
 
 ---
@@ -210,7 +210,7 @@ Plans:
 | 7. ImportTB UX Rework | v1.1 | 4/4 | Complete | 2026-05-30 |
 | 8. Family Medicare Levy Engine | v1.1 | 3/3 | Complete | 2026-05-30 |
 | 9. Exports + Polish + Cleanup | v1.1 | 1/1 | Complete | 2026-05-30 |
-| 10. Public Build + CI/CD to Cloudflare Pages | v1.2 | 0/2 | Planned | - |
+| 10. Public Build + CI/CD to Cloudflare Pages | v1.2 | 1/2 | In Progress | - |
 | 11. IndexedDB Hardening | v1.2 | 0/TBD | Not started | - |
 | 12. User-Supplied AI Key + Direct-Browser Gemini | v1.2 | 0/TBD | Not started | - |
 | 13. PWA Wrapper | v1.2 | 0/TBD | Not started | - |

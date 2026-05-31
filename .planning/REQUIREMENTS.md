@@ -14,7 +14,7 @@ Deploy the SPA to a free static host with auto-deploy from `main`. CI defends ag
 
 - [ ] **HOST-01**: AussieLedger SPA is hosted on Cloudflare Pages at a public URL with GitHub Actions auto-deploy on push to `main` (workflow file `.github/workflows/deploy.yml` using `cloudflare/wrangler-action@v3` with `command: pages deploy dist --project-name=aussieledger`). Includes `_redirects` file `/* /index.html 200` for SPA route fallback + `_headers` file with `Content-Security-Policy` setting `connect-src 'self' https://generativelanguage.googleapis.com` (defense against XSS-exfiltration of user-supplied API keys).
 - [ ] **HOST-02**: Post-build CI step greps `dist/` for `AIza` patterns (Gemini API key shape); fails the build if any match. Defensive against the CVE-2023-46115 analog (a contributor accidentally setting `VITE_GEMINI_API_KEY` in the CI environment would otherwise ship the key to every user). Implemented as a step in the deploy workflow.
-- [ ] **HOST-03**: Build-time `VITE_HOSTED_MODE` flag (boolean). When `true` (hosted Cloudflare build), the SPA renders the user-supplied AI key UI (AI-01) and shows iOS Safari ITP disclosure (IDB-04). When `false` (default; matches v1.0/v1.1 self-host build), the SPA behaves as today (env-var key only, no hosted-specific banners). Single source of truth; one `import.meta.env.VITE_HOSTED_MODE` check.
+- [x] **HOST-03**: Build-time `VITE_HOSTED_MODE` flag (boolean). When `true` (hosted Cloudflare build), the SPA renders the user-supplied AI key UI (AI-01) and shows iOS Safari ITP disclosure (IDB-04). When `false` (default; matches v1.0/v1.1 self-host build), the SPA behaves as today (env-var key only, no hosted-specific banners). Single source of truth; one `import.meta.env.VITE_HOSTED_MODE` check. **Complete 2026-05-31 (Plan 10-1):** `isHostedMode()` helper landed in `src/lib/env.ts` with strict `=== 'true'` equality; 7 unit tests cover `'true'` / `'false'` / undefined / `''` / `'1'` / `'TRUE'` / `'true '` boundary cases; build-flag (compile-time) vs StorageAdapter runtime probe explicitly separated in module doc. Downstream Phase 12/13/14 code can `import { isHostedMode } from 'src/lib/env'` immediately. The CI build env that sets `VITE_HOSTED_MODE: 'true'` ships in Plan 10-2.
 - [ ] **HOST-04**: A custom domain (e.g. `aussieledger.com.au` or `aussieledger.app`) routes to the Cloudflare Pages deployment. DNS configured via Cloudflare. Cert auto-renewed. README live-demo link points at the custom domain (not the `.pages.dev` default).
 
 ### IndexedDB Hardening (IDB)
@@ -82,7 +82,7 @@ Confirmed by `/gsd:roadmapper` on 2026-05-31. Each REQ-ID maps to exactly one ph
 |-----|-------|--------|
 | HOST-01 | Phase 10 | Pending |
 | HOST-02 | Phase 10 | Pending |
-| HOST-03 | Phase 10 | Pending |
+| HOST-03 | Phase 10 | Complete (10-1) |
 | HOST-04 | Phase 14 | Pending |
 | IDB-01 | Phase 11 | Pending |
 | IDB-02 | Phase 11 | Pending |

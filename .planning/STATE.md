@@ -3,21 +3,21 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: 10
-current_plan: 10-1
+current_plan: 10-2
 status: ready-to-execute
-stopped_at: Phase 10 planned (2 plans, 8 tasks) — checker PASS — next action /gsd:execute-phase 10
-last_updated: "2026-05-31T00:00:00.000Z"
+stopped_at: Plan 10-1 complete (3 task commits + SUMMARY); awaiting Wave 2 (Plan 10-2) which requires manual Cloudflare token prereq
+last_updated: "2026-05-31T21:20:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 2
-  completed_plans: 0
+  completed_plans: 1
 ---
 
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
-**Last updated:** 2026-05-31 (Phase 10 planned — 2 plans, 8 tasks, checker PASS round 2)
+**Last updated:** 2026-05-31 (Plan 10-1 complete — 3 task commits + SUMMARY; Wave 2 / Plan 10-2 next)
 
 ---
 
@@ -33,16 +33,16 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 10 — Public Build + CI/CD to Cloudflare Pages (planned, ready to execute)
-**Current plan:** 10-1 (build-flag + static config files)
-**Phase 10 status:** Planned (2 plans, 8 tasks, checker PASS round 2)
+**Current phase:** Phase 10 — Public Build + CI/CD to Cloudflare Pages (in progress — Plan 10-1 complete)
+**Current plan:** 10-2 (CI widening + Cloudflare deploy job)
+**Phase 10 status:** In Progress (1/2 plans complete: 10-1 shipped; 10-2 awaits Cloudflare token prereq + Wave 2 spawn)
 **Phase 11 status:** Not started
 **Phase 12 status:** Not started
 **Phase 13 status:** Not started
 **Phase 14 status:** Not started
-**Last session:** 2026-05-31T00:00:00.000Z
-**Stopped at:** Phase 10 plans landed (10-1 + 10-2 + 10-VERIFICATION.md committed `1913363`); awaiting `/gsd:execute-phase 10`
-**Overall progress:** v1.2: 0/5 phases complete; Phase 10 planned. Run `/gsd:execute-phase 10` to begin execution.
+**Last session:** 2026-05-31T21:20:00.000Z
+**Stopped at:** Plan 10-1 complete (Tasks 1–4 done; commits `7f5e3e0`, `79b6668`, `311c574` + SUMMARY); awaiting Wave 2 spawn for Plan 10-2 (manual Cloudflare API token + Account ID required as GitHub Secrets before 10-2 Task 1 checkpoint can clear)
+**Overall progress:** v1.2: 0/5 phases complete; Phase 10: 1/2 plans complete (50%). Run `/gsd:execute-phase 10` to spawn Wave 2 executor for Plan 10-2.
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -73,15 +73,18 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 
 ## Performance Metrics
 
-- Plans completed: 0 / Plans total: TBD (v1.2 — not yet planned)
+- Plans completed: 1 / Plans total: 2 (Phase 10; subsequent phases not yet planned)
 - Phases complete: 0/5 (v1.2 phases)
 - Requirements mapped: 16/16 v1.2 requirements — all phases 10–14 covered
+- Requirements complete: 1/16 (HOST-03)
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
-| (v1.2 plans not yet created) | — | — | — | — | — |
+| 10 | 10-1 | ~30min | 4 (3 auto + 1 checkpoint) | 8 (6 created, 2 modified) | 999 SPA (+16 from baseline) |
 
 **v1.1 baseline (carried forward):** 983 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
+
+**Post Plan 10-1:** 999 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
 
 ---
 
