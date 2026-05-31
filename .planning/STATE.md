@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: 10
-current_plan: 10-2
-status: ready-to-execute
-stopped_at: Plan 10-1 complete (3 task commits + SUMMARY); awaiting Wave 2 (Plan 10-2) which requires manual Cloudflare token prereq
-last_updated: "2026-05-31T21:20:00.000Z"
+current_plan: null
+status: phase-shipped-pending-verify
+stopped_at: Phase 10 pivoted Cloudflare→Vercel and shipped (vercel.json + scan-aiza.mjs + README + custom domain aussieledger.techtaitan.com); HOST-01/02/03/04 all closed; awaiting user push + Vercel auto-deploy verification
+last_updated: "2026-06-01T00:00:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 0
@@ -17,7 +17,7 @@ progress:
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
-**Last updated:** 2026-05-31 (Plan 10-1 complete — 3 task commits + SUMMARY; Wave 2 / Plan 10-2 next)
+**Last updated:** 2026-06-01 (Phase 10 PIVOT Cloudflare→Vercel — vercel.json + scan-aiza.mjs + README + custom domain shipped; HOST-01/02/03/04 closed; awaiting user push + Vercel auto-deploy verification)
 
 ---
 
@@ -33,16 +33,16 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 10 — Public Build + CI/CD to Cloudflare Pages (in progress — Plan 10-1 complete)
-**Current plan:** 10-2 (CI widening + Cloudflare deploy job)
-**Phase 10 status:** In Progress (1/2 plans complete: 10-1 shipped; 10-2 awaits Cloudflare token prereq + Wave 2 spawn)
+**Current phase:** Phase 10 — Public Build + CI/CD (originally Cloudflare Pages; pivoted to Vercel 2026-06-01)
+**Current plan:** none — Phase 10 deliverables shipped via pivot bundle; Plan 10-2's Cloudflare-specific commits (`9eba387`, `376a273`) reverted
+**Phase 10 status:** Shipped pending verify (HOST-01/02/03/04 closed; vercel.json + scan-aiza.mjs + README live; awaiting user `git push` + Vercel auto-deploy completion + manual smoke at `https://aussieledger.techtaitan.com`)
 **Phase 11 status:** Not started
 **Phase 12 status:** Not started
 **Phase 13 status:** Not started
-**Phase 14 status:** Not started
-**Last session:** 2026-05-31T21:20:00.000Z
-**Stopped at:** Plan 10-1 complete (Tasks 1–4 done; commits `7f5e3e0`, `79b6668`, `311c574` + SUMMARY); awaiting Wave 2 spawn for Plan 10-2 (manual Cloudflare API token + Account ID required as GitHub Secrets before 10-2 Task 1 checkpoint can clear)
-**Overall progress:** v1.2: 0/5 phases complete; Phase 10: 1/2 plans complete (50%). Run `/gsd:execute-phase 10` to spawn Wave 2 executor for Plan 10-2.
+**Phase 14 status:** Not started (HOST-04 originally scoped here is now closed early; remaining: POL-01..04)
+**Last session:** 2026-06-01T00:00:00.000Z
+**Stopped at:** Phase 10 pivot bundle committed locally (commits `67157f7`, `27c33a5`, `25320c4`, `ff7d41c`, `408e943`, plus the pending planning-docs commit); user to `git push origin main` → Vercel auto-deploys → smoke `https://aussieledger.techtaitan.com` (CSP header present + SPA deep link works + console clean + `securityheaders.com` grade ≥ A)
+**Overall progress:** v1.2: 0/5 phases complete formally (Phase 10 ships HOST-01..04 plus Plan 10-1's local deliverables; Phase 11 next). After Phase 10 push + verify: 4/16 requirements complete.
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]

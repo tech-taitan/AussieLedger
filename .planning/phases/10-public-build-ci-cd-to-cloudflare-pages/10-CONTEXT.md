@@ -12,6 +12,48 @@ discussed_areas: [cloudflare-project-wiring, custom-domain-timing, csp-policy, d
 **Gathered:** 2026-05-31
 **Status:** Ready for planning
 
+> ## ⚠ PIVOT — 2026-06-01: Cloudflare Pages → Vercel
+>
+> Mid-execution of Plan 10-2, the user selected **Vercel** as the v1.2 public host instead of Cloudflare Pages. The Cloudflare-specific sections below (CF project + token, `wrangler-action@v3` deploy job, `_headers`/`_redirects` file formats) are **superseded**. The remaining sections (CSP exact policy content, SPA-fallback intent, AIza scan intent, `VITE_HOSTED_MODE` flag, every-push deploy semantics) carry forward unchanged. The Cloudflare history is preserved here as decision provenance.
+>
+> ### New locked decisions (Vercel pivot)
+>
+> **Host + deploy mechanism**
+> - **Vercel Hobby tier**, ToS-acknowledged by user (Hobby's "non-commercial" clause; user accepts the risk for AussieLedger's open-source-but-tax-adjacent positioning)
+> - **Vercel's native GitHub integration** — no GitHub Actions deploy job; Vercel auto-deploys on every push to `main` + PR previews
+> - **NO GitHub Secrets needed** (`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` not created)
+> - **Vercel project already created** and connected to `tech-taitan/AussieLedger`
+> - **Custom domain `aussieledger.techtaitan.com`** already pointed at the Vercel project (HOST-04 satisfied early — was scheduled for Phase 14)
+>
+> **Config delivery**
+> - **Single `vercel.json` at repo root** replaces both `public/_headers` and `public/_redirects`
+> - `vercel.json` `rewrites: [{ source: "/(.*)", destination: "/index.html" }]` is the SPA deep-link fallback
+> - `vercel.json` `headers[0]` carries the **identical** CSP + HSTS + nosniff + Referrer-Policy + Permissions-Policy + X-Frame-Options set previously in `_headers` — same CSP string verbatim, different shape
+> - `public/_redirects` + `public/_headers` **deleted** (Cloudflare-only formats; Vercel ignores them)
+>
+> **AIza scan**
+> - **Moved into `npm run build` script** via `node scripts/scan-aiza.mjs` — runs on BOTH GitHub Actions CI AND Vercel's build runner; neither can ship a bundle containing a Gemini-key-shape string without exiting non-zero
+> - New file: `scripts/scan-aiza.mjs` (Node ES module, SPDX header, same regex `AIza[0-9A-Za-z_-]{35}`)
+> - `__fixtures__/aiza-secret-leak.txt` synthetic fixture + `__fixtures__/__tests__/aiza-regex.test.ts` unit test **unchanged** (still verifies regex shape)
+> - `.github/workflows/ci.yml` reverted to original 32-line `ci`-job-only shape (no `deploy` job, no `upload-artifact`)
+>
+> **What stays unchanged from the original Cloudflare-era plan**
+> - `src/lib/env.ts` + `isHostedMode()` helper (Plan 10-1 / commit `7f5e3e0`)
+> - `__fixtures__/aiza-secret-leak.txt` + regex unit test (Plan 10-1 / commit `311c574`)
+> - `VITE_HOSTED_MODE` semantics (strict `'true'` equality; set via Vercel project env-var dashboard instead of CI workflow env)
+> - CSP policy content (`default-src 'none'; script-src 'self'; ...` — verbatim same string)
+> - Every-push-to-main auto-deploy + PR previews semantics
+>
+> **Files affected by the pivot (post-pivot state)**
+> - Reverted: commits `9eba387`, `376a273`
+> - Deleted: `public/_redirects`, `public/_headers`
+> - Created: `vercel.json`, `scripts/scan-aiza.mjs`
+> - Modified: `package.json` (build script + new `scan:aiza` script), `README.md` (Vercel section), `.planning/research/STACK.md` (pivot note)
+>
+> ---
+>
+> The original Cloudflare-era decisions below are PRESERVED for traceability; treat as superseded.
+
 <domain>
 ## Phase Boundary
 

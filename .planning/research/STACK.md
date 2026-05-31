@@ -38,9 +38,11 @@
 
 Netlify is the backup if Cloudflare Pages has a service issue or the project hits an operational problem. Same developer experience, same `_headers` file support, no credit card. The 100 GB bandwidth cap is acceptable for a fallback scenario. Commercial use explicitly permitted on the free plan.
 
-#### Why Vercel is not recommended
+#### Why Vercel is not recommended (superseded — see PIVOT note below)
 
 Vercel Hobby explicitly prohibits commercial use in its ToS. AussieLedger is borderline (free open-source tool, but it assists with tax compliance which has a commercial context). Not worth the policy risk.
+
+> **PIVOT 2026-06-01:** User selected **Vercel** as the v1.2 public host, on the **Hobby (free) tier**, with explicit ToS acknowledgement. Deploy uses Vercel's native GitHub integration (no GitHub Actions deploy job, no Cloudflare API token). Custom domain `aussieledger.techtaitan.com` already pointed at the Vercel project. Cloudflare-format `_headers` + `_redirects` replaced by single `vercel.json` containing equivalent CSP + security headers + SPA rewrites. AIza secret-leak scan moved from a Cloudflare-specific CI step into the `npm run build` script (`scripts/scan-aiza.mjs`) so it runs on both GitHub Actions AND Vercel's build runner. ToS risk noted; user accepts.
 
 #### Why GitHub Pages is not the primary
 

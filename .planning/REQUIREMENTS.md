@@ -12,10 +12,10 @@
 
 Deploy the SPA to a free static host with auto-deploy from `main`. CI defends against accidental secret leaks. Build flag gates hosted-vs-self-host divergence.
 
-- [ ] **HOST-01**: AussieLedger SPA is hosted on Cloudflare Pages at a public URL with GitHub Actions auto-deploy on push to `main` (workflow file `.github/workflows/deploy.yml` using `cloudflare/wrangler-action@v3` with `command: pages deploy dist --project-name=aussieledger`). Includes `_redirects` file `/* /index.html 200` for SPA route fallback + `_headers` file with `Content-Security-Policy` setting `connect-src 'self' https://generativelanguage.googleapis.com` (defense against XSS-exfiltration of user-supplied API keys).
-- [ ] **HOST-02**: Post-build CI step greps `dist/` for `AIza` patterns (Gemini API key shape); fails the build if any match. Defensive against the CVE-2023-46115 analog (a contributor accidentally setting `VITE_GEMINI_API_KEY` in the CI environment would otherwise ship the key to every user). Implemented as a step in the deploy workflow.
+- [x] **HOST-01**: AussieLedger SPA is hosted on **Vercel** (Hobby tier, ToS-acknowledged) at a public URL with auto-deploy on push to `main` via Vercel's native GitHub integration (no GitHub Actions deploy job). Single `vercel.json` at repo root configures (a) `rewrites: [{ source: "/(.*)", destination: "/index.html" }]` for SPA route fallback, and (b) `headers[0]` with the full pragmatic-strict `Content-Security-Policy` setting `connect-src 'self' https://generativelanguage.googleapis.com` plus HSTS + X-Content-Type-Options + Referrer-Policy + Permissions-Policy + X-Frame-Options. Defense against XSS-exfiltration of user-supplied API keys. **Complete 2026-06-01 (pivot from Cloudflare):** `vercel.json` shipped in commit `25320c4`; Vercel project + custom domain already live (see HOST-04). Originally planned for Cloudflare Pages; pivoted to Vercel per user choice with custom domain `aussieledger.techtaitan.com` configured.
+- [x] **HOST-02**: `npm run build` script invokes `node scripts/scan-aiza.mjs` post-build, which greps `dist/` for `AIza[0-9A-Za-z_-]{35}` patterns (Gemini API key shape) and exits 1 on any match. Runs on BOTH GitHub Actions CI AND Vercel's build runner — defensive against the CVE-2023-46115 analog (a contributor accidentally setting `VITE_GEMINI_API_KEY` in any build environment would otherwise ship the key to every user). **Complete 2026-06-01 (Vercel pivot):** moved from Cloudflare-specific CI step into the build script itself in commit `ff7d41c`; same regex shape as Plan 10-1's fixture test; scan-against-clean-bundle smoke verified locally.
 - [x] **HOST-03**: Build-time `VITE_HOSTED_MODE` flag (boolean). When `true` (hosted Cloudflare build), the SPA renders the user-supplied AI key UI (AI-01) and shows iOS Safari ITP disclosure (IDB-04). When `false` (default; matches v1.0/v1.1 self-host build), the SPA behaves as today (env-var key only, no hosted-specific banners). Single source of truth; one `import.meta.env.VITE_HOSTED_MODE` check. **Complete 2026-05-31 (Plan 10-1):** `isHostedMode()` helper landed in `src/lib/env.ts` with strict `=== 'true'` equality; 7 unit tests cover `'true'` / `'false'` / undefined / `''` / `'1'` / `'TRUE'` / `'true '` boundary cases; build-flag (compile-time) vs StorageAdapter runtime probe explicitly separated in module doc. Downstream Phase 12/13/14 code can `import { isHostedMode } from 'src/lib/env'` immediately. The CI build env that sets `VITE_HOSTED_MODE: 'true'` ships in Plan 10-2.
-- [ ] **HOST-04**: A custom domain (e.g. `aussieledger.com.au` or `aussieledger.app`) routes to the Cloudflare Pages deployment. DNS configured via Cloudflare. Cert auto-renewed. README live-demo link points at the custom domain (not the `.pages.dev` default).
+- [x] **HOST-04**: Custom domain **`aussieledger.techtaitan.com`** routes to the Vercel deployment. DNS + cert handled by Vercel (auto-renewed). README live-demo link points at the custom domain (commit `408e943`). **Complete 2026-06-01 (early — was scheduled for Phase 14):** user already configured the domain at Vercel project setup time; HOST-04 closes at Phase 10 instead of Phase 14, reducing Phase 14 scope by one requirement.
 
 ### IndexedDB Hardening (IDB)
 
@@ -80,10 +80,10 @@ Confirmed by `/gsd:roadmapper` on 2026-05-31. Each REQ-ID maps to exactly one ph
 
 | Req | Phase | Status |
 |-----|-------|--------|
-| HOST-01 | Phase 10 | Pending |
-| HOST-02 | Phase 10 | Pending |
-| HOST-03 | Phase 10 | Complete (10-1) |
-| HOST-04 | Phase 14 | Pending |
+| HOST-01 | Phase 10 | Complete (10-pivot 2026-06-01) |
+| HOST-02 | Phase 10 | Complete (10-pivot 2026-06-01) |
+| HOST-03 | Phase 10 | Complete (10-1 2026-05-31) |
+| HOST-04 | Phase 10 (was Phase 14) | Complete (10-pivot 2026-06-01) |
 | IDB-01 | Phase 11 | Pending |
 | IDB-02 | Phase 11 | Pending |
 | IDB-03 | Phase 11 | Pending |
@@ -100,4 +100,4 @@ Confirmed by `/gsd:roadmapper` on 2026-05-31. Each REQ-ID maps to exactly one ph
 **Total v1.2 requirements: 16**
 **Phase coverage: 10 through 14 (5 phases continuing from v1.1's 7–9)**
 
-**Note on HOST-04:** Custom domain assigned to Phase 14 rather than Phase 10 because the README live-demo link (POL-04) needs to point at the custom domain. Phase 10 ships the default `.pages.dev` URL; Phase 14 swaps to the custom domain + updates the README.
+**Note on HOST-04 (superseded):** Originally assigned to Phase 14 so the README live-demo link (POL-04) could point at the custom domain after Phase 10 shipped the `.pages.dev` URL. The 2026-06-01 Vercel pivot dissolved this dependency — the user configured `aussieledger.techtaitan.com` at Vercel project setup time, so HOST-04 was satisfied during the Phase 10 pivot bundle and the README live-demo link was added to point at the custom domain directly (commit `408e943`). POL-04 (the full audience-first README rewrite) still belongs to Phase 14.
