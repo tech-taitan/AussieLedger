@@ -57,22 +57,6 @@ Windows dev note: `npm run dev:full` requires Visual Studio Build Tools for the 
 
 If `GEMINI_API_KEY` is set in `.env.local` (single-user) or as a server env var (small-firm), the TB import shows an "AI re-match accounts" button. Without a key, you'll see a one-line note saying AI suggestions are disabled — the rest of the app works exactly the same.
 
-## Self-host your own deploy
-
-The repo's CI/CD pipeline auto-deploys every push to `main` to Cloudflare Pages at `https://aussieledger.pages.dev`. If you want to fork the repo and deploy your own instance to your own Cloudflare account, you need three things:
-
-1. **A Cloudflare Pages project** named `aussieledger` (or rename it and update `--project-name=` in `.github/workflows/ci.yml`). Create it in the [Cloudflare Pages dashboard](https://dash.cloudflare.com) → "Create application" → "Pages" → "Upload assets" (direct-upload mode; not git-connected — GitHub Actions handles the trigger).
-
-2. **A fine-grained Cloudflare API token** scoped to the Pages project. Create at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens) → "Create Custom Token" with permissions `Account > Cloudflare Pages > Edit` + `Account > Account Settings > Read`.
-
-3. **Two GitHub Secrets** on your fork (Settings → Secrets and variables → Actions):
-   - `CLOUDFLARE_API_TOKEN` — the token from step 2
-   - `CLOUDFLARE_ACCOUNT_ID` — visible in the Cloudflare dashboard's right sidebar
-
-After that, push to `main` and watch the `deploy` job in `.github/workflows/ci.yml` ship to your `<your-project>.pages.dev` URL. Pull requests get separate preview deploys at `pr-{N}.<your-project>.pages.dev`.
-
-The pipeline includes a defensive `AIza` scan that blocks any build where a Gemini API key shape ends up in `dist/` — see [PITFALLS.md §1](./.planning/research/PITFALLS.md) for the security rationale. Never set `VITE_GEMINI_API_KEY` (or any `VITE_`-prefixed secret) in your CI environment.
-
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for dev setup, test patterns, the hard schema-migration rule, and how to add a new FY.
