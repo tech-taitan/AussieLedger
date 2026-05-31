@@ -76,7 +76,7 @@ First-visit UX + demo data + privacy page + README rewrite — turns the deploye
 
 ## Traceability
 
-Filled by `/gsd:roadmapper`. Each REQ-ID maps to exactly one phase.
+Confirmed by `/gsd:roadmapper` on 2026-05-31. Each REQ-ID maps to exactly one phase. Coverage: 16/16 — no orphans, no duplicates.
 
 | Req | Phase | Status |
 |-----|-------|--------|
