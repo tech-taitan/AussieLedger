@@ -50,6 +50,20 @@ export function nowIso(): string {
   return _nowProvider().toISOString();
 }
 
+/**
+ * ISO-8601 UTC timestamp `days` days from the provider clock. Use for snooze
+ * arithmetic and other "N days from now" timestamps so the structural-lint
+ * invariant ("no new Date() outside src/lib/period.ts") holds and tests can
+ * inject deterministic timestamps via _setNowProvider(). Negative `days`
+ * returns a past timestamp.
+ *
+ * Added Plan 11-2 for useBackupNag's snooze-button arithmetic (today + 7 days).
+ */
+export function addDaysIso(days: number): string {
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  return new Date(_nowProvider().getTime() + days * MS_PER_DAY).toISOString();
+}
+
 // ── FY label helpers ───────────────────────────────────────────────────────
 /**
  * Return the FY label for the given date.

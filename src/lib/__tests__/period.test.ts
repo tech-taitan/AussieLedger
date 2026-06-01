@@ -216,3 +216,19 @@ describe('nowIso', () => {
     expect(Math.abs(bMs - aMs)).toBeLessThan(1000);
   });
 });
+
+describe('addDaysIso', () => {
+  afterEach(() => {
+    period._resetNowProvider();
+  });
+
+  it('returns ISO timestamp `days` days from the provider clock (positive days)', () => {
+    period._setNowProvider(() => new Date('2026-06-15T10:30:00.000Z'));
+    expect(period.addDaysIso(7)).toBe('2026-06-22T10:30:00.000Z');
+  });
+
+  it('returns the current provider clock when days=0', () => {
+    period._setNowProvider(() => new Date('2026-06-15T10:30:00.000Z'));
+    expect(period.addDaysIso(0)).toBe('2026-06-15T10:30:00.000Z');
+  });
+});
