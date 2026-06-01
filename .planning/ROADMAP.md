@@ -1,6 +1,6 @@
 # Roadmap: AussieLedger
 
-**Last updated:** 2026-06-01 (Phase 13 Plan 13-1 complete — PWA icons + vite-plugin-pwa config + manifest + 3 contract tests; PWA install path unlocked; 1114 SPA GREEN; awaiting Plan 13-2 UpdateBanner + Lighthouse smoke)
+**Last updated:** 2026-06-02 (Phase 13 COMPLETE — UpdateBanner + useUpdateBanner hook landed in Plan 13-2; user smoke-verified Lighthouse PWA audit (Installable + PWA Optimized both PASS) + UpdateBanner update flow + npm-run-dev SW absence; PWA-01 closed end-to-end; 1128 SPA GREEN; Phase 14 next)
 
 ## Milestones
 
@@ -37,7 +37,7 @@
 - [x] **Phase 10: Public Build + CI/CD (Cloudflare→Vercel pivot)** — SPA LIVE at https://aussieledger.techtaitan.com — completed 2026-06-01 (HOST-04 closed early)
 - [x] **Phase 11: IndexedDB Hardening** — persist grant + quota disclosure + backup-nag + iOS ITP disclosure + pre-unload guard with settle-point flush — completed 2026-06-01 (user smoke-verified live deploy)
 - [~] **Phase 12: ~~User-Supplied AI Key + Direct-Browser Gemini~~** — **DEFERRED to v5** (2026-06-01); AI-01/02 moved to Future Requirements. v1.2 effectively skips this phase.
-- [~] **Phase 13: PWA Wrapper** — service worker + manifest + stale-cache prevention + update banner (in progress; Plan 13-1 COMPLETE 2026-06-01 — icons + VitePWA config + manifest + 3 contract tests; Plan 13-2 NEXT — UpdateBanner + useUpdateBanner hook + Lighthouse smoke)
+- [x] **Phase 13: PWA Wrapper** — service worker + manifest + stale-cache prevention + UpdateBanner update flow + Lighthouse smoke — completed 2026-06-02 (Plan 13-1 install path + Plan 13-2 UpdateBanner + useUpdateBanner hook; user smoke-verified Lighthouse Installable + PWA Optimized both PASS, npm-run-dev SW absence confirmed, end-to-end UpdateBanner flow incl. B-1 sessionStorage-persists-within-tab lock approved)
 - [ ] **Phase 14: Release Polish** — first-visit UX + `/demo` route + `/privacy` page + README rewrite (HOST-04 already done in Phase 10)
 
 ## Phase Details
@@ -182,9 +182,9 @@ Plans:
 3. `npm run dev` behaviour is unchanged — no service worker is registered in development mode; HMR continues to work normally
 4. An iOS Safari user on the deployed URL sees an in-app contextual prompt explaining "Add to Home Screen" (Share menu path) when `navigator.standalone` is false; installing to the home screen launches the app in standalone mode
 
-**Plans:** 2 plans planned 2026-06-01 (checker PASS round 2 — both B-1 + R-2 resolved):
+**Plans:** 2 plans (both complete; checker PASS round 2 — B-1 + R-2 resolved):
 - 13-1 (COMPLETE 2026-06-01): Icons + vite-plugin-pwa config + manifest + pwa-config structural test — 3 tasks, +30 SPA GREEN
-- 13-2 (NEXT): UpdateBanner + useUpdateBanner hook + App.tsx wiring + Lighthouse smoke — 3 tasks (Wave 2)
+- 13-2 (COMPLETE 2026-06-02): UpdateBanner + useUpdateBanner hook + App.tsx wiring + Lighthouse smoke — 3 tasks (Wave 2), +14 SPA GREEN, user manual smoke approved (Lighthouse Installable + PWA Optimized both PASS; npm-run-dev SW absence verified; end-to-end UpdateBanner update flow verified incl. B-1 sessionStorage-persists-within-tab lock)
 
 ---
 
@@ -223,7 +223,7 @@ Plans:
 | 10. Public Build + CI/CD (Cloudflare→Vercel pivot) | v1.2 | 2/2 | Complete | 2026-06-01 |
 | 11. IndexedDB Hardening | v1.2 | 2/2 | Complete | 2026-06-01 |
 | 12. ~~User-Supplied AI Key + Direct-Browser Gemini~~ | v1.2 | - | DEFERRED → v5 | 2026-06-01 |
-| 13. PWA Wrapper | v1.2 | 1/2 | In Progress | 13-1 done 2026-06-01 |
+| 13. PWA Wrapper | v1.2 | 2/2 | Complete | 2026-06-02 |
 | 14. Release Polish | v1.2 | 0/TBD | Not started (HOST-04 already done in Phase 10) | - |
 
 ## Research Flags

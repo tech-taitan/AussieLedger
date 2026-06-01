@@ -2,22 +2,22 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
-current_phase: 13
-current_plan: 13-2
-status: in-progress
-stopped_at: "Plan 13-1 COMPLETE 2026-06-01T12:38Z — icons + VitePWA config + manifest + 3 contract tests; 30 new GREEN tests; commits e5e60bd/c8abf69/2a59385 all CI GREEN. Ready for Plan 13-2 (UpdateBanner + useUpdateBanner hook + Lighthouse smoke — Wave 2)."
-last_updated: "2026-06-01T12:38:00Z"
+current_phase: 14
+current_plan: null
+status: phase-complete-ready-to-plan-next
+stopped_at: "Plan 13-2 COMPLETE 2026-06-02 — UpdateBanner + useUpdateBanner hook + App.tsx wiring landed; user smoke-verified Lighthouse PWA audit (Installable + PWA Optimized both PASS) + UpdateBanner update flow (incl. B-1 sessionStorage-persists-within-tab lock) + npm-run-dev SW absence at https://aussieledger.techtaitan.com after Vercel auto-deploy. Phase 13 COMPLETE; PWA-01 closed end-to-end. 5 commits (47c9146/1587702/70d892a/2c66663/ca4e064); CI runs 26756246108 + 26756492360 both GREEN. 1128 SPA GREEN + 11 todo + 0 RED. Phase 14 (Release Polish — POL-01..04) next."
+last_updated: "2026-06-02T20:10:00Z"
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 7
 ---
 
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
-**Last updated:** 2026-06-01T12:38Z (Plan 13-1 COMPLETE — PWA icons + vite-plugin-pwa config + manifest + 3 contract tests landed; 1114 SPA GREEN + 11 todo + 0 RED; commits e5e60bd/c8abf69/2a59385 all CI GREEN on origin/main; Plan 13-2 next)
+**Last updated:** 2026-06-02T20:10Z (Plan 13-2 COMPLETE — UpdateBanner + useUpdateBanner hook landed; user smoke-verified Lighthouse PWA + UpdateBanner flow; PWA-01 closed end-to-end; Phase 13 DONE; 1128 SPA GREEN + 11 todo + 0 RED; commits 47c9146/1587702/70d892a/2c66663/ca4e064 — head-commit CI runs 26756246108 + 26756492360 both GREEN on origin/main; Phase 14 next)
 
 ---
 
@@ -33,16 +33,16 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 13 — PWA Wrapper (Plan 13-1 COMPLETE; Plan 13-2 next)
-**Current plan:** 13-2 (UpdateBanner + useUpdateBanner hook + App.tsx wiring + Lighthouse smoke)
+**Current phase:** Phase 14 — Release Polish (next up; POL-01..04 remaining)
+**Current plan:** none (Phase 13 closed; awaiting `/gsd:plan-phase 14`)
 **Phase 10 status:** COMPLETE 2026-06-01 — Cloudflare→Vercel pivot shipped + live-verified at `https://aussieledger.techtaitan.com`; HOST-01/02/03/04 closed; 10 commits total
 **Phase 11 status:** COMPLETE 2026-06-01 — IDB hardening shipped + user smoke-verified; IDB-01..05 all closed; 10 commits total (4 from Plan 11-1 + 6 from Plan 11-2)
 **Phase 12 status:** DEFERRED to v5 (2026-06-01) — AI-01/02 moved to Future Requirements; phase numbering preserved (no renumber) for commit-history stability; AiGateNote copy updated for honest hosted-mode messaging
-**Phase 13 status:** IN PROGRESS — Plan 13-1 COMPLETE 2026-06-01T12:38Z (icons + VitePWA config + manifest + 3 contract tests; 30 new GREEN); Plan 13-2 NEXT (Wave 2 — UpdateBanner + useUpdateBanner + Lighthouse smoke)
-**Phase 14 status:** Not started (HOST-04 closed early in Phase 10; remaining requirements: POL-01..04)
-**Last session:** 2026-06-01T12:38:00Z
-**Stopped at:** Plan 13-1 closed (3 tasks; commits e5e60bd/c8abf69/2a59385 — all CI GREEN). Ready for Plan 13-2 (Wave 2). PWA install path is unlocked: dist/sw.js + dist/workbox-*.js emitted, dist/manifest.webmanifest contains locked CONTEXT values, 5 icons committed in public/.
-**Overall progress:** v1.2: 2/4 phases complete (Phase 10 + Phase 11 done; Phase 12 deferred); Phase 13 1/2 plans done. 9/15 active v1.2 requirements complete (HOST-01..04 + IDB-01..05); PWA-01 half-shipped (install path GREEN; UpdateBanner pending Plan 13-2). 5 remaining v1.2 requirements (PWA-01 full close, POL-01..04). Run `/gsd:execute-phase 13` to continue with Plan 13-2.
+**Phase 13 status:** COMPLETE 2026-06-02 — PWA install path + UpdateBanner + update flow shipped + user smoke-verified (Lighthouse Installable + PWA Optimized both PASS; npm-run-dev SW absence confirmed; end-to-end UpdateBanner flow incl. B-1 sessionStorage-persists-within-tab lock); PWA-01 closed end-to-end; 8 commits total (3 from Plan 13-1 + 5 from Plan 13-2)
+**Phase 14 status:** NEXT UP — Release Polish; HOST-04 closed early in Phase 10; remaining requirements: POL-01..04
+**Last session:** 2026-06-02T20:10:00Z
+**Stopped at:** Plan 13-2 closed (3 tasks — 2 auto TDD + 1 checkpoint:human-verify approved by user). Commits 47c9146 (test RED) / 1587702 (hook GREEN) / 70d892a (test RED) / 2c66663 (component GREEN) / ca4e064 (App wire). Head-commit CI runs 26756246108 + 26756492360 both GREEN. PWA-01 fully closed end-to-end. Phase 13 COMPLETE — ready for `/gsd:plan-phase 14` (Release Polish — POL-01..04: first-visit trust banner + `/demo` isolated-IDB route + `/privacy` page + README rewrite).
+**Overall progress:** v1.2: 3/4 phases complete (Phase 10 + Phase 11 + Phase 13 done; Phase 12 deferred). 10/14 active v1.2 requirements complete (HOST-01..04 + IDB-01..05 + PWA-01). 4 remaining v1.2 requirements (POL-01..04 in Phase 14). Run `/gsd:plan-phase 14` to begin the final v1.2 phase.
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -51,8 +51,8 @@ v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
 v1.1:  [Phase 7] [Phase 8] [Phase 9]
        [ DONE  ] [ DONE  ] [ DONE  ]
 
-v1.2:  [Phase 10] [Phase 11] [Phase 12]   [Phase 13   ] [Phase 14]
-       [ DONE  ] [ DONE  ] [DEFERRED→v5] [13-1 DONE  ] [PENDING ]
+v1.2:  [Phase 10] [Phase 11] [Phase 12]   [Phase 13] [Phase 14]
+       [ DONE  ] [ DONE  ] [DEFERRED→v5] [ DONE   ] [PENDING ]
 
 v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 ```
@@ -66,18 +66,19 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | 10 | Public Build + CI/CD (Cloudflare→Vercel pivot) | SPA LIVE at `https://aussieledger.techtaitan.com`; vercel.json CSP+headers+rewrites; AIza scan in npm build; `VITE_HOSTED_MODE` flag; custom domain configured (HOST-04 early) | DONE 2026-06-01 |
 | 11 | IndexedDB Hardening | `persist()` grant; quota disclosure; backup-nag hook; iOS ITP banner; `beforeunload`+visibilitychange guard with settle-point flush | DONE 2026-06-01 |
 | ~~12~~ | ~~User-Supplied AI Key + Direct-Browser Gemini~~ | Deferred — AI not available on hosted version until v5; self-host AI unchanged | DEFERRED → v5 (2026-06-01) |
-| 13 | PWA Wrapper | `vite-plugin-pwa` + manifest + SW stale-cache prevention + update banner | IN PROGRESS — 13-1 DONE 2026-06-01 (install path); 13-2 next (UpdateBanner) |
+| 13 | PWA Wrapper | `vite-plugin-pwa` + manifest + SW stale-cache prevention + UpdateBanner update flow + Lighthouse smoke | DONE 2026-06-02 — 13-1 (install path) + 13-2 (UpdateBanner + user-verified Lighthouse PWA audit) |
 | 14 | Release Polish + Custom Domain | First-visit trust banner; `/demo` isolated IDB; `/privacy` page; README rewrite; custom domain | Not started |
 
 ---
 
 ## Performance Metrics
 
-- Plans completed: 5 / Plans total in v1.2: 2 (Phase 10) + 2 (Phase 11) + 2 (Phase 13) + TBD (Phase 14); Phase 12 deferred
-- Phases complete: 2/5 (Phase 10 + Phase 11); Phase 13 in progress (1/2 plans done)
+- Plans completed: 7 / Plans total in v1.2: 2 (Phase 10) + 2 (Phase 11) + 2 (Phase 13) + TBD (Phase 14); Phase 12 deferred
+- Phases complete: 3/5 (Phase 10 + Phase 11 + Phase 13); Phase 14 pending
 - Requirements mapped: 16/16 v1.2 requirements — all phases 10–14 covered
-- Requirements complete: 9/14 active (HOST-01..04 — Phase 10; IDB-01..05 — Phase 11). PWA-01 install path landed in 13-1; full PWA-01 closure pending 13-2.
+- Requirements complete: 10/14 active (HOST-01..04 — Phase 10; IDB-01..05 — Phase 11; PWA-01 — Phase 13). 4 remaining: POL-01..04 (Phase 14).
 - All IDB-01..05 closed end-to-end via Plan 11-1 (helpers) + Plan 11-2 (UI/event wiring + REQUIREMENTS IDB-05 italic disclosure)
+- PWA-01 closed end-to-end via Plan 13-1 (install path + 3 contract tests) + Plan 13-2 (UpdateBanner + useUpdateBanner hook + Lighthouse smoke approved by user)
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
@@ -86,6 +87,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | 11 | 11-1 | ~17min | 4 (4 auto, no checkpoints) | 6 (2 created, 4 modified) | 1027 SPA (+28 from baseline 999) |
 | 11 | 11-2 | ~30min | 6 (5 auto + 1 verification) | 13 (5 created, 8 modified) | 1083 SPA (+56 from baseline 1027) |
 | 13 | 13-1 | ~21min | 3 (3 auto, no checkpoints) | 14 (10 created, 4 modified) | 1114 SPA (+30 from baseline 1084 — 9 pwa-manifest + 4 pwa-index-html + 17 pwa-config) |
+| 13 | 13-2 | ~75min (incl. user manual smoke at checkpoint) | 3 (2 auto TDD + 1 checkpoint:human-verify) | 6 (5 created, 1 modified) | 1128 SPA (+14 from baseline 1114 — 6 useUpdateBanner + 6 UpdateBanner + 2 SPDX-headers parametric rows) |
 
 **v1.1 baseline (carried forward):** 983 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
 
@@ -94,6 +96,8 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 **Post Phase 11 Plan 11-1:** 1027 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 (incl. AIza scan). LocalAdapter exposes 4 new duck-typed accessors (getPersistGranted, getStorageEstimate, getLastWriteAt, setLastWriteAt). period.ts adds nowIso() — single source of ISO timestamps. Legacy-migration now passes { silent: true } to importAll. Structural-lint test at src/lib/__tests__/structural-lint-period.test.ts locks the no-bare-new-Date invariant (additive to the existing src/__tests__/structural.test.ts:67 enforcement). CI runs 26733364938 / 26733475166 / 26733700927 all GREEN on origin/main.
 
 **Post Phase 11 Plan 11-2:** 1083 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 (incl. AIza scan). useBackupNag hook (once per App mount; 7d desktop / 5d iOS Safari; empty-adapter + snooze + threshold suppression) + IosItpBanner (4-gate matrix + verbatim CONTEXT-locked copy + sessionStorage per-session dismiss) wired through DataPage (Storage Budget + Storage Protection rows + IosItpBanner mount + handleImport explicit setLastWriteAt(nowIso()) bump + handleExport snooze-clear). App.tsx mounts useBackupNag + isDirty derivation via [entities, journals, auditLogs, accounts] dep-list re-poll + conditional [isDirty]-dep useEffect that registers beforeunload + visibilitychange listener PAIR only when dirty (Firefox bfcache preserved); beforeunload calls preventDefault+returnValue=''; visibilitychange performs Blocker 2 REAL settle-point fire-and-forget `await adapter.getLastWriteAt()` flush wrapped in try/catch. Toast widened with optional `actions?: ReactNode` slot (existing tone='info'|'warn' callers unchanged). period.ts adds addDaysIso(days) helper so snooze arithmetic stays inside the structural-lint invariant. REQUIREMENTS.md IDB-05 gains trailing italic note disclosing visibilitychange-vs-beforeunload capability division (settle-point IDB read vs are-you-sure dialog). CI runs 26734153604 / 26734203565 / 26734254976 / 26734354506 / 26734775190 all GREEN on origin/main. All 5 IDB-01..05 requirements closed end-to-end; all 5 ROADMAP Phase 11 success criteria met; all 13 plan-level verification greps PASS.
+
+**Post Phase 13 Plan 13-2:** 1128 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 (incl. AIza scan against the SW-expanded dist/). useUpdateBanner React hook lands at src/hooks/useUpdateBanner.ts (~118 lines, SPDX header) — wires registerSW({onNeedRefresh, onOfflineReady}) from virtual:pwa-register EXACTLY ONCE per App mount via a runtime-variable-indirected dynamic import (`const pwaModuleId = 'virtual:pwa-register'; await import(/* @vite-ignore */ pwaModuleId)` — defeats Vite's import-analysis transform pass from statically resolving the literal specifier; falls open to no-op updateSWRef in jsdom where vite-plugin-pwa isn't loaded). Exports PWA_UPDATE_SNOOZE_KEY = 'aussieledger:pwa-update-snoozed' constant + __setRegisterSWForTests injectable test seam (named export; matches the Phase 11 _setNowProvider precedent). State machine: useState(needRefresh) + useState(readSnoozed()) + useRef(updateSW); visible derived as `needRefresh && !snoozed`. triggerUpdate() calls `void updateSWRef.current?.(true)` (SKIP_WAITING postMessage + reload; void silences TS no-floating-promises; optional chain guards pre-load/test envs). snooze() writes sessionStorage + setSnoozed(true) for immediate re-render. onOfflineReady is intentionally silent per CONTEXT anti-nag. UpdateBanner component lands at src/components/UpdateBanner.tsx (~62 lines, SPDX header) — consumes useUpdateBanner(); returns null when !visible (no DOM cost in default app state — preserves App.test.tsx + App.beforeunload.test.tsx snapshots); renders single role='status' div with className `fixed top-0 left-0 right-0 z-50 flex items-center gap-3 bg-stone-50 border-b border-stone-300 text-stone-700 px-4 py-2 text-sm shadow-sm` + lucide RefreshCw icon + verbatim CONTEXT-locked copy "A new version of AussieLedger is available." + Update button (bg-blue-600, calls triggerUpdate) + Later button (underline neutral, calls snooze). Fixed top-0 z-50 floats above MainLayout chrome without touching MainLayout interface (truth #12/#13 — accepted brief Header overlap when banner is visible, which is rare). src/vite-env.d.ts created with two triple-slash directives (vite/client + vite-plugin-pwa/client; intentionally no SPDX per VERIFICATION invariant (e) — triple-slash directive file convention). src/App.tsx wiring SURGICALLY MINIMAL: +1 import (`import { UpdateBanner } from './components/UpdateBanner'`) + 1 JSX line (`<UpdateBanner />` as first child of returned fragment, before MainLayout) — diff is +2 lines, 0 deletions. Phase 11 IDB-05 wiring byte-identical to post-11-2 state (useBackupNag / isDirty derivation / [isDirty]-dep conditional listener pair / beforeunload preventDefault / visibilitychange settle-point flush via `await maybe.getLastWriteAt()` / Toast actions slot render) — regression-guard grep returns 21 hits well over the ≥8 threshold. Plan 13-1 pwaOptions UNCHANGED (PITFALLS §3 HARDBLOCK + Pitfall #12 + devOptions.enabled:false + injectRegister:false stay verbatim; the latter is what authorises Plan 13-2 to take registerSW lifecycle control). IosItpBanner UNCHANGED (auto-hides on standalone is the free side-effect of PWA install path). vercel.json UNCHANGED (SW is same-origin; existing CSP covers it). 6 hook tests (Test 1 onNeedRefresh flip; Test 2 onOfflineReady silent; Test 3 snooze writes sessionStorage + flips visible; Test 4 pre-set sessionStorage suppresses; Test 5 triggerUpdate calls updateSW(true); Test 6 = Hook Test #6 canonical Smoke C lock — snooze persists across hook unmount+remount within session) + 6 component tests (Test 1 hidden by default; Test 2 verbatim copy + 3 testids when visible; Test 3 Update click invokes triggerUpdate; Test 4 Later click invokes snooze; Test 5 role='status'; Test 6 className matches all 5 positioning classes — locks the truth #12/#13 decision against regression) all GREEN. +2 SPDX-headers parametric rows (one per new .ts/.tsx source file). 5 commits: 47c9146 (test RED hook), 1587702 (feat GREEN hook), 70d892a (test RED component), 2c66663 (feat GREEN component), ca4e064 (feat App wire). Head-commit CI runs 26756246108 + 26756492360 both GREEN on origin/main (intermediate commits piggybacked). One Rule-3 auto-fix applied + documented (the runtime-variable indirection for the dynamic import specifier — needed because vitest's import-analysis pass runs WITHOUT vite-plugin-pwa loaded and statically rejects the literal `'virtual:pwa-register'` specifier; the `/* @vite-ignore */` directive alone was insufficient because it's only honoured by Rollup's build pass, not the dev-server transform pass). User-verified manual smoke 2026-06-02: Smoke A (Lighthouse Installable + PWA Optimized both PASS at http://localhost:4174 in Chrome) + Smoke B (npm run dev shows EMPTY Service Workers list at localhost:3000) + Smoke C (end-to-end UpdateBanner flow — banner appears on new SW, Later hides it, same-tab reload keeps it hidden (B-1 lock), close+reopen tab restores it, Update reloads cleanly). User reply: `approved`. PWA-01 fully closed end-to-end.
 
 **Post Phase 13 Plan 13-1:** 1114 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 (incl. AIza scan against the SW-expanded dist/). vite-plugin-pwa@^1.3.0 + @resvg/resvg-js@^2.6.2 added to devDependencies; scripts/build-pwa-icons.mjs renders 5 deterministic PNGs into public/ via the hardcoded lucide Calculator SVG + resvg WASM (idempotent SHA-256 verified). public/ directory recreated (was deleted in Phase 10 Vercel pivot). vite.config.ts imports pwaOptions from new vite.pwa-options.ts (extracted module — single source of truth; type-only `import type` for VitePWAOptions so the module loads cleanly in jsdom without triggering vite/esbuild's TextEncoder invariant). pwaOptions locks PITFALLS §3 HARDBLOCK (skipWaiting+clientsClaim+cleanupOutdatedCaches ALL true) + Pitfall #12 (registerType:'prompt') + npm run dev SW absence (devOptions.enabled:false) + injectRegister:false (Plan 13-2 useUpdateBanner controls registerSW) + navigateFallbackDenylist [/^\/api\//] + CONTEXT-locked manifest values verbatim (name/short_name=AussieLedger; description; theme_color=#141414; background_color=#E4E3E0; display=standalone; start_url=/; categories=[finance, productivity]; 4 icons 2-standard+2-maskable). index.html gains `<link rel="apple-touch-icon" href="/apple-touch-icon.png">` and `<meta name="theme-color" content="#141414">`; no manual manifest link (vite-plugin-pwa auto-injects in dist/index.html). vite.config.ts define / resolve / server.proxy blocks UNCHANGED (Pitfall #1 HARDBLOCK preserved — `grep -c VITE_GEMINI vite.config.ts` returns 0). vercel.json CSP UNCHANGED. dist/ now contains sw.js + workbox-9c191d2f.js (14 precache entries / 1553 KiB) + manifest.webmanifest (locked values) + 5 icons. AIza scan still OK against expanded dist/. Three new contract tests: pwa-manifest.test.ts (9 GREEN — skipIf-gated on dist/manifest.webmanifest existence), pwa-index-html.test.ts (4 GREEN — source index.html shape lock + manual-manifest-absence proof), pwa-config.test.ts (17 GREEN — R-2 hardening: structural assert over pwaOptions runtime object; replaces three brittle grep guards that missed duplicate/commented-out drift). CI runs 26754601412 (e5e60bd) / 26754773456 (c8abf69) / 26755202643 (2a59385) all GREEN on origin/main. PWA install path (Lighthouse Installable) UNLOCKED; full PWA-01 closure pending Plan 13-2 (UpdateBanner + Lighthouse smoke). Three Rule-3 auto-fixes applied + documented (pwaOptions split into vite.pwa-options.ts for jsdom compatibility; pwa-config.test.ts narrows `manifest` to Partial<ManifestOptions> to satisfy `false | Partial<ManifestOptions>` TS union; npm install ran with --strict-ssl=false to work around local TLS interception).
 
