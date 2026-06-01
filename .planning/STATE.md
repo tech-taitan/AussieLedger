@@ -2,22 +2,22 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
-current_phase: 10
+current_phase: 11
 current_plan: null
-status: phase-shipped-pending-verify
-stopped_at: Phase 10 pivoted Cloudflare→Vercel and shipped (vercel.json + scan-aiza.mjs + README + custom domain aussieledger.techtaitan.com); HOST-01/02/03/04 all closed; awaiting user push + Vercel auto-deploy verification
+status: phase-complete-ready-to-plan-next
+stopped_at: Phase 10 COMPLETE (Cloudflare→Vercel pivot shipped + live-verified at https://aussieledger.techtaitan.com); HOST-01/02/03/04 all closed; next action /gsd:discuss-phase 11 or /gsd:plan-phase 11
 last_updated: "2026-06-01T00:00:00.000Z"
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
-**Last updated:** 2026-06-01 (Phase 10 PIVOT Cloudflare→Vercel — vercel.json + scan-aiza.mjs + README + custom domain shipped; HOST-01/02/03/04 closed; awaiting user push + Vercel auto-deploy verification)
+**Last updated:** 2026-06-01 (Phase 10 COMPLETE — Cloudflare→Vercel pivot shipped + live-verified at https://aussieledger.techtaitan.com; HOST-01/02/03/04 closed; Phase 11 next)
 
 ---
 
@@ -33,16 +33,16 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 10 — Public Build + CI/CD (originally Cloudflare Pages; pivoted to Vercel 2026-06-01)
-**Current plan:** none — Phase 10 deliverables shipped via pivot bundle; Plan 10-2's Cloudflare-specific commits (`9eba387`, `376a273`) reverted
-**Phase 10 status:** Shipped pending verify (HOST-01/02/03/04 closed; vercel.json + scan-aiza.mjs + README live; awaiting user `git push` + Vercel auto-deploy completion + manual smoke at `https://aussieledger.techtaitan.com`)
-**Phase 11 status:** Not started
+**Current phase:** Phase 11 — IndexedDB Hardening (not yet discussed/planned)
+**Current plan:** none — Phase 10 complete; awaiting `/gsd:discuss-phase 11` or `/gsd:plan-phase 11`
+**Phase 10 status:** COMPLETE 2026-06-01 — Cloudflare→Vercel pivot shipped + live-verified at `https://aussieledger.techtaitan.com`; HOST-01/02/03/04 closed; 6 pivot commits + 4 from Plan 10-1
+**Phase 11 status:** Not started — next up
 **Phase 12 status:** Not started
 **Phase 13 status:** Not started
-**Phase 14 status:** Not started (HOST-04 originally scoped here is now closed early; remaining: POL-01..04)
+**Phase 14 status:** Not started (HOST-04 closed early in Phase 10; remaining requirements: POL-01..04)
 **Last session:** 2026-06-01T00:00:00.000Z
-**Stopped at:** Phase 10 pivot bundle committed locally (commits `67157f7`, `27c33a5`, `25320c4`, `ff7d41c`, `408e943`, plus the pending planning-docs commit); user to `git push origin main` → Vercel auto-deploys → smoke `https://aussieledger.techtaitan.com` (CSP header present + SPA deep link works + console clean + `securityheaders.com` grade ≥ A)
-**Overall progress:** v1.2: 0/5 phases complete formally (Phase 10 ships HOST-01..04 plus Plan 10-1's local deliverables; Phase 11 next). After Phase 10 push + verify: 4/16 requirements complete.
+**Stopped at:** Phase 10 complete + live-verified. 10 commits ahead from this phase: 4 from Plan 10-1 + 6 from pivot bundle. Live deploy confirmed: 9/9 CSP directives present + all 6 security headers + SPA fallback works + AIza scan EXIT 0 in both CI and locally.
+**Overall progress:** v1.2: 1/5 phases complete (Phase 10 done). 4/16 requirements complete (HOST-01..04). Run `/gsd:discuss-phase 11` to scope the IDB Hardening phase, or `/gsd:plan-phase 11` directly if you'd rather skip discussion.
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -52,7 +52,7 @@ v1.1:  [Phase 7] [Phase 8] [Phase 9]
        [ DONE  ] [ DONE  ] [ DONE  ]
 
 v1.2:  [Phase 10] [Phase 11] [Phase 12] [Phase 13] [Phase 14]
-       [PENDING ] [PENDING ] [PENDING ] [PENDING ] [PENDING ]
+       [ DONE  ] [PENDING ] [PENDING ] [PENDING ] [PENDING ]
 
 v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 ```
@@ -63,7 +63,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 
 | Phase | Name | Key Outcome | Status |
 |-------|------|-------------|--------|
-| 10 | Public Build + CI/CD to Cloudflare Pages | SPA live on public URL; `VITE_HOSTED_MODE` flag; `AIza` CI scan; `_redirects` SPA fallback | Not started |
+| 10 | Public Build + CI/CD (Cloudflare→Vercel pivot) | SPA LIVE at `https://aussieledger.techtaitan.com`; vercel.json CSP+headers+rewrites; AIza scan in npm build; `VITE_HOSTED_MODE` flag; custom domain configured (HOST-04 early) | DONE 2026-06-01 |
 | 11 | IndexedDB Hardening | `persist()` grant; quota disclosure; backup-nag hook; iOS ITP banner; `beforeunload` guard | Not started |
 | 12 | User-Supplied AI Key + Direct-Browser Gemini | Settings AI key UI; `callGeminiMatchAccounts` routing helper; `AiGateNote` hosted-mode link | Not started |
 | 13 | PWA Wrapper | `vite-plugin-pwa` + manifest + SW stale-cache prevention + update banner | Not started |
@@ -73,18 +73,19 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 
 ## Performance Metrics
 
-- Plans completed: 1 / Plans total: 2 (Phase 10; subsequent phases not yet planned)
-- Phases complete: 0/5 (v1.2 phases)
+- Plans completed: 2 / Plans total: 2 (Phase 10 done; Phases 11–14 not yet planned)
+- Phases complete: 1/5 (Phase 10 — Cloudflare→Vercel pivot)
 - Requirements mapped: 16/16 v1.2 requirements — all phases 10–14 covered
-- Requirements complete: 1/16 (HOST-03)
+- Requirements complete: 4/16 (HOST-01, HOST-02, HOST-03, HOST-04 — HOST-04 closed early during Phase 10 pivot)
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
 | 10 | 10-1 | ~30min | 4 (3 auto + 1 checkpoint) | 8 (6 created, 2 modified) | 999 SPA (+16 from baseline) |
+| 10 | 10-2-pivot | ~90min (incl. blocked time) | 4 effective (2 reverts + 2 creates + 4 modifies + docs) | 8 unique | 999 SPA (unchanged) |
 
 **v1.1 baseline (carried forward):** 983 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
 
-**Post Plan 10-1:** 999 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
+**Post Phase 10:** 999 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 (incl. AIza scan). Live deploy verified at `https://aussieledger.techtaitan.com/` (9/9 CSP directives + 5/5 other security headers + SPA fallback all OK).
 
 ---
 

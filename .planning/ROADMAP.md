@@ -34,11 +34,11 @@
 
 ### v1.2 (In Progress)
 
-- [ ] **Phase 10: Public Build + CI/CD to Cloudflare Pages** — SPA live on public URL with secret-leak protection and SPA-routing fallback
+- [x] **Phase 10: Public Build + CI/CD (Cloudflare→Vercel pivot)** — SPA LIVE at https://aussieledger.techtaitan.com — completed 2026-06-01 (HOST-04 closed early)
 - [ ] **Phase 11: IndexedDB Hardening** — persist grant + quota disclosure + backup-nag + iOS ITP disclosure + pre-unload guard
 - [ ] **Phase 12: User-Supplied AI Key + Direct-Browser Gemini** — Settings AI key UI + `callGeminiMatchAccounts` routing helper
 - [ ] **Phase 13: PWA Wrapper** — service worker + manifest + stale-cache prevention + update banner
-- [ ] **Phase 14: Release Polish + Custom Domain** — first-visit UX + `/demo` route + `/privacy` page + README rewrite + custom domain
+- [ ] **Phase 14: Release Polish** — first-visit UX + `/demo` route + `/privacy` page + README rewrite (HOST-04 already done in Phase 10)
 
 ## Phase Details
 
@@ -210,11 +210,11 @@ Plans:
 | 7. ImportTB UX Rework | v1.1 | 4/4 | Complete | 2026-05-30 |
 | 8. Family Medicare Levy Engine | v1.1 | 3/3 | Complete | 2026-05-30 |
 | 9. Exports + Polish + Cleanup | v1.1 | 1/1 | Complete | 2026-05-30 |
-| 10. Public Build + CI/CD to Cloudflare Pages | v1.2 | 1/2 | In Progress | - |
+| 10. Public Build + CI/CD (Cloudflare→Vercel pivot) | v1.2 | 2/2 | Complete | 2026-06-01 |
 | 11. IndexedDB Hardening | v1.2 | 0/TBD | Not started | - |
 | 12. User-Supplied AI Key + Direct-Browser Gemini | v1.2 | 0/TBD | Not started | - |
 | 13. PWA Wrapper | v1.2 | 0/TBD | Not started | - |
-| 14. Release Polish + Custom Domain | v1.2 | 0/TBD | Not started | - |
+| 14. Release Polish | v1.2 | 0/TBD | Not started (HOST-04 already done in Phase 10) | - |
 
 ## Research Flags
 
