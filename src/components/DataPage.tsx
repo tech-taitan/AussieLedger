@@ -32,7 +32,8 @@ import {
 } from 'lucide-react';
 import { getAdapter, getAdapterKind } from '../storage';
 import { CURRENT_VERSION, migrate, type PersistedRoot } from '../lib/migrations';
-import { today } from '../lib/period';
+import { today, nowIso } from '../lib/period';
+import { IosItpBanner } from './IosItpBanner';
 
 function fmtFilename(d?: Date): string {
   const dt = d ?? today();
@@ -61,6 +62,32 @@ function adapterLabel(kind: 'local' | 'server' | null): string {
   return 'Unknown';
 }
 
+/**
+ * Phase 11 IDB-02 — text-only quota disclosure helper.
+ * Returns null when estimate is null OR either field is non-numeric
+ * (silent fallback per 11-CONTEXT decision — some Safari versions return
+ * partial estimates and the DataPage hides the entire line in those cases).
+ */
+function formatQuotaLine(est: StorageEstimate | null): string | null {
+  if (!est) return null;
+  if (typeof est.quota !== 'number' || typeof est.usage !== 'number') return null;
+  const quotaGB = (est.quota / 1e9).toFixed(1);
+  const usageMB = Math.round(est.usage / 1e6);
+  return `~${quotaGB} GB allocated · ${usageMB} MB used`;
+}
+
+/**
+ * Phase 11 IDB-01 — persist-status text helper.
+ *   true  → 'Storage protected'
+ *   false → 'Storage not protected — back up regularly'
+ *   null  → null (API not supported; hide the line entirely)
+ */
+function formatPersistStatus(g: boolean | null): string | null {
+  if (g === true) return 'Storage protected';
+  if (g === false) return 'Storage not protected — back up regularly';
+  return null;
+}
+
 export const DataPage: React.FC = () => {
   const [kind, setKind] = useState<'local' | 'server' | null>(null);
   const [lastExport, setLastExport] = useState<string | null>(null);
@@ -69,6 +96,9 @@ export const DataPage: React.FC = () => {
   const [pendingImport, setPendingImport] = useState<PersistedRoot | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [hasExistingData, setHasExistingData] = useState(false);
+  // Phase 11 IDB-01 / IDB-02 — hardening status slots (Plan 11-2)
+  const [persistGranted, setPersistGranted] = useState<boolean | null>(null);
+  const [storageEstimate, setStorageEstimate] = useState<StorageEstimate | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -85,6 +115,19 @@ export const DataPage: React.FC = () => {
       if (typeof maybe.getLastExportAt === 'function') {
         const ts = await maybe.getLastExportAt();
         if (!cancelled) setLastExport(ts);
+      }
+      // Phase 11 — duck-typed hardening accessors (LocalAdapter only).
+      const maybeHardening = adapter as unknown as {
+        getPersistGranted?: () => Promise<boolean | null>;
+        getStorageEstimate?: () => Promise<StorageEstimate | null>;
+      };
+      if (typeof maybeHardening.getPersistGranted === 'function') {
+        const g = await maybeHardening.getPersistGranted();
+        if (!cancelled) setPersistGranted(g);
+      }
+      if (typeof maybeHardening.getStorageEstimate === 'function') {
+        const est = await maybeHardening.getStorageEstimate();
+        if (!cancelled) setStorageEstimate(est);
       }
       // Detect non-empty state for confirmation gating.
       const [ents, accs, ents2, logs] = await Promise.all([
@@ -129,6 +172,14 @@ export const DataPage: React.FC = () => {
       if (typeof maybeLocal.setLastExportAt === 'function') {
         await maybeLocal.setLastExportAt(iso);
         setLastExport(iso);
+        // Phase 11 IDB-03 — clear backup-nag snooze; snooze does not outlive
+        // its motivation. A fresh export resets the "back up" deadline so
+        // any active snooze should be discarded.
+        try {
+          localStorage.removeItem('aussieledger:backup-nag-snoozed-until');
+        } catch {
+          /* ignore — localStorage may be unavailable */
+        }
       }
     } catch (err) {
       alert(`Export failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -181,6 +232,19 @@ export const DataPage: React.FC = () => {
     try {
       const adapter = await getAdapter();
       await adapter.importAll(pendingImport);
+      // Phase 11 IDB-05 — explicit defence-in-depth lastWriteAt bump at the
+      // DataPage call site. importAll already bumps internally when called
+      // without { silent: true } (Plan 11-1), but the user-affecting bulk
+      // import path also bumps explicitly here so any future refactor of
+      // importAll's internal bump can't accidentally make bulk imports look
+      // clean (which would suppress the backup-nag for legitimately dirty
+      // post-import state).
+      const maybeBump = adapter as unknown as {
+        setLastWriteAt?: (iso: string) => Promise<void>;
+      };
+      if (typeof maybeBump.setLastWriteAt === 'function') {
+        await maybeBump.setLastWriteAt(nowIso());
+      }
       setImportMessage(
         'Import succeeded. Refresh the page to see imported data.',
       );
@@ -199,8 +263,12 @@ export const DataPage: React.FC = () => {
     setConfirmText('');
   };
 
+  const quotaLine = formatQuotaLine(storageEstimate);
+  const persistLine = formatPersistStatus(persistGranted);
+
   return (
     <div className="p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
+      <IosItpBanner />
       <header className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
           <HardDriveDownload className="text-blue-600" />
@@ -235,6 +303,22 @@ export const DataPage: React.FC = () => {
               {lastExport ? fmtTimestamp(lastExport) : 'Never'}
             </dd>
           </div>
+          {quotaLine !== null && (
+            <div className="sm:col-span-2">
+              <dt className="text-gray-500">Storage Budget</dt>
+              <dd className="font-medium" data-testid="storage-quota">
+                {quotaLine}
+              </dd>
+            </div>
+          )}
+          {persistLine !== null && (
+            <div className="sm:col-span-2">
+              <dt className="text-gray-500">Storage Protection</dt>
+              <dd className="font-medium" data-testid="persist-status">
+                {persistLine}
+              </dd>
+            </div>
+          )}
         </dl>
       </section>
 
