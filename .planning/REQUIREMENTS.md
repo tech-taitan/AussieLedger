@@ -84,11 +84,11 @@ Confirmed by `/gsd:roadmapper` on 2026-05-31. Each REQ-ID maps to exactly one ph
 | HOST-02 | Phase 10 | Complete (10-pivot 2026-06-01) |
 | HOST-03 | Phase 10 | Complete (10-1 2026-05-31) |
 | HOST-04 | Phase 10 (was Phase 14) | Complete (10-pivot 2026-06-01) |
-| IDB-01 | Phase 11 | Pending |
-| IDB-02 | Phase 11 | Pending |
-| IDB-03 | Phase 11 | Pending |
-| IDB-04 | Phase 11 | Pending |
-| IDB-05 | Phase 11 | Pending |
+| IDB-01 | Phase 11 | In progress (helpers landed 11-1 2026-06-01: tryPersist + getPersistGranted accessor; UI rendering in 11-2) |
+| IDB-02 | Phase 11 | In progress (helper landed 11-1 2026-06-01: getStorageEstimate accessor; DataPage rendering in 11-2) |
+| IDB-03 | Phase 11 | Pending (Plan 11-2 — useBackupNag hook + Toast actions slot) |
+| IDB-04 | Phase 11 | Pending (Plan 11-2 — IosItpBanner component + DataPage mount) |
+| IDB-05 | Phase 11 | In progress (helpers landed 11-1 2026-06-01: lastWriteAt machinery + bumpWriteAt + opts.silent on importAll; beforeunload/visibilitychange wiring in 11-2) |
 | AI-01 | Phase 12 | Pending |
 | AI-02 | Phase 12 | Pending |
 | PWA-01 | Phase 13 | Pending |

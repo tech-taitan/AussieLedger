@@ -3,21 +3,21 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: 11
-current_plan: 11-1
-status: ready-to-execute
-stopped_at: Phase 11 planned (2 plans, 10 tasks, checker PASS round 2 — B1 legacy-migration silent-import + B2 visibilitychange settle-point + W1 structural lint + W3 frontmatter all resolved); next action /gsd:execute-phase 11
-last_updated: "2026-06-01T00:00:00.000Z"
+current_plan: 11-2
+status: in-progress
+stopped_at: "Plan 11-1 complete (LocalAdapter hardening + nowIso() + structural-lint-period test; 28 new SPA tests GREEN; 3 task commits beaa002/cb2f6bc/f9e6e0d pushed; all CI runs GREEN). Ready for Plan 11-2 (Wave 2: useBackupNag + IosItpBanner + DataPage rendering + App-level beforeunload/visibilitychange wiring)."
+last_updated: "2026-06-01T03:37:28Z"
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
-**Last updated:** 2026-06-01 (Phase 10 COMPLETE — Cloudflare→Vercel pivot shipped + live-verified at https://aussieledger.techtaitan.com; HOST-01/02/03/04 closed; Phase 11 next)
+**Last updated:** 2026-06-01 (Phase 11 Plan 11-1 COMPLETE — LocalAdapter hardening + period.ts nowIso + structural-lint-period test; 28 new SPA tests GREEN; baseline 999 → 1027 SPA + 11 todo + 18 server; lint+build EXIT 0; CI GREEN on all 3 task pushes; Plan 11-2 next)
 
 ---
 
@@ -33,16 +33,16 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 11 — IndexedDB Hardening (planned, ready to execute)
-**Current plan:** 11-1 (LocalAdapter hardening + period.ts nowIso/addDaysIso + structural-lint test)
+**Current phase:** Phase 11 — IndexedDB Hardening (Plan 11-1 complete; Plan 11-2 next)
+**Current plan:** 11-2 (UI wiring: useBackupNag + IosItpBanner + DataPage rendering + App-level beforeunload/visibilitychange)
 **Phase 10 status:** COMPLETE 2026-06-01 — Cloudflare→Vercel pivot shipped + live-verified at `https://aussieledger.techtaitan.com`; HOST-01/02/03/04 closed; 6 pivot commits + 4 from Plan 10-1
-**Phase 11 status:** Planned 2026-06-01 — 2 plans, 10 tasks, checker PASS round 2; awaiting execution
+**Phase 11 status:** In progress 2026-06-01 — Plan 11-1 complete (3 task commits); Plan 11-2 ready to execute
 **Phase 12 status:** Not started
 **Phase 13 status:** Not started
 **Phase 14 status:** Not started (HOST-04 closed early in Phase 10; remaining requirements: POL-01..04)
-**Last session:** 2026-06-01T00:00:00.000Z
-**Stopped at:** Phase 10 complete + live-verified. 10 commits ahead from this phase: 4 from Plan 10-1 + 6 from pivot bundle. Live deploy confirmed: 9/9 CSP directives present + all 6 security headers + SPA fallback works + AIza scan EXIT 0 in both CI and locally.
-**Overall progress:** v1.2: 1/5 phases complete (Phase 10 done). 4/16 requirements complete (HOST-01..04). Run `/gsd:discuss-phase 11` to scope the IDB Hardening phase, or `/gsd:plan-phase 11` directly if you'd rather skip discussion.
+**Last session:** 2026-06-01T03:37:28Z
+**Stopped at:** Plan 11-1 COMPLETE (3 task commits: beaa002 Task 1 nowIso; cb2f6bc Task 2 LocalAdapter hardening + B1 fix; f9e6e0d Task 3 structural-lint W1 fix). 28 new SPA tests GREEN (baseline 999 → 1027 SPA GREEN + 11 todo + 0 RED; 18 server GREEN unchanged). Lint EXIT 0; build EXIT 0 (incl. AIza scan). CI runs 26733364938 / 26733475166 / 26733700927 all GREEN. Plan 11-1 helpers (getPersistGranted, getStorageEstimate, getLastWriteAt, setLastWriteAt accessors + nowIso export + opts.silent on importAll) ready to be consumed by Plan 11-2.
+**Overall progress:** v1.2: 1/5 phases complete (Phase 10 done) + Phase 11 Plan 11-1 of 2 complete. 4/16 requirements complete (HOST-01..04). Run `/gsd:execute-phase 11` to continue with Plan 11-2 (Wave 2).
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -73,19 +73,23 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 
 ## Performance Metrics
 
-- Plans completed: 2 / Plans total: 2 (Phase 10 done; Phases 11–14 not yet planned)
+- Plans completed: 3 / Plans total in v1.2: 2 (Phase 10) + ≥2 (Phase 11) + TBD (Phases 12-14)
 - Phases complete: 1/5 (Phase 10 — Cloudflare→Vercel pivot)
 - Requirements mapped: 16/16 v1.2 requirements — all phases 10–14 covered
 - Requirements complete: 4/16 (HOST-01, HOST-02, HOST-03, HOST-04 — HOST-04 closed early during Phase 10 pivot)
+- Helper-only halves of IDB-01, IDB-02, IDB-05 land via Plan 11-1; rendering/event-listener halves land via Plan 11-2
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
 | 10 | 10-1 | ~30min | 4 (3 auto + 1 checkpoint) | 8 (6 created, 2 modified) | 999 SPA (+16 from baseline) |
 | 10 | 10-2-pivot | ~90min (incl. blocked time) | 4 effective (2 reverts + 2 creates + 4 modifies + docs) | 8 unique | 999 SPA (unchanged) |
+| 11 | 11-1 | ~17min | 4 (4 auto, no checkpoints) | 6 (2 created, 4 modified) | 1027 SPA (+28 from baseline 999) |
 
 **v1.1 baseline (carried forward):** 983 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
 
 **Post Phase 10:** 999 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 (incl. AIza scan). Live deploy verified at `https://aussieledger.techtaitan.com/` (9/9 CSP directives + 5/5 other security headers + SPA fallback all OK).
+
+**Post Phase 11 Plan 11-1:** 1027 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 (incl. AIza scan). LocalAdapter exposes 4 new duck-typed accessors (getPersistGranted, getStorageEstimate, getLastWriteAt, setLastWriteAt). period.ts adds nowIso() — single source of ISO timestamps. Legacy-migration now passes { silent: true } to importAll. Structural-lint test at src/lib/__tests__/structural-lint-period.test.ts locks the no-bare-new-Date invariant (additive to the existing src/__tests__/structural.test.ts:67 enforcement). CI runs 26733364938 / 26733475166 / 26733700927 all GREEN on origin/main.
 
 ---
 

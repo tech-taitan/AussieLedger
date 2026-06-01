@@ -1,6 +1,6 @@
 # Roadmap: AussieLedger
 
-**Last updated:** 2026-05-31 (v1.2 roadmap created — 5 phases, ready for planning)
+**Last updated:** 2026-06-01 (Phase 11 Plan 11-1 complete — LocalAdapter hardening + nowIso() + structural-lint test)
 
 ## Milestones
 
@@ -133,7 +133,11 @@ Plans:
 4. When user-agent is iOS Safari AND the app is NOT installed as a PWA (`display-mode: standalone` is false), a dismissible contextual banner appears in DataPage explaining the 7-day ITP wipe risk and linking to "Add to Home Screen" instructions
 5. When `lastWriteAt > lastExportAt`, closing or navigating away from the tab triggers the browser-native "are you sure?" dialog; the listener is registered and unregistered conditionally (not permanently) to preserve Firefox bfcache eligibility; `visibilitychange` fires a complementary state-flush for iOS Safari where `beforeunload` is unreliable
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [x] 11-1-local-adapter-hardening-and-period-helpers-and-structural-lint.md — LocalAdapter duck-typed accessors (getPersistGranted / getStorageEstimate / getLastWriteAt / setLastWriteAt) + bumpWriteAt wrapper + tryPersist once-in-init + opts.silent on importAll (Blocker 1 fix) + nowIso() in period.ts + structural-lint-period.test.ts (W1 fix) — completed 2026-06-01
+- [ ] 11-2-ui-wiring-databpage-rendering-backup-nag-itp-banner-beforeunload.md — useBackupNag hook + IosItpBanner + DataPage quota/persist-status render + App.tsx conditional beforeunload + visibilitychange settle-point (Blocker 2 fix) + Toast actions slot widening
 
 ---
 
@@ -211,7 +215,7 @@ Plans:
 | 8. Family Medicare Levy Engine | v1.1 | 3/3 | Complete | 2026-05-30 |
 | 9. Exports + Polish + Cleanup | v1.1 | 1/1 | Complete | 2026-05-30 |
 | 10. Public Build + CI/CD (Cloudflare→Vercel pivot) | v1.2 | 2/2 | Complete | 2026-06-01 |
-| 11. IndexedDB Hardening | v1.2 | 0/TBD | Not started | - |
+| 11. IndexedDB Hardening | v1.2 | 1/2 | In Progress (Plan 11-1 complete) | - |
 | 12. User-Supplied AI Key + Direct-Browser Gemini | v1.2 | 0/TBD | Not started | - |
 | 13. PWA Wrapper | v1.2 | 0/TBD | Not started | - |
 | 14. Release Polish | v1.2 | 0/TBD | Not started (HOST-04 already done in Phase 10) | - |
