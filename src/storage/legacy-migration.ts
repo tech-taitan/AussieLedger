@@ -65,7 +65,14 @@ export async function migrateLegacyLocalStorage(adapter: LocalAdapter): Promise<
   }
 
   const migrated: PersistedRoot = migrate(assembled);
-  await adapter.importAll(migrated);
+  // Phase 11 IDB-05 — { silent: true } prevents the migration's importAll from
+  // bumping lastWriteAt. Without this, every v1.0/v1.1 user's first launch under
+  // Phase 11 would fire backup-nag (the migration's importAll would make
+  // lastWriteAt > lastExportAt). Schema/legacy migrations are app-version
+  // upgrades, not user-content changes. See LocalAdapter.importAll JSDoc for the
+  // opts.silent contract; unit-test coverage lives in
+  // src/storage/__tests__/local-hardening.test.ts (Tests 20/22).
+  await adapter.importAll(migrated, { silent: true });
 
   // Writes succeeded — clear the four legacy keys.
   for (const k of LEGACY_KEYS) localStorage.removeItem(k);
