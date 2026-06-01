@@ -21,11 +21,11 @@ Deploy the SPA to a free static host with auto-deploy from `main`. CI defends ag
 
 Harden the existing v1.0 LocalAdapter so users who arrive at the hosted SPA cold can trust it. All additions go INSIDE LocalAdapter; the Phase 3 StorageAdapter FINAL interface is untouched (duck-typing via `as unknown as { ... }` matches the existing Phase 3 pattern for `getLastExportAt`).
 
-- [ ] **IDB-01**: On first meaningful user action (e.g. creating an entity or posting a journal entry — NOT page load), the app calls `navigator.storage.persist()` to request persistent storage. Result is cached via `navigator.storage.persisted()`. Browsers that don't support the API (very old browsers) degrade silently. Chrome/Edge auto-grant for engaged sites; Firefox prompts; Safari only grants when installed as PWA.
-- [ ] **IDB-02**: The Data page (Phase 3) shows quota disclosure derived from `navigator.storage.estimate()` — e.g. "Your browser has allocated approximately {N} GB for this site. Currently using {M} MB." Plain English. Friendly disclosure, not a warning.
-- [ ] **IDB-03**: A backup-nag toast fires once on app load when `today - lastExportAt > threshold` (7 days desktop UA; 5 days iOS Safari UA). Reads `lastExportAt` from LocalAdapter meta IDB store via the existing duck-typing pattern. Uses the existing Toast primitive (`tone='warn'`). Includes "Export now" action button and "Snooze 7 days" button (snooze persisted in `localStorage` under `aussieledger:backup-nag-snoozed-until`).
-- [ ] **IDB-04**: When user-agent is detected as iOS Safari AND the app is NOT installed as a PWA (`window.matchMedia('(display-mode: standalone)').matches` is false), a contextual banner appears in DataPage explaining the 7-day ITP wipe risk and recommending "Add to Home Screen" to mitigate. Banner is dismissible (per-session). Honest UX about the risk; does not block the app.
-- [ ] **IDB-05**: `beforeunload` + `visibilitychange` guard fires a browser-native "are you sure you want to leave?" prompt when `lastWriteAt > lastExportAt`. Listener is registered/unregistered conditionally (NOT permanently) to avoid Firefox bfcache exclusion. `visibilitychange` complement is required because iOS Safari fires `beforeunload` unreliably. *v1.2 implementation note: the visibilitychange handler performs a settle-point IDB read (forces pending write transactions to land before iOS Safari may suspend the tab) — it does NOT fire a confirmation dialog because browser APIs only permit that from beforeunload. The "are you sure?" prompt is beforeunload-exclusive.*
+- [x] **IDB-01**: On first meaningful user action (e.g. creating an entity or posting a journal entry — NOT page load), the app calls `navigator.storage.persist()` to request persistent storage. Result is cached via `navigator.storage.persisted()`. Browsers that don't support the API (very old browsers) degrade silently. Chrome/Edge auto-grant for engaged sites; Firefox prompts; Safari only grants when installed as PWA.
+- [x] **IDB-02**: The Data page (Phase 3) shows quota disclosure derived from `navigator.storage.estimate()` — e.g. "Your browser has allocated approximately {N} GB for this site. Currently using {M} MB." Plain English. Friendly disclosure, not a warning.
+- [x] **IDB-03**: A backup-nag toast fires once on app load when `today - lastExportAt > threshold` (7 days desktop UA; 5 days iOS Safari UA). Reads `lastExportAt` from LocalAdapter meta IDB store via the existing duck-typing pattern. Uses the existing Toast primitive (`tone='warn'`). Includes "Export now" action button and "Snooze 7 days" button (snooze persisted in `localStorage` under `aussieledger:backup-nag-snoozed-until`).
+- [x] **IDB-04**: When user-agent is detected as iOS Safari AND the app is NOT installed as a PWA (`window.matchMedia('(display-mode: standalone)').matches` is false), a contextual banner appears in DataPage explaining the 7-day ITP wipe risk and recommending "Add to Home Screen" to mitigate. Banner is dismissible (per-session). Honest UX about the risk; does not block the app.
+- [x] **IDB-05**: `beforeunload` + `visibilitychange` guard fires a browser-native "are you sure you want to leave?" prompt when `lastWriteAt > lastExportAt`. Listener is registered/unregistered conditionally (NOT permanently) to avoid Firefox bfcache exclusion. `visibilitychange` complement is required because iOS Safari fires `beforeunload` unreliably. *v1.2 implementation note: the visibilitychange handler performs a settle-point IDB read (forces pending write transactions to land before iOS Safari may suspend the tab) — it does NOT fire a confirmation dialog because browser APIs only permit that from beforeunload. The "are you sure?" prompt is beforeunload-exclusive.*
 
 ### User-Supplied AI Key + Direct-Browser Gemini (AI)
 
@@ -84,11 +84,11 @@ Confirmed by `/gsd:roadmapper` on 2026-05-31. Each REQ-ID maps to exactly one ph
 | HOST-02 | Phase 10 | Complete (10-pivot 2026-06-01) |
 | HOST-03 | Phase 10 | Complete (10-1 2026-05-31) |
 | HOST-04 | Phase 10 (was Phase 14) | Complete (10-pivot 2026-06-01) |
-| IDB-01 | Phase 11 | In progress (helpers landed 11-1 2026-06-01: tryPersist + getPersistGranted accessor; UI rendering in 11-2) |
-| IDB-02 | Phase 11 | In progress (helper landed 11-1 2026-06-01: getStorageEstimate accessor; DataPage rendering in 11-2) |
-| IDB-03 | Phase 11 | Pending (Plan 11-2 — useBackupNag hook + Toast actions slot) |
-| IDB-04 | Phase 11 | Pending (Plan 11-2 — IosItpBanner component + DataPage mount) |
-| IDB-05 | Phase 11 | In progress (helpers landed 11-1 2026-06-01: lastWriteAt machinery + bumpWriteAt + opts.silent on importAll; beforeunload/visibilitychange wiring in 11-2) |
+| IDB-01 | Phase 11 | Complete (11-2 2026-06-01: tryPersist helper landed 11-1; DataPage Storage Protection row + getPersistGranted consumer landed 11-2) |
+| IDB-02 | Phase 11 | Complete (11-2 2026-06-01: getStorageEstimate helper landed 11-1; DataPage Storage Budget row + formatQuotaLine silent-fallback landed 11-2) |
+| IDB-03 | Phase 11 | Complete (11-2 2026-06-01: useBackupNag hook + Toast actions slot + App-level mount + DataPage handleExport snooze-clear) |
+| IDB-04 | Phase 11 | Complete (11-2 2026-06-01: IosItpBanner 4-gate matrix + verbatim CONTEXT-locked copy + sessionStorage per-session dismiss + DataPage mount) |
+| IDB-05 | Phase 11 | Complete (11-2 2026-06-01: lastWriteAt machinery + bumpWriteAt + opts.silent landed 11-1; App-level conditional beforeunload+visibilitychange + Blocker 2 settle-point flush + REQUIREMENTS italic capability disclosure landed 11-2) |
 | AI-01 | Phase 12 | Pending |
 | AI-02 | Phase 12 | Pending |
 | PWA-01 | Phase 13 | Pending |

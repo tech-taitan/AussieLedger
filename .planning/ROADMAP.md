@@ -1,6 +1,6 @@
 # Roadmap: AussieLedger
 
-**Last updated:** 2026-06-01 (Phase 11 Plan 11-1 complete — LocalAdapter hardening + nowIso() + structural-lint test)
+**Last updated:** 2026-06-01 (Phase 11 Plans 11-1 + 11-2 complete — full IndexedDB hardening; IDB-01..05 closed end-to-end; 1083 SPA GREEN; awaiting verification + UAT)
 
 ## Milestones
 
@@ -35,7 +35,7 @@
 ### v1.2 (In Progress)
 
 - [x] **Phase 10: Public Build + CI/CD (Cloudflare→Vercel pivot)** — SPA LIVE at https://aussieledger.techtaitan.com — completed 2026-06-01 (HOST-04 closed early)
-- [ ] **Phase 11: IndexedDB Hardening** — persist grant + quota disclosure + backup-nag + iOS ITP disclosure + pre-unload guard
+- [x] **Phase 11: IndexedDB Hardening** — persist grant + quota disclosure + backup-nag + iOS ITP disclosure + pre-unload guard with settle-point flush — plans complete 2026-06-01 (awaiting verification + UAT)
 - [ ] **Phase 12: User-Supplied AI Key + Direct-Browser Gemini** — Settings AI key UI + `callGeminiMatchAccounts` routing helper
 - [ ] **Phase 13: PWA Wrapper** — service worker + manifest + stale-cache prevention + update banner
 - [ ] **Phase 14: Release Polish** — first-visit UX + `/demo` route + `/privacy` page + README rewrite (HOST-04 already done in Phase 10)
@@ -137,7 +137,7 @@ Plans:
 
 Plans:
 - [x] 11-1-local-adapter-hardening-and-period-helpers-and-structural-lint.md — LocalAdapter duck-typed accessors (getPersistGranted / getStorageEstimate / getLastWriteAt / setLastWriteAt) + bumpWriteAt wrapper + tryPersist once-in-init + opts.silent on importAll (Blocker 1 fix) + nowIso() in period.ts + structural-lint-period.test.ts (W1 fix) — completed 2026-06-01
-- [ ] 11-2-ui-wiring-databpage-rendering-backup-nag-itp-banner-beforeunload.md — useBackupNag hook + IosItpBanner + DataPage quota/persist-status render + App.tsx conditional beforeunload + visibilitychange settle-point (Blocker 2 fix) + Toast actions slot widening
+- [x] 11-2-ui-wiring-databpage-rendering-backup-nag-itp-banner-beforeunload.md — useBackupNag hook + IosItpBanner + DataPage quota/persist-status render + App.tsx conditional beforeunload + visibilitychange settle-point (Blocker 2 fix) + Toast actions slot widening + REQUIREMENTS IDB-05 italic disclosure + addDaysIso(days) helper — completed 2026-06-01 (5 task commits; 56 new SPA tests GREEN; all CI runs GREEN; awaiting /gsd:verify-phase 11 + UAT)
 
 ---
 

@@ -3,21 +3,21 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: 11
-current_plan: 11-2
-status: in-progress
-stopped_at: "Plan 11-1 complete (LocalAdapter hardening + nowIso() + structural-lint-period test; 28 new SPA tests GREEN; 3 task commits beaa002/cb2f6bc/f9e6e0d pushed; all CI runs GREEN). Ready for Plan 11-2 (Wave 2: useBackupNag + IosItpBanner + DataPage rendering + App-level beforeunload/visibilitychange wiring)."
-last_updated: "2026-06-01T03:37:28Z"
+current_plan: complete
+status: phase-complete-pending-verification
+stopped_at: "Plan 11-2 COMPLETE (useBackupNag + IosItpBanner + DataPage rendering + App-level beforeunload/visibilitychange + Toast widening + REQUIREMENTS IDB-05 disclosure; 56 new SPA tests GREEN; 5 task commits 9067e5c/7ee4aef/41e5607/0878e8a/fc73e7c pushed; all CI runs GREEN). Phase 11 ready for /gsd:verify-phase 11 then UAT."
+last_updated: "2026-06-01T04:20:00Z"
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
-**Last updated:** 2026-06-01 (Phase 11 Plan 11-1 COMPLETE — LocalAdapter hardening + period.ts nowIso + structural-lint-period test; 28 new SPA tests GREEN; baseline 999 → 1027 SPA + 11 todo + 18 server; lint+build EXIT 0; CI GREEN on all 3 task pushes; Plan 11-2 next)
+**Last updated:** 2026-06-01 (Phase 11 Plan 11-2 COMPLETE — useBackupNag hook + IosItpBanner component + DataPage quota/persist/banner-mount + handleImport bump + handleExport snooze-clear + App-level conditional beforeunload+visibilitychange + Blocker 2 settle-point flush + REQUIREMENTS IDB-05 italic note; 56 new SPA tests GREEN; baseline 1027 → 1083 SPA + 11 todo + 18 server; lint+build EXIT 0; CI GREEN on all 5 task pushes; Phase 11 ready for /gsd:verify-phase 11)
 
 ---
 
@@ -33,16 +33,16 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 11 — IndexedDB Hardening (Plan 11-1 complete; Plan 11-2 next)
-**Current plan:** 11-2 (UI wiring: useBackupNag + IosItpBanner + DataPage rendering + App-level beforeunload/visibilitychange)
+**Current phase:** Phase 11 — IndexedDB Hardening (BOTH plans complete; awaiting verification + UAT)
+**Current plan:** complete (Plan 11-1 + Plan 11-2 both complete)
 **Phase 10 status:** COMPLETE 2026-06-01 — Cloudflare→Vercel pivot shipped + live-verified at `https://aussieledger.techtaitan.com`; HOST-01/02/03/04 closed; 6 pivot commits + 4 from Plan 10-1
-**Phase 11 status:** In progress 2026-06-01 — Plan 11-1 complete (3 task commits); Plan 11-2 ready to execute
+**Phase 11 status:** Plans complete 2026-06-01 — Plan 11-1 (3 task commits) + Plan 11-2 (5 task commits); awaiting /gsd:verify-phase 11 + UAT; IDB-01..05 all closed end-to-end
 **Phase 12 status:** Not started
 **Phase 13 status:** Not started
 **Phase 14 status:** Not started (HOST-04 closed early in Phase 10; remaining requirements: POL-01..04)
-**Last session:** 2026-06-01T03:37:28Z
-**Stopped at:** Plan 11-1 COMPLETE (3 task commits: beaa002 Task 1 nowIso; cb2f6bc Task 2 LocalAdapter hardening + B1 fix; f9e6e0d Task 3 structural-lint W1 fix). 28 new SPA tests GREEN (baseline 999 → 1027 SPA GREEN + 11 todo + 0 RED; 18 server GREEN unchanged). Lint EXIT 0; build EXIT 0 (incl. AIza scan). CI runs 26733364938 / 26733475166 / 26733700927 all GREEN. Plan 11-1 helpers (getPersistGranted, getStorageEstimate, getLastWriteAt, setLastWriteAt accessors + nowIso export + opts.silent on importAll) ready to be consumed by Plan 11-2.
-**Overall progress:** v1.2: 1/5 phases complete (Phase 10 done) + Phase 11 Plan 11-1 of 2 complete. 4/16 requirements complete (HOST-01..04). Run `/gsd:execute-phase 11` to continue with Plan 11-2 (Wave 2).
+**Last session:** 2026-06-01T04:20:00Z
+**Stopped at:** Plan 11-2 COMPLETE (5 task commits: 9067e5c Task 1 useBackupNag+addDaysIso; 7ee4aef Task 2 IosItpBanner; 41e5607 Task 4 Toast actions widening; 0878e8a Task 3 DataPage wiring; fc73e7c Task 5 App.tsx wiring + REQUIREMENTS IDB-05 italic note). 56 new SPA tests GREEN (baseline 1027 → 1083 SPA GREEN + 11 todo + 0 RED; 18 server GREEN unchanged). Lint EXIT 0; build EXIT 0 (incl. AIza scan). CI runs 26734153604 / 26734203565 / 26734254976 / 26734354506 / 26734775190 all GREEN. All 13 plan-level verification greps PASS; all 5 ROADMAP Phase 11 success criteria met; IDB-01..05 closed end-to-end.
+**Overall progress:** v1.2: 1/5 phases complete (Phase 10 done) + Phase 11 plans complete pending verification. 9/16 requirements complete (HOST-01..04 + IDB-01..05). Run `/gsd:verify-phase 11` to verify Phase 11, then UAT, then `/gsd:execute-phase 12`.
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -51,8 +51,8 @@ v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
 v1.1:  [Phase 7] [Phase 8] [Phase 9]
        [ DONE  ] [ DONE  ] [ DONE  ]
 
-v1.2:  [Phase 10] [Phase 11] [Phase 12] [Phase 13] [Phase 14]
-       [ DONE  ] [PENDING ] [PENDING ] [PENDING ] [PENDING ]
+v1.2:  [Phase 10] [Phase 11]    [Phase 12] [Phase 13] [Phase 14]
+       [ DONE  ] [PLANS DONE] [PENDING ] [PENDING ] [PENDING ]
 
 v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 ```
@@ -64,7 +64,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | Phase | Name | Key Outcome | Status |
 |-------|------|-------------|--------|
 | 10 | Public Build + CI/CD (Cloudflare→Vercel pivot) | SPA LIVE at `https://aussieledger.techtaitan.com`; vercel.json CSP+headers+rewrites; AIza scan in npm build; `VITE_HOSTED_MODE` flag; custom domain configured (HOST-04 early) | DONE 2026-06-01 |
-| 11 | IndexedDB Hardening | `persist()` grant; quota disclosure; backup-nag hook; iOS ITP banner; `beforeunload` guard | Not started |
+| 11 | IndexedDB Hardening | `persist()` grant; quota disclosure; backup-nag hook; iOS ITP banner; `beforeunload`+visibilitychange guard with settle-point flush | Plans complete 2026-06-01 (awaiting verification + UAT) |
 | 12 | User-Supplied AI Key + Direct-Browser Gemini | Settings AI key UI; `callGeminiMatchAccounts` routing helper; `AiGateNote` hosted-mode link | Not started |
 | 13 | PWA Wrapper | `vite-plugin-pwa` + manifest + SW stale-cache prevention + update banner | Not started |
 | 14 | Release Polish + Custom Domain | First-visit trust banner; `/demo` isolated IDB; `/privacy` page; README rewrite; custom domain | Not started |
@@ -73,23 +73,26 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 
 ## Performance Metrics
 
-- Plans completed: 3 / Plans total in v1.2: 2 (Phase 10) + ≥2 (Phase 11) + TBD (Phases 12-14)
-- Phases complete: 1/5 (Phase 10 — Cloudflare→Vercel pivot)
+- Plans completed: 4 / Plans total in v1.2: 2 (Phase 10) + 2 (Phase 11) + TBD (Phases 12-14)
+- Phases complete: 1/5 (Phase 10 — Cloudflare→Vercel pivot); Phase 11 plans complete pending verification
 - Requirements mapped: 16/16 v1.2 requirements — all phases 10–14 covered
-- Requirements complete: 4/16 (HOST-01, HOST-02, HOST-03, HOST-04 — HOST-04 closed early during Phase 10 pivot)
-- Helper-only halves of IDB-01, IDB-02, IDB-05 land via Plan 11-1; rendering/event-listener halves land via Plan 11-2
+- Requirements complete: 9/16 (HOST-01..04 — Phase 10; IDB-01..05 — Phase 11)
+- All IDB-01..05 closed end-to-end via Plan 11-1 (helpers) + Plan 11-2 (UI/event wiring + REQUIREMENTS IDB-05 italic disclosure)
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
 | 10 | 10-1 | ~30min | 4 (3 auto + 1 checkpoint) | 8 (6 created, 2 modified) | 999 SPA (+16 from baseline) |
 | 10 | 10-2-pivot | ~90min (incl. blocked time) | 4 effective (2 reverts + 2 creates + 4 modifies + docs) | 8 unique | 999 SPA (unchanged) |
 | 11 | 11-1 | ~17min | 4 (4 auto, no checkpoints) | 6 (2 created, 4 modified) | 1027 SPA (+28 from baseline 999) |
+| 11 | 11-2 | ~30min | 6 (5 auto + 1 verification) | 13 (5 created, 8 modified) | 1083 SPA (+56 from baseline 1027) |
 
 **v1.1 baseline (carried forward):** 983 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
 
 **Post Phase 10:** 999 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 (incl. AIza scan). Live deploy verified at `https://aussieledger.techtaitan.com/` (9/9 CSP directives + 5/5 other security headers + SPA fallback all OK).
 
 **Post Phase 11 Plan 11-1:** 1027 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 (incl. AIza scan). LocalAdapter exposes 4 new duck-typed accessors (getPersistGranted, getStorageEstimate, getLastWriteAt, setLastWriteAt). period.ts adds nowIso() — single source of ISO timestamps. Legacy-migration now passes { silent: true } to importAll. Structural-lint test at src/lib/__tests__/structural-lint-period.test.ts locks the no-bare-new-Date invariant (additive to the existing src/__tests__/structural.test.ts:67 enforcement). CI runs 26733364938 / 26733475166 / 26733700927 all GREEN on origin/main.
+
+**Post Phase 11 Plan 11-2:** 1083 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0 (incl. AIza scan). useBackupNag hook (once per App mount; 7d desktop / 5d iOS Safari; empty-adapter + snooze + threshold suppression) + IosItpBanner (4-gate matrix + verbatim CONTEXT-locked copy + sessionStorage per-session dismiss) wired through DataPage (Storage Budget + Storage Protection rows + IosItpBanner mount + handleImport explicit setLastWriteAt(nowIso()) bump + handleExport snooze-clear). App.tsx mounts useBackupNag + isDirty derivation via [entities, journals, auditLogs, accounts] dep-list re-poll + conditional [isDirty]-dep useEffect that registers beforeunload + visibilitychange listener PAIR only when dirty (Firefox bfcache preserved); beforeunload calls preventDefault+returnValue=''; visibilitychange performs Blocker 2 REAL settle-point fire-and-forget `await adapter.getLastWriteAt()` flush wrapped in try/catch. Toast widened with optional `actions?: ReactNode` slot (existing tone='info'|'warn' callers unchanged). period.ts adds addDaysIso(days) helper so snooze arithmetic stays inside the structural-lint invariant. REQUIREMENTS.md IDB-05 gains trailing italic note disclosing visibilitychange-vs-beforeunload capability division (settle-point IDB read vs are-you-sure dialog). CI runs 26734153604 / 26734203565 / 26734254976 / 26734354506 / 26734775190 all GREEN on origin/main. All 5 IDB-01..05 requirements closed end-to-end; all 5 ROADMAP Phase 11 success criteria met; all 13 plan-level verification greps PASS.
 
 ---
 
