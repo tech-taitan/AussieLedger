@@ -38,7 +38,7 @@ Harden the existing v1.0 LocalAdapter so users who arrive at the hosted SPA cold
 
 Installable to OS home screen; offline-capable; addresses iOS Safari ITP via PWA-install path (resets 7-day timer on each launch).
 
-- [ ] **PWA-01**: `vite-plugin-pwa@^1.3.0` integrated into `vite.config.ts` with `generateSW` strategy (NOT `injectManifest` — no custom SW logic needed) and `registerType: 'prompt'` (NOT `'autoUpdate'` — avoids force-reload mid-form). `skipWaiting: true` + `clientsClaim: true` + `cleanupOutdatedCaches: true` all configured to prevent the stale-cache trap. `manifest.json` includes `name`, `short_name`, `description`, `icons` (192px + 512px PNG), `theme_color`, `background_color`, `display: 'standalone'`, `start_url: '/'`. Service worker only activates in production builds — zero impact on `npm run dev`. Update banner appears when SW detects a new version: "A new version is available — reload to update?" with explicit user click required.
+- [ ] **PWA-01**: `vite-plugin-pwa@^1.3.0` integrated into `vite.config.ts` with `generateSW` strategy (NOT `injectManifest` — no custom SW logic needed) and `registerType: 'prompt'` (NOT `'autoUpdate'` — avoids force-reload mid-form). `skipWaiting: true` + `clientsClaim: true` + `cleanupOutdatedCaches: true` all configured to prevent the stale-cache trap. `manifest.json` includes `name`, `short_name`, `description`, `icons` (192px + 512px PNG), `theme_color`, `background_color`, `display: 'standalone'`, `start_url: '/'`. Service worker only activates in production builds — zero impact on `npm run dev`. Update banner appears when SW detects a new version: "A new version is available — reload to update?" with explicit user click required. *Plan 13-1 progress (2026-06-01): install path landed — vite-plugin-pwa@^1.3.0 + @resvg/resvg-js@^2.6.2 in devDependencies; pwaOptions named export in vite.pwa-options.ts locks all three stale-cache flags + registerType:'prompt' + devOptions.enabled:false; 5 PNG icons committed in public/; index.html has apple-touch-icon + theme-color; dist/sw.js + workbox-*.js + manifest.webmanifest emit on every build; 3 contract tests (pwa-manifest 9 + pwa-index-html 4 + pwa-config 17 = 30 GREEN). UpdateBanner UI + Lighthouse smoke pending Plan 13-2.*
 
 ### Release Polish (POL)
 
@@ -92,7 +92,7 @@ Confirmed by `/gsd:roadmapper` on 2026-05-31. Each REQ-ID maps to exactly one ph
 | IDB-05 | Phase 11 | Complete (11-2 2026-06-01: lastWriteAt machinery + bumpWriteAt + opts.silent landed 11-1; App-level conditional beforeunload+visibilitychange + Blocker 2 settle-point flush + REQUIREMENTS italic capability disclosure landed 11-2) |
 | ~~AI-01~~ | ~~Phase 12~~ | DEFERRED → v5 (2026-06-01) |
 | ~~AI-02~~ | ~~Phase 12~~ | DEFERRED → v5 (2026-06-01) |
-| PWA-01 | Phase 13 | Pending |
+| PWA-01 | Phase 13 | In Progress — Plan 13-1 done 2026-06-01 (install path); Plan 13-2 next (UpdateBanner) |
 | POL-01 | Phase 14 | Pending |
 | POL-02 | Phase 14 | Pending |
 | POL-03 | Phase 14 | Pending |
