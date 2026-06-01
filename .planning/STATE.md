@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: 14
-current_plan: null
-status: phase-complete-ready-to-plan-next
-stopped_at: "Plan 13-2 COMPLETE 2026-06-02 — UpdateBanner + useUpdateBanner hook + App.tsx wiring landed; user smoke-verified Lighthouse PWA audit (Installable + PWA Optimized both PASS) + UpdateBanner update flow (incl. B-1 sessionStorage-persists-within-tab lock) + npm-run-dev SW absence at https://aussieledger.techtaitan.com after Vercel auto-deploy. Phase 13 COMPLETE; PWA-01 closed end-to-end. 5 commits (47c9146/1587702/70d892a/2c66663/ca4e064); CI runs 26756246108 + 26756492360 both GREEN. 1128 SPA GREEN + 11 todo + 0 RED. Phase 14 (Release Polish — POL-01..04) next."
+current_plan: 14-1
+status: ready-to-execute
+stopped_at: "Phase 14 planned (3 plans, 12 tasks, checker PASS no revisions needed). Ready for /gsd:execute-phase 14. Plan 14-1 wave-1 foundation (routing + LocalAdapter widening + demo seed + PITFALLS §4 HARD-BLOCK guard); Plans 14-2 + 14-3 wave-2 parallel-safe."
 last_updated: "2026-06-02T20:10:00Z"
 progress:
   total_phases: 4
