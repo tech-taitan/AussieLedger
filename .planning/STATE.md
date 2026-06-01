@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
-current_phase: 11
-current_plan: complete
-status: phase-complete-pending-verification
-stopped_at: "Plan 11-2 COMPLETE (useBackupNag + IosItpBanner + DataPage rendering + App-level beforeunload/visibilitychange + Toast widening + REQUIREMENTS IDB-05 disclosure; 56 new SPA tests GREEN; 5 task commits 9067e5c/7ee4aef/41e5607/0878e8a/fc73e7c pushed; all CI runs GREEN). Phase 11 ready for /gsd:verify-phase 11 then UAT."
-last_updated: "2026-06-01T04:20:00Z"
+current_phase: 12
+current_plan: null
+status: phase-complete-ready-to-plan-next
+stopped_at: "Phase 11 COMPLETE 2026-06-01 — user-verified live deploy at https://aussieledger.techtaitan.com (smoke OK; new bundle hashes confirm Phase 11 shipped); IDB-01..05 all closed end-to-end; 1083 SPA GREEN; 9 task commits + 1 docs commit across Plan 11-1 + Plan 11-2; all CI runs GREEN. Phase 12 next."
+last_updated: "2026-06-01T04:30:00Z"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
   completed_plans: 4
 ---
@@ -17,7 +17,7 @@ progress:
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
-**Last updated:** 2026-06-01 (Phase 11 Plan 11-2 COMPLETE — useBackupNag hook + IosItpBanner component + DataPage quota/persist/banner-mount + handleImport bump + handleExport snooze-clear + App-level conditional beforeunload+visibilitychange + Blocker 2 settle-point flush + REQUIREMENTS IDB-05 italic note; 56 new SPA tests GREEN; baseline 1027 → 1083 SPA + 11 todo + 18 server; lint+build EXIT 0; CI GREEN on all 5 task pushes; Phase 11 ready for /gsd:verify-phase 11)
+**Last updated:** 2026-06-01 (Phase 11 COMPLETE — user smoke-verified live deploy at https://aussieledger.techtaitan.com with new bundle hashes index-D7XS6EvI.js / index-CqP1BSka.css confirming Phase 11 IDB hardening shipped; IDB-01..05 all closed; Phase 12 next)
 
 ---
 
@@ -33,16 +33,16 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 11 — IndexedDB Hardening (BOTH plans complete; awaiting verification + UAT)
-**Current plan:** complete (Plan 11-1 + Plan 11-2 both complete)
-**Phase 10 status:** COMPLETE 2026-06-01 — Cloudflare→Vercel pivot shipped + live-verified at `https://aussieledger.techtaitan.com`; HOST-01/02/03/04 closed; 6 pivot commits + 4 from Plan 10-1
-**Phase 11 status:** Plans complete 2026-06-01 — Plan 11-1 (3 task commits) + Plan 11-2 (5 task commits); awaiting /gsd:verify-phase 11 + UAT; IDB-01..05 all closed end-to-end
-**Phase 12 status:** Not started
+**Current phase:** Phase 12 — User-Supplied AI Key + Direct-Browser Gemini (not yet discussed/planned)
+**Current plan:** none — Phase 11 complete; awaiting `/gsd:discuss-phase 12` or `/gsd:plan-phase 12`
+**Phase 10 status:** COMPLETE 2026-06-01 — Cloudflare→Vercel pivot shipped + live-verified at `https://aussieledger.techtaitan.com`; HOST-01/02/03/04 closed; 10 commits total
+**Phase 11 status:** COMPLETE 2026-06-01 — IDB hardening shipped + user smoke-verified; IDB-01..05 all closed; 10 commits total (4 from Plan 11-1 + 6 from Plan 11-2)
+**Phase 12 status:** Not started — next up
 **Phase 13 status:** Not started
 **Phase 14 status:** Not started (HOST-04 closed early in Phase 10; remaining requirements: POL-01..04)
-**Last session:** 2026-06-01T04:20:00Z
-**Stopped at:** Plan 11-2 COMPLETE (5 task commits: 9067e5c Task 1 useBackupNag+addDaysIso; 7ee4aef Task 2 IosItpBanner; 41e5607 Task 4 Toast actions widening; 0878e8a Task 3 DataPage wiring; fc73e7c Task 5 App.tsx wiring + REQUIREMENTS IDB-05 italic note). 56 new SPA tests GREEN (baseline 1027 → 1083 SPA GREEN + 11 todo + 0 RED; 18 server GREEN unchanged). Lint EXIT 0; build EXIT 0 (incl. AIza scan). CI runs 26734153604 / 26734203565 / 26734254976 / 26734354506 / 26734775190 all GREEN. All 13 plan-level verification greps PASS; all 5 ROADMAP Phase 11 success criteria met; IDB-01..05 closed end-to-end.
-**Overall progress:** v1.2: 1/5 phases complete (Phase 10 done) + Phase 11 plans complete pending verification. 9/16 requirements complete (HOST-01..04 + IDB-01..05). Run `/gsd:verify-phase 11` to verify Phase 11, then UAT, then `/gsd:execute-phase 12`.
+**Last session:** 2026-06-01T04:30:00Z
+**Stopped at:** Phase 11 verified done via user live smoke. 1083 SPA GREEN + 11 todo + 0 RED + 18 server GREEN; lint EXIT 0; build EXIT 0. Live deploy serves new bundle hashes (index-D7XS6EvI.js + index-CqP1BSka.css) — confirms Phase 11 IDB hardening is in production. 9/16 v1.2 requirements complete (HOST-01..04 + IDB-01..05); 7 remaining (AI-01..02, PWA-01, POL-01..04).
+**Overall progress:** v1.2: 2/5 phases complete (Phase 10 + Phase 11 done). 9/16 requirements complete. Run `/gsd:discuss-phase 12` to scope Phase 12 (User-Supplied AI Key + Direct-Browser Gemini), or `/gsd:plan-phase 12` directly to skip discussion.
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -51,8 +51,8 @@ v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
 v1.1:  [Phase 7] [Phase 8] [Phase 9]
        [ DONE  ] [ DONE  ] [ DONE  ]
 
-v1.2:  [Phase 10] [Phase 11]    [Phase 12] [Phase 13] [Phase 14]
-       [ DONE  ] [PLANS DONE] [PENDING ] [PENDING ] [PENDING ]
+v1.2:  [Phase 10] [Phase 11] [Phase 12] [Phase 13] [Phase 14]
+       [ DONE  ] [ DONE  ] [PENDING ] [PENDING ] [PENDING ]
 
 v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 ```
@@ -64,7 +64,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | Phase | Name | Key Outcome | Status |
 |-------|------|-------------|--------|
 | 10 | Public Build + CI/CD (Cloudflare→Vercel pivot) | SPA LIVE at `https://aussieledger.techtaitan.com`; vercel.json CSP+headers+rewrites; AIza scan in npm build; `VITE_HOSTED_MODE` flag; custom domain configured (HOST-04 early) | DONE 2026-06-01 |
-| 11 | IndexedDB Hardening | `persist()` grant; quota disclosure; backup-nag hook; iOS ITP banner; `beforeunload`+visibilitychange guard with settle-point flush | Plans complete 2026-06-01 (awaiting verification + UAT) |
+| 11 | IndexedDB Hardening | `persist()` grant; quota disclosure; backup-nag hook; iOS ITP banner; `beforeunload`+visibilitychange guard with settle-point flush | DONE 2026-06-01 |
 | 12 | User-Supplied AI Key + Direct-Browser Gemini | Settings AI key UI; `callGeminiMatchAccounts` routing helper; `AiGateNote` hosted-mode link | Not started |
 | 13 | PWA Wrapper | `vite-plugin-pwa` + manifest + SW stale-cache prevention + update banner | Not started |
 | 14 | Release Polish + Custom Domain | First-visit trust banner; `/demo` isolated IDB; `/privacy` page; README rewrite; custom domain | Not started |
