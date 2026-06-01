@@ -29,8 +29,9 @@ let cachedHealth: HealthResponse | null = null;
 
 /**
  * True iff the adapter probe was attempted AND exhausted (server expected but
- * unreachable). Plan 03-4's "Server unreachable" banner reads this. False on
- * an explicit `storageMode` override and false on a clean server-200 path.
+ * unreachable). The AdapterFallbackBanner ("Running on Local Browser Storage")
+ * reads this. False on an explicit `storageMode` override and false on a
+ * clean server-200 path.
  */
 let fellBackToLocal = false;
 

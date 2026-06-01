@@ -159,7 +159,7 @@ export function Sidebar({
           <div>
             <h1 className="text-xl font-bold tracking-tighter flex items-center gap-2">
               <Calculator className="text-blue-600" />
-              LedgerAU
+              AussieLedger
             </h1>
             <p className="text-[10px] uppercase tracking-widest opacity-50 font-bold mt-1">
               Professional Accounting

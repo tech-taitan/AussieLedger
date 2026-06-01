@@ -8,10 +8,15 @@
  * `getFellBackToLocal() === true`). On a clean local-only boot
  * (storageMode='local' override or no probe attempted) this is silent.
  *
+ * Copy is intentionally informational, not alarming: on the public
+ * Vercel deploy, running on local browser storage IS the intended
+ * state (zero hosted user data is the v1.2 thesis). The banner just
+ * confirms the storage mode for transparency.
+ *
  * Dismissal is session-state — the next page reload re-checks the flag.
  */
 import React, { useEffect, useState } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, Database } from 'lucide-react';
 import { getAdapterKind, getFellBackToLocal } from '../storage';
 
 export const AdapterFallbackBanner: React.FC = () => {
@@ -32,14 +37,14 @@ export const AdapterFallbackBanner: React.FC = () => {
 
   return (
     <div
-      role="alert"
-      className="flex items-start gap-3 bg-amber-50 border-b border-amber-300 text-amber-900 px-4 py-2 text-sm"
+      role="status"
+      className="flex items-start gap-3 bg-stone-50 border-b border-stone-300 text-stone-700 px-4 py-2 text-sm"
       data-testid="adapter-fallback-banner"
     >
-      <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+      <Database size={18} className="shrink-0 mt-0.5" />
       <div className="flex-1">
-        <strong className="font-semibold">Server unreachable</strong>
-        &nbsp;— running in local mode. Refresh once the server is up.
+        <strong className="font-semibold">Running on Local Browser Storage</strong>
+        &nbsp;— your data lives in this browser only. Export from the Data page to keep a backup.
       </div>
       <button
         onClick={() => setShow(false)}

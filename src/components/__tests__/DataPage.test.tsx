@@ -400,7 +400,7 @@ describe('AdapterFallbackBanner (W5)', () => {
     render(<AdapterFallbackBanner />);
     const banner = await screen.findByTestId('adapter-fallback-banner');
     expect(banner).toBeInTheDocument();
-    expect(banner.textContent).toMatch(/Server unreachable/);
+    expect(banner.textContent).toMatch(/Running on Local Browser Storage/);
   });
 
   it('banner is dismissible', async () => {
