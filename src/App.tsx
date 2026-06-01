@@ -13,6 +13,7 @@ import { useSettings } from './lib/persona';
 import { MainLayout } from './components/shell/MainLayout';
 import { ViewRouter } from './components/ViewRouter';
 import { Toast } from './components/Toast';
+import { UpdateBanner } from './components/UpdateBanner';
 import { getAdapter } from './storage';
 import type { View } from './types';
 
@@ -148,6 +149,7 @@ export default function App() {
 
   return (
     <>
+      <UpdateBanner />
       <MainLayout
         view={view}
         setView={setView}
