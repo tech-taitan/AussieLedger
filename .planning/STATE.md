@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: 13
-current_plan: null
-status: phase-deferred-ready-to-plan-next
-stopped_at: "Phase 12 DEFERRED to v5 (2026-06-01) — AI-01/AI-02 moved to Future Requirements; AiGateNote copy updated to honest 'not available on hosted version' messaging. Phase 13 (PWA Wrapper) is now next."
-last_updated: "2026-06-01T05:00:00Z"
+current_plan: 13-1
+status: ready-to-execute
+stopped_at: "Phase 13 planned (2 plans, 6 tasks, checker PASS round 2 — B-1 Smoke C wording + R-2 pwa-config.test.ts structural-test hardening both resolved). Ready for /gsd:execute-phase 13."
+last_updated: "2026-06-01T05:30:00Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
+  total_plans: 6
   completed_plans: 4
 ---
 
@@ -33,12 +33,12 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 13 — PWA Wrapper (not yet discussed/planned; Phase 12 deferred)
-**Current plan:** none — Phase 11 complete + Phase 12 deferred; awaiting `/gsd:discuss-phase 13` or `/gsd:plan-phase 13`
+**Current phase:** Phase 13 — PWA Wrapper (planned, ready to execute)
+**Current plan:** 13-1 (icons + vite-plugin-pwa config + manifest + pwa-config structural test)
 **Phase 10 status:** COMPLETE 2026-06-01 — Cloudflare→Vercel pivot shipped + live-verified at `https://aussieledger.techtaitan.com`; HOST-01/02/03/04 closed; 10 commits total
 **Phase 11 status:** COMPLETE 2026-06-01 — IDB hardening shipped + user smoke-verified; IDB-01..05 all closed; 10 commits total (4 from Plan 11-1 + 6 from Plan 11-2)
 **Phase 12 status:** DEFERRED to v5 (2026-06-01) — AI-01/02 moved to Future Requirements; phase numbering preserved (no renumber) for commit-history stability; AiGateNote copy updated for honest hosted-mode messaging
-**Phase 13 status:** Not started — next up (PWA Wrapper)
+**Phase 13 status:** Planned 2026-06-01 — 2 plans (13-1 + 13-2), 6 tasks, checker PASS round 2; awaiting execution
 **Phase 14 status:** Not started (HOST-04 closed early in Phase 10; remaining requirements: POL-01..04)
 **Last session:** 2026-06-01T05:00:00Z
 **Stopped at:** Phase 12 deferred to v5 per user decision; REQUIREMENTS + ROADMAP + STATE all updated; AiGateNote copy now branches on isHostedMode() (hosted users see "not available on the hosted version", self-host users keep the .env.local hint). Phase 13 (PWA Wrapper) is next.
