@@ -42,10 +42,10 @@ describe('Toast', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it('T.4: clicking the toast calls onDismiss immediately', () => {
+  it('T.4: clicking the toast message body calls onDismiss immediately', () => {
     const onDismiss = vi.fn();
     render(<Toast message="click me" onDismiss={onDismiss} />);
-    fireEvent.click(screen.getByTestId('toast'));
+    fireEvent.click(screen.getByTestId('toast-message'));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
@@ -67,5 +67,61 @@ describe('Toast', () => {
     const { container } = render(<Toast message="warn" onDismiss={onDismiss} tone="warn" />);
     const el = container.querySelector('[data-testid="toast"]');
     expect(el?.className).toContain('bg-amber-600');
+  });
+
+  // ── Phase 11 widening: optional actions slot ───────────────────────────────
+  it('Phase11.1: omitting actions → no action area in DOM (existing contract preserved)', () => {
+    const onDismiss = vi.fn();
+    render(<Toast message="hi" onDismiss={onDismiss} />);
+    expect(screen.queryByTestId('toast-actions')).toBeNull();
+  });
+
+  it('Phase11.2: actions slot renders both buttons in DOM', () => {
+    const onDismiss = vi.fn();
+    render(
+      <Toast
+        message="hi"
+        onDismiss={onDismiss}
+        actions={
+          <>
+            <button data-testid="btn-a">A</button>
+            <button data-testid="btn-b">B</button>
+          </>
+        }
+      />,
+    );
+    expect(screen.getByTestId('toast-actions')).toBeInTheDocument();
+    expect(screen.getByTestId('btn-a')).toBeInTheDocument();
+    expect(screen.getByTestId('btn-b')).toBeInTheDocument();
+  });
+
+  it('Phase11.3: clicking an action button does NOT call onDismiss (stopPropagation)', () => {
+    const onDismiss = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <Toast
+        message="hi"
+        onDismiss={onDismiss}
+        actions={<button data-testid="action-btn" onClick={onClick}>Click</button>}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('action-btn'));
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it('Phase11.4: tone="warn" still applies amber-600 alongside actions slot', () => {
+    const onDismiss = vi.fn();
+    const { container } = render(
+      <Toast
+        message="warn+actions"
+        onDismiss={onDismiss}
+        tone="warn"
+        actions={<button>X</button>}
+      />,
+    );
+    const el = container.querySelector('[data-testid="toast"]');
+    expect(el?.className).toContain('bg-amber-600');
+    expect(screen.getByTestId('toast-actions')).toBeInTheDocument();
   });
 });
