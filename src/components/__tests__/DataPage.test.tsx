@@ -150,10 +150,25 @@ describe('DataPage (FND-02 / FND-03 UI)', () => {
 
 describe('DataPage Phase 11 hardening UI (IDB-01/02/03/04/05)', () => {
   const SNOOZE_KEY = 'aussieledger:backup-nag-snoozed-until';
+  // Snapshot the original navigator.storage descriptor so we can restore it
+  // after tests that override it (preventing cross-suite leakage).
+  const ORIGINAL_NAV_STORAGE = Object.getOwnPropertyDescriptor(
+    Object.getPrototypeOf(globalThis.navigator),
+    'storage',
+  );
 
   afterEach(() => {
     localStorage.removeItem(SNOOZE_KEY);
     sessionStorage.removeItem('aussieledger:ios-itp-banner-dismissed');
+    // Restore navigator.storage — Object.defineProperty overrides leak across
+    // tests and can cause App.beforeunload tests downstream to see the wrong
+    // persist()/estimate() implementations.
+    if (ORIGINAL_NAV_STORAGE) {
+      Object.defineProperty(globalThis.navigator, 'storage', ORIGINAL_NAV_STORAGE);
+    } else {
+      // Property was added directly on the instance; delete it.
+      delete (globalThis.navigator as unknown as Record<string, unknown>).storage;
+    }
     vi.restoreAllMocks();
   });
 
