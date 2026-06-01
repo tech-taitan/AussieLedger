@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: 11
-current_plan: null
-status: phase-complete-ready-to-plan-next
-stopped_at: Phase 10 COMPLETE (Cloudflare→Vercel pivot shipped + live-verified at https://aussieledger.techtaitan.com); HOST-01/02/03/04 all closed; next action /gsd:discuss-phase 11 or /gsd:plan-phase 11
+current_plan: 11-1
+status: ready-to-execute
+stopped_at: Phase 11 planned (2 plans, 10 tasks, checker PASS round 2 — B1 legacy-migration silent-import + B2 visibilitychange settle-point + W1 structural lint + W3 frontmatter all resolved); next action /gsd:execute-phase 11
 last_updated: "2026-06-01T00:00:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 2
+  total_plans: 4
   completed_plans: 2
 ---
 
@@ -33,10 +33,10 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 11 — IndexedDB Hardening (not yet discussed/planned)
-**Current plan:** none — Phase 10 complete; awaiting `/gsd:discuss-phase 11` or `/gsd:plan-phase 11`
+**Current phase:** Phase 11 — IndexedDB Hardening (planned, ready to execute)
+**Current plan:** 11-1 (LocalAdapter hardening + period.ts nowIso/addDaysIso + structural-lint test)
 **Phase 10 status:** COMPLETE 2026-06-01 — Cloudflare→Vercel pivot shipped + live-verified at `https://aussieledger.techtaitan.com`; HOST-01/02/03/04 closed; 6 pivot commits + 4 from Plan 10-1
-**Phase 11 status:** Not started — next up
+**Phase 11 status:** Planned 2026-06-01 — 2 plans, 10 tasks, checker PASS round 2; awaiting execution
 **Phase 12 status:** Not started
 **Phase 13 status:** Not started
 **Phase 14 status:** Not started (HOST-04 closed early in Phase 10; remaining requirements: POL-01..04)
