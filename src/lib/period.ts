@@ -40,6 +40,16 @@ export function _resetNowProvider(): void {
   _nowProvider = () => new Date();
 }
 
+/**
+ * ISO-8601 UTC timestamp from the same provider as today(). Use for meta-store
+ * writes (e.g. LocalAdapter's lastWriteAt / lastExportAt) so the structural
+ * lint invariant ("no new Date() outside src/lib/period.ts") holds and tests
+ * can inject deterministic timestamps via _setNowProvider().
+ */
+export function nowIso(): string {
+  return _nowProvider().toISOString();
+}
+
 // ── FY label helpers ───────────────────────────────────────────────────────
 /**
  * Return the FY label for the given date.

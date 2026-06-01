@@ -185,3 +185,34 @@ describe('today injectable', () => {
     });
   });
 });
+
+describe('nowIso', () => {
+  afterEach(() => {
+    period._resetNowProvider();
+  });
+
+  it('returns an ISO-8601 UTC string (YYYY-MM-DDTHH:mm:ss.sssZ)', () => {
+    const iso = period.nowIso();
+    expect(iso).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  });
+
+  it('returns the injected provider clock as ISO when _setNowProvider is set', () => {
+    period._setNowProvider(() => new Date('2026-06-15T10:30:00.000Z'));
+    expect(period.nowIso()).toBe('2026-06-15T10:30:00.000Z');
+  });
+
+  it('nowIso() and today().toISOString() match at the same provider tick', () => {
+    period._setNowProvider(() => new Date('2026-01-02T03:04:05.678Z'));
+    expect(period.nowIso()).toBe(period.today().toISOString());
+  });
+
+  it('after _resetNowProvider, two consecutive nowIso() calls produce strings within 1 second of each other', () => {
+    period._setNowProvider(() => new Date('2026-06-15T10:30:00.000Z'));
+    period._resetNowProvider();
+    const a = period.nowIso();
+    const b = period.nowIso();
+    const aMs = new Date(a).getTime();
+    const bMs = new Date(b).getTime();
+    expect(Math.abs(bMs - aMs)).toBeLessThan(1000);
+  });
+});
