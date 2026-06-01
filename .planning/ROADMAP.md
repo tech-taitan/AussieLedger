@@ -36,8 +36,8 @@
 
 - [x] **Phase 10: Public Build + CI/CD (Cloudflare→Vercel pivot)** — SPA LIVE at https://aussieledger.techtaitan.com — completed 2026-06-01 (HOST-04 closed early)
 - [x] **Phase 11: IndexedDB Hardening** — persist grant + quota disclosure + backup-nag + iOS ITP disclosure + pre-unload guard with settle-point flush — completed 2026-06-01 (user smoke-verified live deploy)
-- [ ] **Phase 12: User-Supplied AI Key + Direct-Browser Gemini** — Settings AI key UI + `callGeminiMatchAccounts` routing helper
-- [ ] **Phase 13: PWA Wrapper** — service worker + manifest + stale-cache prevention + update banner
+- [~] **Phase 12: ~~User-Supplied AI Key + Direct-Browser Gemini~~** — **DEFERRED to v5** (2026-06-01); AI-01/02 moved to Future Requirements. v1.2 effectively skips this phase.
+- [ ] **Phase 13: PWA Wrapper** — service worker + manifest + stale-cache prevention + update banner (next up; Phase 12 deferred)
 - [ ] **Phase 14: Release Polish** — first-visit UX + `/demo` route + `/privacy` page + README rewrite (HOST-04 already done in Phase 10)
 
 ## Phase Details
@@ -141,7 +141,11 @@ Plans:
 
 ---
 
-### Phase 12: User-Supplied AI Key + Direct-Browser Gemini
+### Phase 12: ~~User-Supplied AI Key + Direct-Browser Gemini~~ — DEFERRED to v5 (2026-06-01)
+
+> AI features deferred from v1.2 to a future milestone (v5). Self-host AI continues to work today (server `GEMINI_API_KEY` env var); hosted Vercel deploy intentionally has no AI surface until v5 ships. `AiGateNote` copy updated 2026-06-01 to honestly say AI is "not available on the hosted version" instead of misleadingly pointing at `.env.local`. The original AI-01/AI-02 scope below is preserved as historical record of the v1.2-era plan.
+
+**Original v1.2 scope (now deferred):**
 
 **Goal:** A hosted-SPA user can paste their own Gemini API key into Settings, and AI account-matching in ImportTB routes through a direct browser-to-Google call — no AussieLedger server involved, no key ever logged or sent to the app's origin.
 
@@ -216,7 +220,7 @@ Plans:
 | 9. Exports + Polish + Cleanup | v1.1 | 1/1 | Complete | 2026-05-30 |
 | 10. Public Build + CI/CD (Cloudflare→Vercel pivot) | v1.2 | 2/2 | Complete | 2026-06-01 |
 | 11. IndexedDB Hardening | v1.2 | 2/2 | Complete | 2026-06-01 |
-| 12. User-Supplied AI Key + Direct-Browser Gemini | v1.2 | 0/TBD | Not started | - |
+| 12. ~~User-Supplied AI Key + Direct-Browser Gemini~~ | v1.2 | - | DEFERRED → v5 | 2026-06-01 |
 | 13. PWA Wrapper | v1.2 | 0/TBD | Not started | - |
 | 14. Release Polish | v1.2 | 0/TBD | Not started (HOST-04 already done in Phase 10) | - |
 

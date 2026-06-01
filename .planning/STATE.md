@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
-current_phase: 12
+current_phase: 13
 current_plan: null
-status: phase-complete-ready-to-plan-next
-stopped_at: "Phase 11 COMPLETE 2026-06-01 — user-verified live deploy at https://aussieledger.techtaitan.com (smoke OK; new bundle hashes confirm Phase 11 shipped); IDB-01..05 all closed end-to-end; 1083 SPA GREEN; 9 task commits + 1 docs commit across Plan 11-1 + Plan 11-2; all CI runs GREEN. Phase 12 next."
-last_updated: "2026-06-01T04:30:00Z"
+status: phase-deferred-ready-to-plan-next
+stopped_at: "Phase 12 DEFERRED to v5 (2026-06-01) — AI-01/AI-02 moved to Future Requirements; AiGateNote copy updated to honest 'not available on hosted version' messaging. Phase 13 (PWA Wrapper) is now next."
+last_updated: "2026-06-01T05:00:00Z"
 progress:
-  total_phases: 5
+  total_phases: 4
   completed_phases: 2
   total_plans: 4
   completed_plans: 4
@@ -33,16 +33,16 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 12 — User-Supplied AI Key + Direct-Browser Gemini (not yet discussed/planned)
-**Current plan:** none — Phase 11 complete; awaiting `/gsd:discuss-phase 12` or `/gsd:plan-phase 12`
+**Current phase:** Phase 13 — PWA Wrapper (not yet discussed/planned; Phase 12 deferred)
+**Current plan:** none — Phase 11 complete + Phase 12 deferred; awaiting `/gsd:discuss-phase 13` or `/gsd:plan-phase 13`
 **Phase 10 status:** COMPLETE 2026-06-01 — Cloudflare→Vercel pivot shipped + live-verified at `https://aussieledger.techtaitan.com`; HOST-01/02/03/04 closed; 10 commits total
 **Phase 11 status:** COMPLETE 2026-06-01 — IDB hardening shipped + user smoke-verified; IDB-01..05 all closed; 10 commits total (4 from Plan 11-1 + 6 from Plan 11-2)
-**Phase 12 status:** Not started — next up
-**Phase 13 status:** Not started
+**Phase 12 status:** DEFERRED to v5 (2026-06-01) — AI-01/02 moved to Future Requirements; phase numbering preserved (no renumber) for commit-history stability; AiGateNote copy updated for honest hosted-mode messaging
+**Phase 13 status:** Not started — next up (PWA Wrapper)
 **Phase 14 status:** Not started (HOST-04 closed early in Phase 10; remaining requirements: POL-01..04)
-**Last session:** 2026-06-01T04:30:00Z
-**Stopped at:** Phase 11 verified done via user live smoke. 1083 SPA GREEN + 11 todo + 0 RED + 18 server GREEN; lint EXIT 0; build EXIT 0. Live deploy serves new bundle hashes (index-D7XS6EvI.js + index-CqP1BSka.css) — confirms Phase 11 IDB hardening is in production. 9/16 v1.2 requirements complete (HOST-01..04 + IDB-01..05); 7 remaining (AI-01..02, PWA-01, POL-01..04).
-**Overall progress:** v1.2: 2/5 phases complete (Phase 10 + Phase 11 done). 9/16 requirements complete. Run `/gsd:discuss-phase 12` to scope Phase 12 (User-Supplied AI Key + Direct-Browser Gemini), or `/gsd:plan-phase 12` directly to skip discussion.
+**Last session:** 2026-06-01T05:00:00Z
+**Stopped at:** Phase 12 deferred to v5 per user decision; REQUIREMENTS + ROADMAP + STATE all updated; AiGateNote copy now branches on isHostedMode() (hosted users see "not available on the hosted version", self-host users keep the .env.local hint). Phase 13 (PWA Wrapper) is next.
+**Overall progress:** v1.2: 2/4 phases complete (Phase 10 + Phase 11 done; Phase 12 deferred → effectively 4 phases in v1.2). 9/14 active v1.2 requirements complete (HOST-01..04 + IDB-01..05); 5 remaining (PWA-01, POL-01..04). Run `/gsd:discuss-phase 13` to scope PWA, or `/gsd:plan-phase 13` directly to skip discussion.
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -51,8 +51,8 @@ v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
 v1.1:  [Phase 7] [Phase 8] [Phase 9]
        [ DONE  ] [ DONE  ] [ DONE  ]
 
-v1.2:  [Phase 10] [Phase 11] [Phase 12] [Phase 13] [Phase 14]
-       [ DONE  ] [ DONE  ] [PENDING ] [PENDING ] [PENDING ]
+v1.2:  [Phase 10] [Phase 11] [Phase 12]   [Phase 13] [Phase 14]
+       [ DONE  ] [ DONE  ] [DEFERRED→v5] [PENDING ] [PENDING ]
 
 v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 ```
@@ -65,7 +65,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 |-------|------|-------------|--------|
 | 10 | Public Build + CI/CD (Cloudflare→Vercel pivot) | SPA LIVE at `https://aussieledger.techtaitan.com`; vercel.json CSP+headers+rewrites; AIza scan in npm build; `VITE_HOSTED_MODE` flag; custom domain configured (HOST-04 early) | DONE 2026-06-01 |
 | 11 | IndexedDB Hardening | `persist()` grant; quota disclosure; backup-nag hook; iOS ITP banner; `beforeunload`+visibilitychange guard with settle-point flush | DONE 2026-06-01 |
-| 12 | User-Supplied AI Key + Direct-Browser Gemini | Settings AI key UI; `callGeminiMatchAccounts` routing helper; `AiGateNote` hosted-mode link | Not started |
+| ~~12~~ | ~~User-Supplied AI Key + Direct-Browser Gemini~~ | Deferred — AI not available on hosted version until v5; self-host AI unchanged | DEFERRED → v5 (2026-06-01) |
 | 13 | PWA Wrapper | `vite-plugin-pwa` + manifest + SW stale-cache prevention + update banner | Not started |
 | 14 | Release Polish + Custom Domain | First-visit trust banner; `/demo` isolated IDB; `/privacy` page; README rewrite; custom domain | Not started |
 

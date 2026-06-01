@@ -27,12 +27,12 @@ Harden the existing v1.0 LocalAdapter so users who arrive at the hosted SPA cold
 - [x] **IDB-04**: When user-agent is detected as iOS Safari AND the app is NOT installed as a PWA (`window.matchMedia('(display-mode: standalone)').matches` is false), a contextual banner appears in DataPage explaining the 7-day ITP wipe risk and recommending "Add to Home Screen" to mitigate. Banner is dismissible (per-session). Honest UX about the risk; does not block the app.
 - [x] **IDB-05**: `beforeunload` + `visibilitychange` guard fires a browser-native "are you sure you want to leave?" prompt when `lastWriteAt > lastExportAt`. Listener is registered/unregistered conditionally (NOT permanently) to avoid Firefox bfcache exclusion. `visibilitychange` complement is required because iOS Safari fires `beforeunload` unreliably. *v1.2 implementation note: the visibilitychange handler performs a settle-point IDB read (forces pending write transactions to land before iOS Safari may suspend the tab) — it does NOT fire a confirmation dialog because browser APIs only permit that from beforeunload. The "are you sure?" prompt is beforeunload-exclusive.*
 
-### User-Supplied AI Key + Direct-Browser Gemini (AI)
+### ~~User-Supplied AI Key + Direct-Browser Gemini (AI)~~ — DEFERRED to v5 (2026-06-01)
 
-Hosted SPA cannot ship with a Gemini API key (it would leak to every user). User provides their own key; never sent to the AussieLedger origin or any third party.
+> **Deferred from v1.2 to a future milestone (v5).** User decided AI features will not be enabled on the hosted version until v5. Self-host AI continues to work as today (Express + `GEMINI_API_KEY` env var). On the hosted Vercel deploy, AI surfaces (ImportTB AI re-match button) are naturally hidden because `isAiEnabled()` returns false; the `AiGateNote` copy was updated 2026-06-01 to say "not available on the hosted version" instead of misleadingly pointing at `.env.local`. Phase 12 cancelled; CSP `connect-src` allowlist for `generativelanguage.googleapis.com` (Phase 10 vercel.json) kept in place — harmless and ready to be consumed when v5 ships.
 
-- [ ] **AI-01**: Settings page (Phase 6) gains a "Gemini API key" section with `<input type="password">` paste field, "Save" button, "Show/hide" toggle, and live-validation indicator. On Save, app calls Gemini `/models` endpoint with the key to confirm it's valid (401 → "key invalid" inline error); on success, key is persisted to `localStorage` under `aussieledger:gemini-api-key`. Key is held in `useRef` (NOT React state) to prevent React DevTools state inspection from leaking. Never `console.log`'d. One-line disclosure visible: "Stored only in this browser. Never sent to AussieLedger servers." `AiGateNote` (Phase 6) becomes a navigation link to this Settings section when `VITE_HOSTED_MODE=true`.
-- [ ] **AI-02**: New `callGeminiMatchAccounts()` helper in `src/lib/ai.ts` handles server-vs-browser routing. When running in `VITE_HOSTED_MODE` and a user key is present in `localStorage`, the helper makes a direct browser fetch to `https://generativelanguage.googleapis.com/.../models/{model}:generateContent` (using the `@google/genai` package already in `dependencies`). When self-hosted with the Express server (`server/`) and no user key, the helper falls back to the existing `/api/ai/match-accounts` route. ImportTB.tsx replaces its inline `fetch('/api/ai/match-accounts', ...)` with a single call to this helper.
+- [~] **AI-01** *(DEFERRED → v5)*: Settings page (Phase 6) gains a "Gemini API key" section with `<input type="password">` paste field, "Save" button, "Show/hide" toggle, and live-validation indicator. On Save, app calls Gemini `/models` endpoint with the key to confirm it's valid (401 → "key invalid" inline error); on success, key is persisted to `localStorage` under `aussieledger:gemini-api-key`. Key is held in `useRef` (NOT React state) to prevent React DevTools state inspection from leaking. Never `console.log`'d. One-line disclosure visible: "Stored only in this browser. Never sent to AussieLedger servers." `AiGateNote` (Phase 6) becomes a navigation link to this Settings section when `VITE_HOSTED_MODE=true`.
+- [~] **AI-02** *(DEFERRED → v5)*: New `callGeminiMatchAccounts()` helper in `src/lib/ai.ts` handles server-vs-browser routing. When running in `VITE_HOSTED_MODE` and a user key is present in `localStorage`, the helper makes a direct browser fetch to `https://generativelanguage.googleapis.com/.../models/{model}:generateContent` (using the `@google/genai` package already in `dependencies`). When self-hosted with the Express server (`server/`) and no user key, the helper falls back to the existing `/api/ai/match-accounts` route. ImportTB.tsx replaces its inline `fetch('/api/ai/match-accounts', ...)` with a single call to this helper.
 
 ### PWA Wrapper (PWA)
 
@@ -51,6 +51,7 @@ First-visit UX + demo data + privacy page + README rewrite — turns the deploye
 
 ## Future Requirements (deferred from v1.2)
 
+- **AI-01 + AI-02 (User-Supplied Gemini Key + Direct-Browser Gemini)** — *deferred to v5 on 2026-06-01.* Self-host AI keeps working as today (server-side `GEMINI_API_KEY` env var); hosted Vercel deploy will not surface AI features until the v5 milestone. CSP `connect-src` allowlist for `generativelanguage.googleapis.com` already in `vercel.json` (Phase 10) — pre-positioned for v5.
 - **sqlite-wasm + File System Access API** — v2.0's locked direction; user-owned `.aussieledger` SQLite files on disk
 - **Tauri desktop wrapper** — v2.0 follow-on once `BrowserSqliteAdapter` is proven in production
 - **Anonymous voluntary error reporting** — even opt-in telemetry contradicts the "nothing leaves your browser" message v1.2 establishes; defer to v2.x if it ever becomes warranted
@@ -89,15 +90,15 @@ Confirmed by `/gsd:roadmapper` on 2026-05-31. Each REQ-ID maps to exactly one ph
 | IDB-03 | Phase 11 | Complete (11-2 2026-06-01: useBackupNag hook + Toast actions slot + App-level mount + DataPage handleExport snooze-clear) |
 | IDB-04 | Phase 11 | Complete (11-2 2026-06-01: IosItpBanner 4-gate matrix + verbatim CONTEXT-locked copy + sessionStorage per-session dismiss + DataPage mount) |
 | IDB-05 | Phase 11 | Complete (11-2 2026-06-01: lastWriteAt machinery + bumpWriteAt + opts.silent landed 11-1; App-level conditional beforeunload+visibilitychange + Blocker 2 settle-point flush + REQUIREMENTS italic capability disclosure landed 11-2) |
-| AI-01 | Phase 12 | Pending |
-| AI-02 | Phase 12 | Pending |
+| ~~AI-01~~ | ~~Phase 12~~ | DEFERRED → v5 (2026-06-01) |
+| ~~AI-02~~ | ~~Phase 12~~ | DEFERRED → v5 (2026-06-01) |
 | PWA-01 | Phase 13 | Pending |
 | POL-01 | Phase 14 | Pending |
 | POL-02 | Phase 14 | Pending |
 | POL-03 | Phase 14 | Pending |
 | POL-04 | Phase 14 | Pending |
 
-**Total v1.2 requirements: 16**
-**Phase coverage: 10 through 14 (5 phases continuing from v1.1's 7–9)**
+**Total v1.2 requirements: 14** (was 16; AI-01/AI-02 deferred to v5 on 2026-06-01)
+**Phase coverage: 10, 11, 13, 14** — Phase 12 (AI) deferred. v1.2 effectively ships 4 phases continuing from v1.1's 7–9. Phase numbering preserved (no renumber) so commit history + downstream phase plans remain stable.
 
 **Note on HOST-04 (superseded):** Originally assigned to Phase 14 so the README live-demo link (POL-04) could point at the custom domain after Phase 10 shipped the `.pages.dev` URL. The 2026-06-01 Vercel pivot dissolved this dependency — the user configured `aussieledger.techtaitan.com` at Vercel project setup time, so HOST-04 was satisfied during the Phase 10 pivot bundle and the README live-demo link was added to point at the custom domain directly (commit `408e943`). POL-04 (the full audience-first README rewrite) still belongs to Phase 14.
