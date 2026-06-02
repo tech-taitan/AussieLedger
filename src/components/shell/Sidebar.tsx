@@ -62,32 +62,46 @@ function NavButton({
   badge?: number;
   onBadgeClick?: () => void; // when present, badge becomes a clickable button
 }) {
+  const badgeTestId = `nav-${label.toLowerCase().replace(/\s+/g, '-')}-badge`;
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'w-full flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors',
-        active ? 'bg-[var(--ink)] text-white' : 'text-gray-600 hover:bg-gray-100',
-      )}
-    >
-      {icon}
-      <span className="flex-1 text-left">{label}</span>
-      {badge != null && badge > 0 && (
-        onBadgeClick ? (
-          <button
-            onClick={(e) => { e.stopPropagation(); onBadgeClick(); }}
-            className="ml-auto text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold hover:bg-red-600"
-            data-testid={`nav-${label.toLowerCase().replace(/\s+/g, '-')}-badge`}
-          >
-            {badge}
-          </button>
-        ) : (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          'w-full flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors',
+          onBadgeClick && badge != null && badge > 0 ? 'pr-12' : '',
+          active ? 'bg-[var(--ink)] text-white' : 'text-gray-600 hover:bg-gray-100',
+        )}
+      >
+        {icon}
+        <span className="flex-1 text-left">{label}</span>
+        {badge != null && badge > 0 && !onBadgeClick && (
           <span className="ml-auto text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold">
             {badge}
           </span>
-        )
+        )}
+      </button>
+      {badge != null && badge > 0 && onBadgeClick && (
+        /* POL-CODE-03 — span role=button silences React's nested-interactive warning; Enter+Space dispatch via onKeyDown. */
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label={`Show next anomaly for ${label}`}
+          onClick={onBadgeClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onBadgeClick();
+            }
+          }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold hover:bg-red-600 cursor-pointer"
+          data-testid={badgeTestId}
+        >
+          {badge}
+        </span>
       )}
-    </button>
+    </div>
   );
 }
 
