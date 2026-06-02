@@ -242,7 +242,7 @@ Plans:
 | 12. ~~User-Supplied AI Key + Direct-Browser Gemini~~ | v1.2 | - | DEFERRED → v5 | 2026-06-01 |
 | 13. PWA Wrapper | v1.2 | 2/2 | Complete | 2026-06-02 |
 | 14. Release Polish | v1.2 | 3/3 | Complete | 2026-06-02 |
-| 15. Code Polish | v1.3 | 0/2 | Planned | - |
+| 15. Code Polish | v1.3 | 1/2 | In Progress | - |
 | 16. Docs Polish | v1.3 | 0/TBD | Not started | - |
 
 ## Research Flags
