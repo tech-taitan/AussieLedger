@@ -47,20 +47,16 @@ function renderSidebar(overrides: Partial<React.ComponentProps<typeof Sidebar>> 
 }
 
 describe('Sidebar (PERS-01 + UX-02 — Plan 06-3)', () => {
-  it('Test S.1: owner mode with anomalyCounts={journals:3} — journals button subtree contains "3" in bg-red-500 pill', () => {
+  it('Test S.1: owner mode with anomalyCounts={journals:3} — journals badge contains "3" in bg-red-500 pill', () => {
     renderSidebar({ mode: 'owner', anomalyCounts: { journals: 3, accounts: 0 } });
-    // Find the Journal Entries button
-    const journalBtn = screen.getByRole('button', { name: /journal entries/i });
-    expect(journalBtn).toBeTruthy();
-    // Its subtree must contain a span with bg-red-500 and text "3"
-    const pill = journalBtn.querySelector('.bg-red-500');
+    const pill = document.querySelector('[data-testid="nav-journal-entries-badge"]');
     expect(pill).toBeTruthy();
     expect(pill?.textContent).toBe('3');
   });
 
   it('Test S.2: owner mode with anomalyCounts={journals:0} — no bg-red-500 pill inside journals button', () => {
     renderSidebar({ mode: 'owner', anomalyCounts: { journals: 0, accounts: 0 } });
-    const journalBtn = screen.getByRole('button', { name: /journal entries/i });
+    const journalBtn = screen.getByRole('button', { name: 'Journal Entries' });
     const pill = journalBtn.querySelector('.bg-red-500');
     expect(pill).toBeNull();
   });
@@ -98,18 +94,29 @@ describe('Sidebar (PERS-01 + UX-02 — Plan 06-3)', () => {
 });
 
 describe('Sidebar Phase 9 UX-06 — badge deep-link cycle state', () => {
-  it('S.8: journals badge renders as a button (clickable) when anomalyCounts.journals > 0', () => {
+  it('S.8: journals badge renders as a span role=button (clickable) when anomalyCounts.journals > 0', () => {
+    // POL-CODE-03 (Phase 15) — badge swapped from <button> to <span role="button"> to
+    // silence React's nested-interactive-elements warning. Tag is now SPAN; role is button.
     renderSidebar({ mode: 'owner', anomalyCounts: { journals: 2, accounts: 0 } });
     const badge = document.querySelector('[data-testid="nav-journal-entries-badge"]');
     expect(badge).toBeTruthy();
-    expect(badge?.tagName).toBe('BUTTON');
+    expect(badge?.tagName).toBe('SPAN');
+    expect(badge?.getAttribute('role')).toBe('button');
   });
 
-  it('S.9: accounts badge renders as a button (clickable) when anomalyCounts.accounts > 0', () => {
+  it('S.8a: clickable badges are not nested inside navigation buttons', () => {
+    renderSidebar({ mode: 'owner', anomalyCounts: { journals: 2, accounts: 0 } });
+    const badge = document.querySelector('[data-testid="nav-journal-entries-badge"]');
+    expect(badge?.parentElement?.tagName).not.toBe('BUTTON');
+  });
+
+  it('S.9: accounts badge renders as a span role=button (clickable) when anomalyCounts.accounts > 0', () => {
+    // POL-CODE-03 (Phase 15) — same tag-swap as S.8.
     renderSidebar({ mode: 'owner', anomalyCounts: { journals: 0, accounts: 3 } });
     const badge = document.querySelector('[data-testid="nav-accounts-badge"]');
     expect(badge).toBeTruthy();
-    expect(badge?.tagName).toBe('BUTTON');
+    expect(badge?.tagName).toBe('SPAN');
+    expect(badge?.getAttribute('role')).toBe('button');
   });
 
   it('S.10: journals badge is a span (non-clickable) when no onAnomalyScroll provided but count > 0', () => {
@@ -160,5 +167,36 @@ describe('Sidebar Phase 9 UX-06 — badge deep-link cycle state', () => {
     fireEvent.click(badge);
     expect(onAnomalyScroll).toHaveBeenNthCalledWith(1, 'journals', 0);
     expect(onAnomalyScroll).toHaveBeenNthCalledWith(2, 'journals', 1);
+  });
+});
+
+describe('Sidebar POL-CODE-03 — keyboard a11y on anomaly badge', () => {
+  it('K.1: pressing Enter on journals badge invokes onAnomalyScroll(journals, 0)', () => {
+    const onAnomalyScroll = vi.fn();
+    renderSidebar({
+      mode: 'owner',
+      anomalyCounts: { journals: 3, accounts: 0 },
+      onAnomalyScroll,
+    });
+    const badge = document.querySelector('[data-testid="nav-journal-entries-badge"]') as HTMLElement;
+    expect(badge).toBeTruthy();
+    expect(badge.tagName).toBe('SPAN');
+    expect(badge.getAttribute('role')).toBe('button');
+    expect(badge.getAttribute('tabindex')).toBe('0');
+    fireEvent.keyDown(badge, { key: 'Enter' });
+    expect(onAnomalyScroll).toHaveBeenCalledWith('journals', 0);
+  });
+
+  it('K.2: pressing Space on journals badge invokes onAnomalyScroll(journals, 0)', () => {
+    const onAnomalyScroll = vi.fn();
+    renderSidebar({
+      mode: 'owner',
+      anomalyCounts: { journals: 3, accounts: 0 },
+      onAnomalyScroll,
+    });
+    const badge = document.querySelector('[data-testid="nav-journal-entries-badge"]') as HTMLElement;
+    expect(badge).toBeTruthy();
+    fireEvent.keyDown(badge, { key: ' ' });
+    expect(onAnomalyScroll).toHaveBeenCalledWith('journals', 0);
   });
 });
