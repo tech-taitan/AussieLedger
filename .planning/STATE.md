@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: 14
-current_plan: 14-3
-status: phase-ready-to-close
-stopped_at: "Plan 14-2 COMPLETE 2026-06-02 (6 tasks back-to-back; +34 SPA GREEN; WelcomeBanner + DemoModeBanner + PrivacyPage shipped; DisclaimerFooter widened; MasterDashboard empty-state branch; App.tsx initial view dispatched off getRouteKind() at mount; POL-01 + POL-02 + POL-03 all closed). Plan 14-3 (parallel executor) also complete. Phase 14 ready for verify + close."
-last_updated: "2026-06-02T14:15:00Z"
+current_plan: null
+status: milestone-ready-for-audit
+stopped_at: "Phase 14 COMPLETE 2026-06-02 — user smoke-verified live deploy at https://aussieledger.techtaitan.com (POL-01 WelcomeBanner empty-state + POL-02 /demo with aussieledger-demo IDB isolation + POL-03 /privacy page + POL-04 README all live; new bundle hash BeT9DoGt confirms shipped). v1.2 has 14/14 active requirements complete (HOST-01..04 + IDB-01..05 + PWA-01 + POL-01..04). AI-01/02 deferred to v5. Ready for /gsd:audit-milestone v1.2."
+last_updated: "2026-06-02T15:00:00Z"
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 6
+  completed_phases: 4
+  total_plans: 10
   completed_plans: 10
 ---
 

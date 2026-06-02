@@ -38,7 +38,7 @@
 - [x] **Phase 11: IndexedDB Hardening** — persist grant + quota disclosure + backup-nag + iOS ITP disclosure + pre-unload guard with settle-point flush — completed 2026-06-01 (user smoke-verified live deploy)
 - [~] **Phase 12: ~~User-Supplied AI Key + Direct-Browser Gemini~~** — **DEFERRED to v5** (2026-06-01); AI-01/02 moved to Future Requirements. v1.2 effectively skips this phase.
 - [x] **Phase 13: PWA Wrapper** — service worker + manifest + stale-cache prevention + UpdateBanner update flow + Lighthouse smoke — completed 2026-06-02 (Plan 13-1 install path + Plan 13-2 UpdateBanner + useUpdateBanner hook; user smoke-verified Lighthouse Installable + PWA Optimized both PASS, npm-run-dev SW absence confirmed, end-to-end UpdateBanner flow incl. B-1 sessionStorage-persists-within-tab lock approved)
-- [ ] **Phase 14: Release Polish** — first-visit UX + `/demo` route + `/privacy` page + README rewrite (HOST-04 already done in Phase 10)
+- [x] **Phase 14: Release Polish** — first-visit UX + `/demo` route + `/privacy` page + README rewrite — completed 2026-06-02 (user smoke-verified live deploy; POL-01..04 closed end-to-end; HOST-04 already done in Phase 10)
 
 ## Phase Details
 
@@ -229,7 +229,7 @@ Plans:
 | 11. IndexedDB Hardening | v1.2 | 2/2 | Complete | 2026-06-01 |
 | 12. ~~User-Supplied AI Key + Direct-Browser Gemini~~ | v1.2 | - | DEFERRED → v5 | 2026-06-01 |
 | 13. PWA Wrapper | v1.2 | 2/2 | Complete | 2026-06-02 |
-| 14. Release Polish | v1.2 | 3/3 | Plans complete; ready for /gsd:verify-phase 14 | 2026-06-02 |
+| 14. Release Polish | v1.2 | 3/3 | Complete | 2026-06-02 |
 
 ## Research Flags
 
