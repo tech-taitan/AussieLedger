@@ -83,3 +83,55 @@ describe('Settings component (Plan 06-3 SET.1–SET.4)', () => {
     expect(onClearSettings).toHaveBeenCalledOnce();
   });
 });
+
+describe('Settings POL-CODE-05 — Active Entity section', () => {
+  it('SET.5: activeEntity passed → section heading + entity name + Edit Entity Details button render', () => {
+    render(
+      <Settings
+        settings={{ mode: 'owner' }}
+        onChange={vi.fn()}
+        onClearSettings={vi.fn()}
+        entities={[entityA]}
+        activeEntity={entityA}
+        onEditActiveEntity={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('heading', { name: /active entity/i })).toBeTruthy();
+    expect(screen.getByText(/acme pty ltd/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /edit entity details/i })).toBeTruthy();
+  });
+
+  it('SET.6: activeEntity undefined → section heading + empty-state copy + NO Edit button', () => {
+    render(
+      <Settings
+        settings={{ mode: 'owner' }}
+        onChange={vi.fn()}
+        onClearSettings={vi.fn()}
+        entities={[]}
+        activeEntity={undefined}
+        onEditActiveEntity={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('heading', { name: /active entity/i })).toBeTruthy();
+    expect(screen.getByText(/no active entity selected/i)).toBeTruthy();
+    expect(screen.getByText(/select an entity from the master dashboard to edit/i)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /edit entity details/i })).toBeNull();
+  });
+
+  it('SET.7: clicking Edit Entity Details invokes onEditActiveEntity callback', () => {
+    const onEditActiveEntity = vi.fn();
+    render(
+      <Settings
+        settings={{ mode: 'owner' }}
+        onChange={vi.fn()}
+        onClearSettings={vi.fn()}
+        entities={[entityA]}
+        activeEntity={entityA}
+        onEditActiveEntity={onEditActiveEntity}
+      />
+    );
+    const btn = screen.getByRole('button', { name: /edit entity details/i });
+    fireEvent.click(btn);
+    expect(onEditActiveEntity).toHaveBeenCalledOnce();
+  });
+});
