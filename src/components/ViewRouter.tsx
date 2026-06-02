@@ -820,6 +820,8 @@ export function ViewRouter({
               onChange={setSettings}
               onClearSettings={clearSettings}
               entities={entities}
+              activeEntity={activeEntity}
+              onEditActiveEntity={() => setView('edit-entity')}
             />
           )}
 

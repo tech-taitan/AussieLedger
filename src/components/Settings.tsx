@@ -15,6 +15,10 @@ interface SettingsProps {
   onChange: (s: SettingsType) => void;
   onClearSettings: () => void;
   entities: Entity[];
+  /** Phase 15 POL-CODE-05 — currently-active entity (looked up by ViewRouter from activeEntityId). */
+  activeEntity?: Entity;
+  /** Phase 15 POL-CODE-05 — invoked when the Active Entity Edit button is clicked; delegates to setView('edit-entity'). */
+  onEditActiveEntity?: () => void;
 }
 
 export function Settings({
@@ -22,6 +26,8 @@ export function Settings({
   onChange,
   onClearSettings,
   entities,
+  activeEntity,
+  onEditActiveEntity,
 }: SettingsProps): React.JSX.Element {
   const mode = settings?.mode ?? 'owner';
 
@@ -80,6 +86,32 @@ export function Settings({
           </div>
         </section>
       )}
+
+      {/* Phase 15 POL-CODE-05 — Active Entity section. Duplicate access point to setView('edit-entity'); */}
+      {/* ViewRouter.tsx:179 header button stays unchanged per CONTEXT decision. */}
+      <section className="bg-white border border-[var(--line-strong)] p-6 space-y-3">
+        <h3 className="font-bold text-sm uppercase tracking-wider">Active Entity</h3>
+        {activeEntity ? (
+          <>
+            <p className="text-sm">
+              {activeEntity.name}
+              <span className="text-xs text-gray-400 ml-2">({activeEntity.type})</span>
+            </p>
+            <button
+              data-testid="settings-edit-active-entity"
+              onClick={() => onEditActiveEntity?.()}
+              className="text-sm text-blue-600 hover:underline font-medium"
+            >
+              Edit Entity Details
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-gray-500">No active entity selected</p>
+            <p className="text-xs text-gray-400">Select an entity from the Master Dashboard to edit</p>
+          </>
+        )}
+      </section>
 
       <section className="bg-white border border-[var(--line-strong)] p-6 space-y-3">
         <h3 className="font-bold text-sm uppercase tracking-wider">
