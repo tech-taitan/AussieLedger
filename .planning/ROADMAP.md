@@ -206,7 +206,7 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 14-1-PLAN.md — getRouteKind() helper + LocalAdapter constructor widening (dbName param + DB_NAME_PROD/DB_NAME_DEMO exports) + seedDemoData() helper + initAdapter() pathname-dispatched DB selection + demo-isolation HARD-BLOCK guard (POL-02 foundation)
+- [x] 14-1-PLAN.md — getRouteKind() helper + LocalAdapter constructor widening (dbName param + DB_NAME_PROD/DB_NAME_DEMO exports) + seedDemoData() helper + initAdapter() pathname-dispatched DB selection + demo-isolation HARD-BLOCK guard (POL-02 foundation) — COMPLETE 2026-06-02, 4 tasks back-to-back, 16 new SPA GREEN (+5 SPDX-headers parametric rows), 4 commits 50b51ac/6745423/871154e/8565267 all CI-GREEN on origin/main, PITFALLS §4 HARD-BLOCK locked via demo-isolation.test.ts (3 cross-contamination tests)
 - [ ] 14-2-PLAN.md — WelcomeBanner empty-state component + DemoModeBanner top-of-app + PrivacyPage with 12 trust bullets + DisclaimerFooter /privacy link widening + MasterDashboard mount + App.tsx initial-view dispatch (POL-01 + POL-02 finish + POL-03)
 - [ ] 14-3-PLAN.md — README restructure to ~120 lines with audience-first top-of-fold + reordered Quick Start (try-demo / clone-self-host) + Privacy section link + v5-deferral annotation in Optional AI + 7 new readme.test.ts assertions (POL-04)
 
@@ -229,7 +229,7 @@ Plans:
 | 11. IndexedDB Hardening | v1.2 | 2/2 | Complete | 2026-06-01 |
 | 12. ~~User-Supplied AI Key + Direct-Browser Gemini~~ | v1.2 | - | DEFERRED → v5 | 2026-06-01 |
 | 13. PWA Wrapper | v1.2 | 2/2 | Complete | 2026-06-02 |
-| 14. Release Polish | v1.2 | 0/3 | Planned (3 plans drafted; awaiting plan-checker) | - |
+| 14. Release Polish | v1.2 | 1/3 | In progress (14-1 complete; Wave 2 14-2 + 14-3 next) | - |
 
 ## Research Flags
 
