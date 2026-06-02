@@ -37,4 +37,33 @@ describe('README.md (DEP-03)', () => {
   it('contains "Apache 2.0" (license section)', () => {
     expect(content).toContain('Apache 2.0');
   });
+
+  it('contains the live-demo URL (POL-04)', () => {
+    expect(content).toContain('https://aussieledger.techtaitan.com');
+  });
+
+  it('contains the /demo deep-link (POL-04)', () => {
+    expect(content).toContain('/demo');
+  });
+
+  it('contains the /privacy deep-link (POL-04)', () => {
+    expect(content).toContain('/privacy');
+  });
+
+  it('contains a Privacy section heading (POL-04)', () => {
+    expect(content).toMatch(/^##\s+Privacy/m);
+  });
+
+  it('contains the v5-deferral language for AI (POL-04)', () => {
+    expect(content).toContain('planned for v5');
+  });
+
+  it('contains "Try the demo" Quick Start sub-heading (POL-04)', () => {
+    expect(content).toContain('Try the demo');
+  });
+
+  it('is at least 100 lines (POL-04 length sanity)', () => {
+    const lineCount = content.split('\n').length;
+    expect(lineCount).toBeGreaterThanOrEqual(100);
+  });
 });
