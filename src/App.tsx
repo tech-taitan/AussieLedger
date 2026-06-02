@@ -15,10 +15,20 @@ import { ViewRouter } from './components/ViewRouter';
 import { Toast } from './components/Toast';
 import { UpdateBanner } from './components/UpdateBanner';
 import { getAdapter } from './storage';
+import { getRouteKind } from './lib/route';
 import type { View } from './types';
 
 export default function App() {
-  const [view, setView] = useState<View>('master-dashboard');
+  // Phase 14 Plan 14-2 Task 6 — initial view dispatched off getRouteKind() at
+  // mount. Lazy initialiser runs once; pathname read is captured for the page
+  // lifetime. /privacy → 'privacy' (PrivacyPage renders); /demo → keeps the
+  // default 'master-dashboard' (DemoModeBanner mounts at the top via
+  // MainLayout); / → default. Phase 11 IDB-05 wiring + Phase 13 UpdateBanner
+  // are byte-identical post-Phase-14 — see useBackupNag + beforeunload +
+  // visibilitychange + UpdateBanner below.
+  const [view, setView] = useState<View>(() =>
+    getRouteKind() === 'privacy' ? 'privacy' : 'master-dashboard'
+  );
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showNewJournal, setShowNewJournal] = useState(false);
 
