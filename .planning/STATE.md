@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: public-hosting-and-indexeddb-hardening
-current_phase: 14
+milestone: v1.3
+milestone_name: TBD
+current_phase: null
 current_plan: null
-status: milestone-ready-for-audit
-stopped_at: "Phase 14 COMPLETE 2026-06-02 — user smoke-verified live deploy at https://aussieledger.techtaitan.com (POL-01 WelcomeBanner empty-state + POL-02 /demo with aussieledger-demo IDB isolation + POL-03 /privacy page + POL-04 README all live; new bundle hash BeT9DoGt confirms shipped). v1.2 has 14/14 active requirements complete (HOST-01..04 + IDB-01..05 + PWA-01 + POL-01..04). AI-01/02 deferred to v5. Ready for /gsd:audit-milestone v1.2."
-last_updated: "2026-06-02T15:00:00Z"
+status: milestone-pending-scoping
+stopped_at: "v1.2 SHIPPED + ARCHIVED 2026-06-02. v1.2-MILESTONE-AUDIT.md captures passed-with-caveats verdict (1 RED deferred — private repo URL; 2 AMBER documented for v1.3). v1.2 phase dirs archived to .planning/milestones/v1.2-phases/; REQUIREMENTS + ROADMAP snapshots in .planning/milestones/v1.2-{REQUIREMENTS,ROADMAP}.md. Live deploy stable at https://aussieledger.techtaitan.com. Ready for /gsd:new-milestone to scope v1.3."
+last_updated: "2026-06-02T15:30:00Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State: AussieLedger

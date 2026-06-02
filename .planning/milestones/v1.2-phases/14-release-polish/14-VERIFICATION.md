@@ -138,3 +138,113 @@ Dependency graph acyclic. No forward references. Wave numbers consistent.
 
 Test count projection: 1128 baseline + ~16-20 (14-1) + ~22-25 (14-2) + ~7 (14-3) = ~1173-1180 SPA GREEN. Plans projection of `~1158-1180 SPA GREEN` falls within this range. Plausible.
 
+
+---
+
+## Out-of-Scope Hygiene
+
+Scanned all three plans for deferred Phase 12 (AI-01/02) and v1.3+ scope leakage:
+
+| Out-of-scope item | Found? |
+|-------------------|--------|
+| Real README screenshot (v1.3) | NO — italic blockquote placeholder `> _Screenshot coming v1.3._` |
+| Persona-segmented README sections (v1.3) | NO — Plan 14-3 step 7 explicitly excludes |
+| AI hosted features (Phase 12 deferred) | NO — PrivacyPage AI bullet verbatim v5-deferral; README Optional AI section v5-honest |
+| sqlite-wasm (v2.0) | NO |
+| `react-router-dom` | NO — DIY pathname dispatch only |
+| Multi-entity demo seed | NO — single sole-trader only |
+| Settings page link to demo/privacy | NO — footer link + empty-state CTA + URL bar only |
+| First-visit-once-only localStorage flag | NO — empty-state IS the trigger |
+| Top-of-app POL-01 banner placement | NO — MasterDashboard-scoped only |
+| Cookie banner | NO |
+| Formal legal-doc privacy page | NO — friendly bullet list locked |
+| AI bullet pretending hosted-today | NO — REJECTED |
+| `/demo/sole-trader` extensible path | NO — single `/demo` URL only |
+| `/welcome` route | NO |
+
+**Clean scope. No leakage detected.**
+
+---
+
+## CONTEXT Discretion Compliance
+
+All 13 planner discretion choices map to scope authorised by CONTEXT's Claude's Discretion block (lines 113-125) OR are justified idiomatic extensions consistent with existing project patterns (items 7, 12). No silent scope creep. No locked decisions contradicted.
+
+Every CONTEXT-locked value appears verbatim in the plans:
+
+- POL-01 trust banner copy (em-dash)
+- POL-02 DemoModeBanner copy (em-dash)
+- POL-03 AI v5-deferral bullet (textContent-flatten assertion)
+- Phase 01 DisclaimerFooter copy (preserved byte-identical)
+- DB_NAME_DEMO = 'aussieledger-demo' (PITFALLS §4 HARD-BLOCK)
+- DB_NAME_PROD = 'aussieledger'
+- Full page reload as demo-exit (`window.location.href = '/'`)
+- Idempotent seedDemoData on first init only
+- Empty-state trigger (no localStorage flag)
+- FY2025-26 demo data
+- ~12 privacy bullets
+
+**No deferred ideas (CONTEXT lines 229-245) included.** Specifically NOT present: real README screenshot, persona-segmented sections, react-router-dom, hot-swap LocalAdapter, multi-entity demo seed, Settings page link, first-visit-once-only flag, top-of-app POL-01 banner, `/welcome` route, cookie banner, formal legal-doc privacy, hosted-today AI bullet, `/demo/sole-trader` path, demo data reset button, privacy YAML generation.
+
+---
+
+## ROADMAP.md Update Accuracy
+
+ROADMAP.md updates verified at lines 191-211:
+
+- Phase 14 entry now reads "Release Polish" (header) with HOST-04 explicitly closed early in Phase 10 (line 195)
+- Requirements list trimmed to POL-01..04 (line 197 — confirmed correct)
+- Success Criteria #1 struck-through with Vercel-pivot rationale (line 200)
+- AI bullet honesty: PrivacyPage AI bullet matches REQUIREMENTS.md AI deferred note (REQUIREMENTS.md line 30 + 32; verbatim "AI features are not available on the public hosted version" in both)
+- Phase 14 plans listed (lines 209-211) — 3 plans match the three PLAN.md files on disk
+- Progress table line 232: "14. Release Polish | v1.2 | 0/3 | Planned" — accurate
+
+ROADMAP.md internally consistent with CONTEXT.md, REQUIREMENTS.md (Note on HOST-04 at line 104), and shipped Phase 10/11/13 state.
+
+GREEN.
+
+---
+
+## Observations (non-blocking)
+
+**O-1 (informational, no action required):** Plan 14-3's drafted README re-orders Quick Start so Option 2 contains `npm install && npm run build` + `npm run dev`. The literal `npm run dev:full` token appears in the Small-firm VPS Windows-dev note — preserving the existing README convention. The Deployment Shapes header text "AussieLedger ships in three shapes" is a copy correction over the current README's "two shapes" (which is already inconsistent with the three sections it documents). Not new scope; minor accuracy improvement.
+
+**O-2 (informational):** Plan 14-2 Task 3 PrivacyPage bullet #1 reads "The browser's Content Security Policy is set to `script-src 'self'`". The actual `vercel.json` CSP enforces `script-src 'self'` (verified Phase 10). Claim accurate today. Caveat for future Phases that modify CSP (e.g. v5 AI work) to re-verify this bullet. Not a Phase 14 blocker.
+
+**O-3 (informational):** Plan 14-2 Task 3 PrivacyPage bullet #8 mentions "Custom domain and TLS provided by Vercel; static assets served from Vercel's CDN." Accurate per HOST-04 (REQUIREMENTS.md line 18).
+
+**O-4 (informational, no action):** Plan 14-1 Task 4 step 6 conditionally adds `getDbName()` to LocalAdapter "in the same file as Task 2's widening; do NOT re-modify in Task 4 if Task 2 has already added it." Task 2 step 5 does NOT add this getter — only the constructor widening + private `dbName` field + DB_NAME constants. So `getDbName()` IS introduced in Task 4 step 6 as written. Cross-task awareness need is small; Task 4 step 6 wording is correctly defensive ("do NOT re-modify if already added") and harmless. No revision required.
+
+---
+
+## Specific Revision Asks
+
+**NONE.** No file/line-range changes required. Plans execution-ready as written.
+
+---
+
+## Final Summary
+
+**Verdict: PASS.**
+
+The Phase 14 plan set delivers all 4 active ROADMAP success criteria (HOST-04 already closed early in Phase 10) and every POL-01/02/03/04 acceptance clause via:
+
+- Plan 14-1 (Wave 1, 4 tasks, foundation): `getRouteKind()` helper + LocalAdapter constructor widening + `seedDemoData()` + initAdapter pathname dispatch + PITFALLS §4 HARD-BLOCK executable guard
+- Plan 14-2 (Wave 2, 6 tasks, UI): WelcomeBanner + DemoModeBanner + PrivacyPage + DisclaimerFooter widening + MasterDashboard mount + App.tsx view dispatch
+- Plan 14-3 (Wave 2, 2 tasks, docs): README restructure to ~115 lines + 7 new readme.test.ts assertions
+
+Round-1 findings:
+
+- Every ROADMAP success criterion (4/4 active) — GREEN
+- Every POL acceptance sub-clause (11/11) — GREEN
+- Every architecture invariant (a-i) — GREEN
+- PITFALLS §4 demo-data-leak HARD-BLOCK — GREEN via `src/storage/__tests__/demo-isolation.test.ts` (3 executable cross-contamination tests)
+- All four verbatim copy locks (POL-01 / POL-02 / POL-03 AI bullet / DisclaimerFooter) — GREEN via test assertions
+- All 13 Claude's-Discretion calls — within CONTEXT-authorised scope or justified idiomatic extensions
+- All 8 planner-flagged scrutiny items — adjudicated GREEN
+- No scope leak to deferred Phase 12 / v1.3 / v2.0
+- ~1173-1180 SPA GREEN projection from 1128 baseline (+45-52 new across the three plans)
+- Dependency graph acyclic; 14-2 + 14-3 parallel-safe within Wave 2
+- ROADMAP.md update accuracy confirmed
+
+After Plan 14-3 ships, all of v1.2 is complete. `/gsd:verify-phase 14` + UAT can run next. The plan trio is execution-ready — run `/gsd:execute-phase 14` to proceed.
