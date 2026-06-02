@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: polish-and-cleanup
 current_phase: 15
-current_plan: null
-status: ready-to-plan
-stopped_at: "v1.3 scoped 2026-06-02 — Polish + Cleanup theme; 8 requirements across 2 phases (Phase 15 Code Polish 6 items: POL-CODE-01..06; Phase 16 Docs Polish 2 items: POL-DOCS-01..02). PROJECT.md + REQUIREMENTS.md + ROADMAP.md all updated. Slow + thoughtful cadence; no architectural changes; closes v1.2 audit tech debt + reactivates POL-04 deferred items. Next: /gsd:discuss-phase 15."
-last_updated: "2026-06-02T16:00:00Z"
+current_plan: 15-1
+status: ready-to-execute
+stopped_at: "Phase 15 planned (2 plans, 5 tasks, checker PASS-WITH-NOTES round 1; 2 non-blocking doc cleanups folded into the commit). 15-1 Wave 1 (POL-CODE-01 GitHub-visibility-flip checkpoint:human-action + POL-CODE-02 legacy-migration-demo-guard); 15-2 Wave 2 (POL-CODE-03 Sidebar refactor + POL-CODE-04 entity-aware nav + POL-CODE-05 Settings Active Entity section). POL-CODE-06 PWA install desktop CTA deferred to a future milestone at discuss-time. Ready for /gsd:execute-phase 15."
+last_updated: "2026-06-02T17:00:00Z"
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 0
+  total_plans: 2
   completed_plans: 0
 ---
 

@@ -30,7 +30,7 @@ README + screenshot work. No source-code changes in this phase.
 
 These were noted during v1.2 close but don't need their own POL- requirements:
 
-- **PrivacyPage AI bullet wording drift**: The verbatim Phase 14 POL-03 AI bullet says *"the CSP allowlist is already in place"* — but the user tightened `vercel.json` post-v1.2-ship to remove `https://generativelanguage.googleapis.com` from `connect-src`. The bullet is now slightly inaccurate (CSP allowlist will need to be re-added when v5 AI ships). **Action:** fold a small wording fix into POL-CODE-01 when touching PrivacyPage — change wording to *"the CSP allowlist will be added in v5 alongside the AI flows"* or similar. ~2 line edit.
+- **PrivacyPage AI bullet wording drift**: ~~The verbatim Phase 14 POL-03 AI bullet says "the CSP allowlist is already in place"~~ — **RESOLVED in shipped source 2026-06-02 (pre-Phase-15)**: Phase 14-2 executor wrote `"The public hosted build does not send data to Google."` instead of the planned verbatim wording, which is already honest about the v1.2 hosted state (no Google calls at all). Phase 15 plan-checker round 1 confirmed via direct source read. POL-CODE-01 Task 1's wording-fix branch is therefore a no-op; the GitHub-visibility-flip is the only substantive POL-CODE-01 work.
 
 ## Future Requirements (deferred from v1.3)
 

@@ -126,8 +126,8 @@ Phase 15 closes the four v1.2-audit-documented code-side issues and ships the en
 
 ### New code Phase 15 creates
 - `src/storage/__tests__/legacy-migration-demo-guard.test.ts` — POL-CODE-02 unit tests (2 cases: demo-skips-migration + prod-still-migrates)
-- 2 new tests added to `src/components/shell/__tests__/Sidebar.test.tsx` (POL-CODE-03 keyboard accessibility — Enter + Space → onBadgeClick)
-- ~6-8 new tests added to `src/components/shell/__tests__/Sidebar.test.tsx` (POL-CODE-04 entity-type filtering — 4 type branches + no-entity case)
+- 2 new tests added to `src/components/__tests__/Sidebar.test.tsx` (POL-CODE-03 keyboard accessibility — Enter + Space → onBadgeClick)
+- ~6-8 new tests added to `src/components/__tests__/Sidebar.test.tsx` (POL-CODE-04 entity-type filtering — 4 type branches + no-entity case)
 - ~3 new tests added to `src/components/__tests__/Settings.test.tsx` (POL-CODE-05 — Active Entity section render states + button click)
 - Plus the existing test file expansions noted above
 
