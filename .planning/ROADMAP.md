@@ -207,7 +207,7 @@ Plans:
 
 Plans:
 - [x] 14-1-PLAN.md — getRouteKind() helper + LocalAdapter constructor widening (dbName param + DB_NAME_PROD/DB_NAME_DEMO exports) + seedDemoData() helper + initAdapter() pathname-dispatched DB selection + demo-isolation HARD-BLOCK guard (POL-02 foundation) — COMPLETE 2026-06-02, 4 tasks back-to-back, 16 new SPA GREEN (+5 SPDX-headers parametric rows), 4 commits 50b51ac/6745423/871154e/8565267 all CI-GREEN on origin/main, PITFALLS §4 HARD-BLOCK locked via demo-isolation.test.ts (3 cross-contamination tests)
-- [ ] 14-2-PLAN.md — WelcomeBanner empty-state component + DemoModeBanner top-of-app + PrivacyPage with 12 trust bullets + DisclaimerFooter /privacy link widening + MasterDashboard mount + App.tsx initial-view dispatch (POL-01 + POL-02 finish + POL-03)
+- [x] 14-2-PLAN.md — WelcomeBanner empty-state component + DemoModeBanner top-of-app + PrivacyPage with 12 trust bullets + DisclaimerFooter /privacy link widening + MasterDashboard mount + App.tsx initial-view dispatch (POL-01 + POL-02 finish + POL-03) — COMPLETE 2026-06-02, 6 tasks back-to-back, +34 SPA GREEN (1149 → 1183), 6 commits a84c899/b7cf5ea/5b7e15e/95bc671/a61cea3/94a92ac all pushed to origin/main, 4 verbatim copy locks GREEN (POL-01 em-dash, POL-02 em-dash, POL-03 AI bullet textContent flatten, DisclaimerFooter Phase 01), Phase 11 IDB-05 wiring + Phase 13 UpdateBanner mount in App.tsx all byte-identical post-Phase-14, vercel.json + vite.pwa-options.ts unchanged
 - [x] 14-3-PLAN.md — README restructure to ~120 lines with audience-first top-of-fold + reordered Quick Start (try-demo / clone-self-host) + Privacy section link + v5-deferral annotation in Optional AI + 7 new readme.test.ts assertions (POL-04) — COMPLETE 2026-06-02, 2 tasks back-to-back, 7 new readme.test.ts GREEN (14 total in readme.test.ts), README 82 → 102 lines, 2 commits a8082b0/748bf46 pushed to origin/main, POL-04 closed end-to-end
 
 ---
@@ -229,7 +229,7 @@ Plans:
 | 11. IndexedDB Hardening | v1.2 | 2/2 | Complete | 2026-06-01 |
 | 12. ~~User-Supplied AI Key + Direct-Browser Gemini~~ | v1.2 | - | DEFERRED → v5 | 2026-06-01 |
 | 13. PWA Wrapper | v1.2 | 2/2 | Complete | 2026-06-02 |
-| 14. Release Polish | v1.2 | 2/3 | In progress (14-1 + 14-3 complete; 14-2 running in parallel) | - |
+| 14. Release Polish | v1.2 | 3/3 | Plans complete; ready for /gsd:verify-phase 14 | 2026-06-02 |
 
 ## Research Flags
 

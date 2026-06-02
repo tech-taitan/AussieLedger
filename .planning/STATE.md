@@ -3,21 +3,21 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: public-hosting-and-indexeddb-hardening
 current_phase: 14
-current_plan: 14-2
-status: ready-to-execute
-stopped_at: "Plan 14-3 COMPLETE 2026-06-02 (2 tasks back-to-back; +7 SPA GREEN from readme.test.ts; README restructured 82 → 102 lines with audience-first top-of-fold + 2-option Quick Start + Privacy footer; POL-04 closed). Plan 14-2 (parallel executor) running concurrently — orchestrator decides Phase 14 closure once 14-2 reports complete."
-last_updated: "2026-06-02T14:05:00Z"
+current_plan: 14-3
+status: phase-ready-to-close
+stopped_at: "Plan 14-2 COMPLETE 2026-06-02 (6 tasks back-to-back; +34 SPA GREEN; WelcomeBanner + DemoModeBanner + PrivacyPage shipped; DisclaimerFooter widened; MasterDashboard empty-state branch; App.tsx initial view dispatched off getRouteKind() at mount; POL-01 + POL-02 + POL-03 all closed). Plan 14-3 (parallel executor) also complete. Phase 14 ready for verify + close."
+last_updated: "2026-06-02T14:15:00Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 6
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State: AussieLedger
 
 **Initialized:** 2026-05-10
-**Last updated:** 2026-06-02T14:05Z (Plan 14-3 COMPLETE — README.md restructured 82 → 102 lines with audience-first top-of-fold + 2-option Quick Start + Privacy footer link + v5-deferral Optional AI annotation; src/__tests__/readme.test.ts extended with 7 new POL-04 assertions; 2 tasks back-to-back, 0 deviations, 0 checkpoints; 1162 SPA GREEN + 11 todo + 0 RED (+13 from baseline 1149: +7 readme.test.ts from this plan + 6 from Plan 14-2's concurrent WelcomeBanner commit a84c899/b7cf5ea); commits a8082b0 + 748bf46; CI run ID lookup denied in sandbox session — local lint EXIT 0, build EXIT 0 incl. AIza scan, full SPA suite all GREEN; POL-04 closed. Plan 14-2 running in parallel — orchestrator decides Phase 14 closure once 14-2 reports complete)
+**Last updated:** 2026-06-02T14:15Z (Plan 14-2 COMPLETE — WelcomeBanner empty-state (POL-01 verbatim em-dash copy + 2 CTAs) + DemoModeBanner top-of-app blue-tinted route-gated banner (POL-02 verbatim copy + Exit-demo full-reload to /) + PrivacyPage with 12 trust bullets including verbatim AI v5-deferral textContent flatten (POL-03) + DisclaimerFooter widened with /privacy sibling link (Phase 01 verbatim copy preserved byte-identical) + MasterDashboard early-return empty-state branch + App.tsx single 3-line lazy useState<View> initialiser off getRouteKind() at mount; 6 tasks back-to-back, 0 deviations, 0 checkpoints, Phase 11 IDB-05 wiring + Phase 13 UpdateBanner all byte-identical post-Phase-14; 1183 SPA GREEN + 11 todo + 0 RED (+34 from 1149 baseline: 4 WelcomeBanner + 3 DemoModeBanner + 8 PrivacyPage + 2 new DisclaimerFooter + 4 new MasterDashboard + 3 App.routing + parametric SPDX-headers rows for 3 new .tsx files + Plan 14-3's 7 readme.test.ts assertions also reflected); commits a84c899 + b7cf5ea + 5b7e15e + 95bc671 + a61cea3 + 94a92ac; CI run ID lookup denied in sandbox session — local lint EXIT 0, build EXIT 0 incl. AIza scan, full SPA suite all GREEN; vercel.json + vite.pwa-options.ts unchanged (git diff empty); POL-01 + POL-02 + POL-03 all closed end-to-end)
 
 ---
 
@@ -33,16 +33,16 @@ See: `.planning/PROJECT.md` (updated 2026-05-30 with v1.2 milestone goal).
 
 ## Current Position
 
-**Current phase:** Phase 14 — Release Polish (2/3 plans complete: 14-1 foundation + 14-3 docs; 14-2 UI in parallel)
-**Current plan:** 14-2 (Wave 2; parallel-safe with 14-3 which is now complete)
+**Current phase:** Phase 14 — Release Polish (3/3 plans complete: 14-1 foundation + 14-2 UI + 14-3 docs; ready for `/gsd:verify-phase 14`)
+**Current plan:** 14-3 (final plan in Phase 14; Phase 14 ready to close)
 **Phase 10 status:** COMPLETE 2026-06-01 — Cloudflare→Vercel pivot shipped + live-verified at `https://aussieledger.techtaitan.com`; HOST-01/02/03/04 closed; 10 commits total
 **Phase 11 status:** COMPLETE 2026-06-01 — IDB hardening shipped + user smoke-verified; IDB-01..05 all closed; 10 commits total (4 from Plan 11-1 + 6 from Plan 11-2)
 **Phase 12 status:** DEFERRED to v5 (2026-06-01) — AI-01/02 moved to Future Requirements; phase numbering preserved (no renumber) for commit-history stability; AiGateNote copy updated for honest hosted-mode messaging
 **Phase 13 status:** COMPLETE 2026-06-02 — PWA install path + UpdateBanner + update flow shipped + user smoke-verified (Lighthouse Installable + PWA Optimized both PASS; npm-run-dev SW absence confirmed; end-to-end UpdateBanner flow incl. B-1 sessionStorage-persists-within-tab lock); PWA-01 closed end-to-end; 8 commits total (3 from Plan 13-1 + 5 from Plan 13-2)
-**Phase 14 status:** IN PROGRESS — Plan 14-1 COMPLETE 2026-06-02 (routing helper + LocalAdapter widening + demo seed + PITFALLS §4 HARD-BLOCK guard) + Plan 14-3 COMPLETE 2026-06-02 (README restructure + 7 POL-04 readme.test.ts assertions); Plan 14-2 running in parallel
-**Last session:** 2026-06-02T14:05:00Z
-**Stopped at:** Plan 14-3 closed (2 tasks — both auto, no checkpoints). Commits a8082b0 (docs: restructure README with audience-first top-of-fold) / 748bf46 (test: add 7 POL-04 content-presence assertions to readme.test.ts). 1162 SPA GREEN + 11 todo + 0 RED (+13 from baseline 1149 = +7 readme.test.ts from this plan + 6 from Plan 14-2's concurrent WelcomeBanner commit a84c899/b7cf5ea landing between my Task 1 and Task 2 pushes). lint EXIT 0, build EXIT 0 incl. AIza scan. CI run ID lookup denied in sandbox session — orchestrator observes downstream conclusion via gh CLI or web UI; local verification is unambiguous (full SPA suite + lint + build all GREEN). POL-04 closed end-to-end. Plan 14-2 (parallel executor) running concurrently — orchestrator decides Phase 14 closure once 14-2 reports complete.
-**Overall progress:** v1.2: 3/4 phases complete (Phase 10 + Phase 11 + Phase 13 done; Phase 12 deferred); Phase 14 2/3 plans complete (Plans 14-1 + 14-3; Plan 14-2 in parallel). 11/14 active v1.2 requirements fully complete (HOST-01..04 + IDB-01..05 + PWA-01 + POL-04); POL-02 foundation locked but requirement closes only after Plan 14-2 ships the DemoModeBanner. 3 active v1.2 requirements (POL-01..03) still pending Plan 14-2.
+**Phase 14 status:** READY-TO-CLOSE — Plan 14-1 COMPLETE 2026-06-02 (routing helper + LocalAdapter widening + demo seed + PITFALLS §4 HARD-BLOCK guard) + Plan 14-2 COMPLETE 2026-06-02 (WelcomeBanner + DemoModeBanner + PrivacyPage + DisclaimerFooter widening + MasterDashboard mount + App.tsx view dispatch) + Plan 14-3 COMPLETE 2026-06-02 (README restructure + 7 POL-04 readme.test.ts assertions); all 4 POL requirements closed end-to-end; ready for `/gsd:verify-phase 14`
+**Last session:** 2026-06-02T14:15:00Z
+**Stopped at:** Plan 14-2 closed (6 tasks — all auto TDD, no checkpoints). Commits a84c899 (feat: WelcomeBanner) / b7cf5ea (feat: DemoModeBanner + MainLayout mount) / 5b7e15e (feat: PrivacyPage with 12 trust bullets + verbatim AI v5-deferral) / 95bc671 (feat: DisclaimerFooter /privacy link sibling) / a61cea3 (feat: MasterDashboard empty-state mount + ViewRouter PrivacyPage render) / 94a92ac (feat: App.tsx getRouteKind() initial view dispatch). 1183 SPA GREEN + 11 todo + 0 RED (+34 from baseline 1149). lint EXIT 0, build EXIT 0 incl. AIza scan ("scan-aiza: OK"). CI run ID lookup denied in sandbox session — orchestrator observes downstream conclusion via gh CLI or web UI; local verification is unambiguous (full SPA suite + lint + build all GREEN). Phase 11 IDB-05 wiring (useBackupNag + isDirty + beforeunload + visibilitychange) + Phase 13 UpdateBanner mount in App.tsx all byte-identical post-Phase-14. vercel.json + vite.pwa-options.ts unchanged (`git diff HEAD vercel.json` + `git diff HEAD vite.pwa-options.ts` both empty). 4 verbatim copy locks GREEN: POL-01 em-dash, POL-02 em-dash, POL-03 AI bullet textContent flatten, DisclaimerFooter Phase 01 verbatim. POL-01 + POL-02 + POL-03 closed end-to-end.
+**Overall progress:** v1.2: 3/4 phases complete (Phase 10 + Phase 11 + Phase 13 done; Phase 12 deferred); Phase 14 3/3 plans complete (Plans 14-1 + 14-2 + 14-3). 14/14 active v1.2 requirements fully complete (HOST-01..04 + IDB-01..05 + PWA-01 + POL-01..04). Phase 14 ready for verify + close; v1.2 milestone ready for /gsd:audit-milestone v1.2 once Phase 14 closes.
 
 ```
 v1.0:  [Phase 1] [Phase 2] [Phase 3] [Phase 4] [Phase 5] [Phase 6]
@@ -52,7 +52,7 @@ v1.1:  [Phase 7] [Phase 8] [Phase 9]
        [ DONE  ] [ DONE  ] [ DONE  ]
 
 v1.2:  [Phase 10] [Phase 11] [Phase 12]   [Phase 13] [Phase 14]
-       [ DONE  ] [ DONE  ] [DEFERRED→v5] [ DONE   ] [PENDING ]
+       [ DONE  ] [ DONE  ] [DEFERRED→v5] [ DONE   ] [READY-CLOSE]
 
 v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 ```
@@ -67,19 +67,19 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | 11 | IndexedDB Hardening | `persist()` grant; quota disclosure; backup-nag hook; iOS ITP banner; `beforeunload`+visibilitychange guard with settle-point flush | DONE 2026-06-01 |
 | ~~12~~ | ~~User-Supplied AI Key + Direct-Browser Gemini~~ | Deferred — AI not available on hosted version until v5; self-host AI unchanged | DEFERRED → v5 (2026-06-01) |
 | 13 | PWA Wrapper | `vite-plugin-pwa` + manifest + SW stale-cache prevention + UpdateBanner update flow + Lighthouse smoke | DONE 2026-06-02 — 13-1 (install path) + 13-2 (UpdateBanner + user-verified Lighthouse PWA audit) |
-| 14 | Release Polish + Custom Domain | First-visit trust banner; `/demo` isolated IDB; `/privacy` page; README rewrite; custom domain | Not started |
+| 14 | Release Polish | First-visit trust banner; `/demo` isolated IDB; `/privacy` page; README rewrite (custom domain closed early in Phase 10) | 3/3 plans DONE 2026-06-02 — POL-01..04 closed; ready for verify + close |
 
 ---
 
 ## Performance Metrics
 
-- Plans completed: 9 / Plans total in v1.2: 2 (Phase 10) + 2 (Phase 11) + 2 (Phase 13) + 3 (Phase 14); Phase 12 deferred
-- Phases complete: 3/5 (Phase 10 + Phase 11 + Phase 13); Phase 14 2/3 plans (Plan 14-1 POL-02 foundation + Plan 14-3 POL-04 docs)
+- Plans completed: 10 / Plans total in v1.2: 2 (Phase 10) + 2 (Phase 11) + 2 (Phase 13) + 3 (Phase 14); Phase 12 deferred
+- Phases complete: 3/5 (Phase 10 + Phase 11 + Phase 13); Phase 14 3/3 plans complete and ready to close
 - Requirements mapped: 16/16 v1.2 requirements — all phases 10–14 covered
-- Requirements complete: 11/14 active (HOST-01..04 — Phase 10; IDB-01..05 — Phase 11; PWA-01 — Phase 13; POL-04 — Phase 14 Plan 14-3). 3 still pending UI: POL-01 (Plan 14-2), POL-02 (foundation locked by 14-1; UI by 14-2), POL-03 (Plan 14-2).
+- Requirements complete: 14/14 active (HOST-01..04 — Phase 10; IDB-01..05 — Phase 11; PWA-01 — Phase 13; POL-01..04 — Phase 14). AI-01/02 deferred to v5.
 - All IDB-01..05 closed end-to-end via Plan 11-1 (helpers) + Plan 11-2 (UI/event wiring + REQUIREMENTS IDB-05 italic disclosure)
 - PWA-01 closed end-to-end via Plan 13-1 (install path + 3 contract tests) + Plan 13-2 (UpdateBanner + useUpdateBanner hook + Lighthouse smoke approved by user)
-- POL-02 foundation closed via Plan 14-1: PITFALLS §4 HARD-BLOCK now executable-testable via demo-isolation.test.ts (3 cross-contamination tests); LocalAdapter constructor widened with dbName param; getRouteKind() helper provides single source of truth for both initAdapter() dispatch and Plan 14-2's App.tsx view dispatch
+- POL-01..04 closed end-to-end via Plan 14-1 (routing helper + LocalAdapter widening + demo seed + isolation guard) + Plan 14-2 (WelcomeBanner + DemoModeBanner + PrivacyPage + DisclaimerFooter widening + MasterDashboard mount + App.tsx view dispatch) + Plan 14-3 (README restructure + readme.test.ts assertions)
 
 | Phase | Plan | Duration | Tasks | Files | Tests Green |
 |-------|------|----------|-------|-------|-------------|
@@ -91,6 +91,7 @@ v2.0:  preserved at .planning/future-milestones/v2.0-standalone-app/
 | 13 | 13-2 | ~75min (incl. user manual smoke at checkpoint) | 3 (2 auto TDD + 1 checkpoint:human-verify) | 6 (5 created, 1 modified) | 1128 SPA (+14 from baseline 1114 — 6 useUpdateBanner + 6 UpdateBanner + 2 SPDX-headers parametric rows) |
 | 14 | 14-1 | ~75min (4 tasks back-to-back; ~10-15min each; CI-poll long-tail) | 4 (4 auto TDD, no checkpoints) | 9 (7 created, 2 modified) | 1149 SPA (+21 from baseline 1128 — 7 route + 3 db-name + 3 demo-seed + 3 demo-isolation + 3 init-routing + 2 SPDX-headers parametric rows) |
 | 14 | 14-3 | ~15min (2 tasks back-to-back; docs-only) | 2 (2 auto, no checkpoints) | 2 (0 created, 2 modified) | 1162 SPA (+13 from baseline 1149 — +7 readme.test.ts from this plan + 6 from Plan 14-2's concurrent WelcomeBanner commit landing in parallel) |
+| 14 | 14-2 | ~45min (6 tasks back-to-back; UI integration) | 6 (6 auto TDD, no checkpoints) | 15 (7 created, 8 modified) | 1183 SPA (+34 from baseline 1149 — 4 WelcomeBanner + 3 DemoModeBanner + 8 PrivacyPage + 2 new DisclaimerFooter + 4 new MasterDashboard + 3 App.routing + parametric SPDX-headers rows for 3 new .tsx files + Plan 14-3's 7 readme.test.ts assertions also reflected in this run) |
 
 **v1.1 baseline (carried forward):** 983 SPA GREEN + 11 todo + 0 RED; 18 server GREEN; lint EXIT 0; build EXIT 0.
 
