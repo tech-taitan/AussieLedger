@@ -22,7 +22,8 @@ export type View =
   | 'coa-manager'
   | 'data'
   | 'year-end'
-  | 'settings';
+  | 'settings'
+  | 'privacy';
 
 export interface Entity {
   _v?: number;

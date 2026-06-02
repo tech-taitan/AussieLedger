@@ -32,6 +32,7 @@ import { DataPage } from './DataPage';
 import { YearEndWizard } from './YearEndWizard';
 import { Settings } from './Settings';
 import { PersonaModeModal } from './PersonaModeModal';
+import { PrivacyPage } from './PrivacyPage';
 import { cn } from '../lib/utils';
 import { currentFy, today } from '../lib/period';
 import type { FyLabel } from '../lib/period';
@@ -821,6 +822,8 @@ export function ViewRouter({
               entities={entities}
             />
           )}
+
+          {view === 'privacy' && <PrivacyPage />}
         </motion.div>
       )}
     </AnimatePresence>

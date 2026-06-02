@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Layers, Plus, ListTree, Archive, Power, Trash2 } from 'lucide-react';
 import { EntityCard } from './EntityCard';
+import { WelcomeBanner } from './WelcomeBanner';
 import type { View, Entity, Account, JournalEntry } from '../types';
 
 interface MasterDashboardProps {
@@ -78,6 +79,19 @@ export function MasterDashboard({
   onSelectEntity,
 }: MasterDashboardProps) {
   const activeEntities = entities.filter((e) => e.status !== 'Archived');
+
+  // Phase 14 POL-01 — when zero active entities (fresh install OR
+  // deleted-everything returning user), render ONLY the WelcomeBanner.
+  // No Recent Clients (would be empty), no Master Dashboard header (the
+  // primary CTA is the discoverable affordance), no entity grid. CONTEXT
+  // decision: "inline within the existing MasterDashboard empty-state".
+  if (activeEntities.length === 0) {
+    return (
+      <div className="space-y-6" data-testid="master-dashboard-empty">
+        <WelcomeBanner onCreateEntity={onAddEntity} />
+      </div>
+    );
+  }
 
   /** Recent clients: top 5 by last journal date or wizardState.completedAt */
   const recentClients = useMemo(() => {

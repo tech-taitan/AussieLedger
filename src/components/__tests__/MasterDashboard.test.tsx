@@ -85,4 +85,45 @@ describe('MasterDashboard (Plan 06-3 MD.1–MD.3)', () => {
     const section = screen.getByTestId('recent-clients');
     expect(section).toBeTruthy();
   });
+
+  // ───── Phase 14 Plan 14-2 Task 5 — POL-01 empty-state branch ───────────
+  it('Phase 14: with entities=[], renders WelcomeBanner and hides the Master Dashboard header', () => {
+    render(<MasterDashboard {...defaultProps} entities={[]} />);
+    expect(screen.getByTestId('welcome-banner')).toBeInTheDocument();
+    expect(screen.queryByText('Master Dashboard')).toBeNull();
+    expect(screen.queryByTestId('recent-clients')).toBeNull();
+  });
+
+  it('Phase 14: with one active entity, hides WelcomeBanner and shows header + Add Entity', () => {
+    render(<MasterDashboard {...defaultProps} entities={[finalisedEntity]} />);
+    expect(screen.queryByTestId('welcome-banner')).toBeNull();
+    expect(screen.getByText('Master Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Add Entity')).toBeInTheDocument();
+  });
+
+  it('Phase 14: clicking WelcomeBanner primary CTA invokes onAddEntity', () => {
+    const onAddEntity = vi.fn();
+    render(
+      <MasterDashboard
+        {...defaultProps}
+        entities={[]}
+        onAddEntity={onAddEntity}
+      />
+    );
+    const cta = screen.getByTestId('welcome-create-entity');
+    cta.click();
+    expect(onAddEntity).toHaveBeenCalledTimes(1);
+  });
+
+  it('Phase 14: with archived-only entities, renders WelcomeBanner (deleted-everything = empty-state)', () => {
+    const archivedOnly: Entity = {
+      id: 'e-arch',
+      name: 'Archived Entity',
+      type: 'Company',
+      status: 'Archived',
+    };
+    render(<MasterDashboard {...defaultProps} entities={[archivedOnly]} />);
+    expect(screen.getByTestId('welcome-banner')).toBeInTheDocument();
+    expect(screen.queryByText('Master Dashboard')).toBeNull();
+  });
 });
