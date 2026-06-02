@@ -9,6 +9,7 @@ import { Header } from './Header';
 import { BottomNav } from './BottomNav';
 import { DisclaimerFooter } from '../DisclaimerFooter';
 import { AdapterFallbackBanner } from '../AdapterFallbackBanner';
+import { DemoModeBanner } from '../DemoModeBanner';
 import { useSettings } from '../../lib/persona';
 import { useAnomalyCounts } from '../../hooks/useAnomalyCounts';
 import type { View, Entity, Account, JournalEntry } from '../../types';
@@ -73,6 +74,8 @@ export function MainLayout({
           setIsSidebarOpen={setIsSidebarOpen}
           setShowNewJournal={setShowNewJournal}
         />
+
+        <DemoModeBanner />
 
         <AdapterFallbackBanner />
 
