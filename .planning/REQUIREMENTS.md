@@ -17,7 +17,7 @@ Close v1.2 audit tech debt + ship the entity-aware navigation UX. All source-cod
 - [ ] **POL-CODE-03 (button-in-button-sidebar-refactor)**: Sidebar's NavButton anomaly badge (`src/components/shell/Sidebar.tsx:85-95`) restructured so it does NOT render `<button>` nested inside `<button>`. Either (a) anomaly badge becomes `<span role="button" tabIndex={0}>` with keyboard handling (Enter + Space → click), or (b) NavButton becomes a `<div role="link">` and the badge stays a real `<button>`. React console warning gone. All existing Sidebar tests still GREEN; new keyboard-accessibility test added. Pre-existing from Phase 6; carried through v1.1 + v1.2.
 - [ ] **POL-CODE-04 (entity-aware-tax-nav)**: Sidebar tax-section nav entries (`setView('tax-return' | 'company-tax' | 'trust-tax' | 'bas-ias')` in `src/components/shell/Sidebar.tsx`) filter by `activeEntity?.type`. Mapping: Individual / Sole Trader → Tax Assist (Form I) only; Company → Company Tax (Form C) only; Trust → Trust Tax (Form T) only; Partnership → Partnership Tax (Form P) only. BAS/IAS stays visible regardless (universal across entity types). When no active entity selected (master-dashboard), all 4 tax-section entries hidden. Tests: each entity type renders the correct subset; no-entity case hides all 4.
 - [ ] **POL-CODE-05 (edit-entity-details-in-settings)**: A new "Active Entity" section added to `src/components/Settings.tsx` (after existing "Mode" and "Primary Entity" sections). Section shows active entity name + an "Edit Entity Details" button that opens `EntityForm` for the active entity. When no active entity selected, section shows "No active entity selected" prompt. The existing `ViewRouter.tsx:179` "Edit Entity Details" header button stays unchanged (duplicate, NOT move).
-- [ ] **POL-CODE-06 (pwa-install-desktop-cta)**: Captures `window.addEventListener('beforeinstallprompt', ...)` and surfaces a manual "Install AussieLedger" CTA at the bottom of Settings page. Button calls the captured event's `prompt()` method. Hides itself once installed (`window.matchMedia('(display-mode: standalone)').matches === true`) or if `beforeinstallprompt` never fires (Safari, already installed, unsupported browser). Tests: button hidden by default; appears when `beforeinstallprompt` event fires; hides on standalone-mode detection.
+- [~] **~~POL-CODE-06 (pwa-install-desktop-cta)~~** — **DEFERRED to a future milestone** (2026-06-02): user opted to defer the manual `beforeinstallprompt` install CTA. Browser-native URL-bar install affordance (Chrome/Edge/Brave automatically show it) + Phase 11's IosItpBanner Add-to-Home-Screen guidance for iOS cover the install discovery channels in v1.3 without a new UI surface. Original scope preserved in Future Requirements for reactivation later.
 
 ### Docs Polish — Phase 16 (POL-DOCS)
 
@@ -34,6 +34,7 @@ These were noted during v1.2 close but don't need their own POL- requirements:
 
 ## Future Requirements (deferred from v1.3)
 
+- **POL-CODE-06 (PWA install desktop CTA)** — *deferred from v1.3 on 2026-06-02.* Manual `beforeinstallprompt` button in Settings; placement + copy designed but not implemented. Browser-native install affordance (Chrome/Edge/Brave URL-bar icon) + Phase 11's IosItpBanner cover the install discovery channels without this CTA. Reactivate when user-research shows the browser-native affordance isn't discoverable enough.
 - **sqlite-wasm + File System Access API** — v2.0's locked direction
 - **Tauri desktop wrapper** — v2.0 follow-on
 - **AI-01 + AI-02 (User-Supplied Gemini Key + Direct-Browser Gemini)** — still deferred to v5; CSP allowlist re-added to vercel.json when v5 ships
@@ -65,9 +66,9 @@ To be confirmed by `/gsd:plan-phase` once Phase 15 + 16 plans land. Each REQ-ID 
 | POL-CODE-03 | Phase 15 | Pending |
 | POL-CODE-04 | Phase 15 | Pending |
 | POL-CODE-05 | Phase 15 | Pending |
-| POL-CODE-06 | Phase 15 | Pending |
+| ~~POL-CODE-06~~ | ~~Phase 15~~ | DEFERRED → future milestone (2026-06-02) |
 | POL-DOCS-01 | Phase 16 | Pending |
 | POL-DOCS-02 | Phase 16 | Pending |
 
-**Total v1.3 requirements: 8**
+**Total v1.3 requirements: 7 active** (was 8; POL-CODE-06 deferred)
 **Phase coverage: 15 + 16 (2 phases continuing from v1.2's 10/11/13/14; Phase 12 stays as deferred-slot per v1.2 commit-history-stability policy)**

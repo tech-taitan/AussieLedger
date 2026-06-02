@@ -14,13 +14,14 @@ After v1.0 + v1.1 + v1.2: the tool is **live at `https://aussieledger.techtaitan
 
 **Why now (sequencing decision):** v1.2 left 4 tech-debt items + 3 deferred polish items on the table. Knocking them out cleanly before v2.0 means v2.0 starts from a healthy baseline rather than carrying debt forward into a major architectural shift. Slow + thoughtful cadence — no hard deadline; each phase gets the time it needs.
 
-**Phase 15 — Code Polish (6 items):**
-- **Repo visibility fix** — flip `github.com/tech-taitan/AussieLedger` to public OR strip the URLs from README + PrivacyPage (user decision at execution time). Fixes the v1.2 audit RED.
+**Phase 15 — Code Polish (5 items):**
+- **Repo visibility fix** — flip `github.com/tech-taitan/AussieLedger` to public via GitHub Settings → Danger Zone (user decision at execution time; recommended path is flip-public). Fixes the v1.2 audit RED.
 - **Legacy-migration demo-DB guard** — `src/storage/local.ts:117-122` should skip `migrateLegacyLocalStorage()` when constructed with `DB_NAME_DEMO`. Closes v1.2 audit AMBER.
 - **`<button>`-in-`<button>` Sidebar refactor** — anomaly badge → `<span role="button">` with keyboard handling. Pre-existing from Phase 6; carried through v1.1 + v1.2 audits.
-- **Entity-aware tax nav** — Sidebar filters tax-section nav items by `activeEntity.type` (Individual → Tax Assist only; Company → Company Tax only; Trust → Trust Tax only; Partnership → Partnership Tax only).
-- **Edit Entity Details in Settings** — duplicate (NOT move) the existing "Edit Entity Details" button into the Settings page.
-- **PWA install desktop CTA** — `beforeinstallprompt` button in Welcome banner or Settings.
+- **Entity-aware tax nav** — Sidebar filters tax-section nav items by `activeEntity.type` (Individual / Sole Trader → Tax Assist only; Company → Company Tax only; Trust → Trust Tax only; Partnership → BAS/IAS only since no Form P view exists today). BAS/IAS always visible (universal).
+- **Edit Entity Details in Settings** — duplicate (NOT move) the existing "Edit Entity Details" button into the Settings page as a new "Active Entity" section.
+
+*Originally scoped (now deferred):* **PWA install desktop CTA** — `beforeinstallprompt` button. Deferred to future milestone 2026-06-02; browser-native URL-bar install affordance + Phase 11's IosItpBanner cover the install paths without a new CTA.
 
 **Phase 16 — Docs Polish (2 items):**
 - **Real README screenshot** — manual capture of `/demo` state; replaces `> _Screenshot coming v1.3._` placeholder.
