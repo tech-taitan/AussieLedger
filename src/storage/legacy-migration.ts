@@ -10,9 +10,17 @@
  * Legacy keys are NEVER cleared on the failure path — original data is
  * preserved untouched (per CONTEXT.md "If any step throws, leave localStorage
  * untouched and surface MigrationError").
+ *
+ * Phase 15 POL-CODE-02 — demo DB guard: when the adapter was constructed
+ * against DB_NAME_DEMO, the migration is skipped entirely (no read, no write,
+ * no clear). Closes v1.2-audit-AMBER #2 — without the guard, a pre-Phase-11
+ * user landing on /demo BEFORE / would have their legacy localStorage
+ * migrated INTO the demo DB and the 4 legacy keys cleared, leaving the
+ * production DB empty on their subsequent / visit. Single source of truth;
+ * no caller-side check needed. Test coverage: legacy-migration-demo-guard.test.ts.
  */
 import { migrate, type PersistedRoot } from '../lib/migrations';
-import type { LocalAdapter } from './local';
+import { DB_NAME_DEMO, type LocalAdapter } from './local';
 
 const LEGACY_KEYS = [
   'ledger_entities_list',
@@ -22,6 +30,9 @@ const LEGACY_KEYS = [
 ] as const;
 
 export async function migrateLegacyLocalStorage(adapter: LocalAdapter): Promise<void> {
+  // Phase 15 POL-CODE-02 — demo DB never inherits legacy localStorage migration.
+  if (adapter.getDbName() === DB_NAME_DEMO) return;
+
   if (typeof localStorage === 'undefined') return;
 
   const raw: Record<string, string | null> = {
