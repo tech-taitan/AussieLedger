@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.3
-milestone_name: TBD
-current_phase: null
+milestone_name: polish-and-cleanup
+current_phase: 15
 current_plan: null
-status: milestone-pending-scoping
-stopped_at: "v1.2 SHIPPED + ARCHIVED 2026-06-02. v1.2-MILESTONE-AUDIT.md captures passed-with-caveats verdict (1 RED deferred — private repo URL; 2 AMBER documented for v1.3). v1.2 phase dirs archived to .planning/milestones/v1.2-phases/; REQUIREMENTS + ROADMAP snapshots in .planning/milestones/v1.2-{REQUIREMENTS,ROADMAP}.md. Live deploy stable at https://aussieledger.techtaitan.com. Ready for /gsd:new-milestone to scope v1.3."
-last_updated: "2026-06-02T15:30:00Z"
+status: ready-to-plan
+stopped_at: "v1.3 scoped 2026-06-02 — Polish + Cleanup theme; 8 requirements across 2 phases (Phase 15 Code Polish 6 items: POL-CODE-01..06; Phase 16 Docs Polish 2 items: POL-DOCS-01..02). PROJECT.md + REQUIREMENTS.md + ROADMAP.md all updated. Slow + thoughtful cadence; no architectural changes; closes v1.2 audit tech debt + reactivates POL-04 deferred items. Next: /gsd:discuss-phase 15."
+last_updated: "2026-06-02T16:00:00Z"
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0

@@ -2,13 +2,38 @@
 
 ## Current State
 
-**v1.1 shipped 2026-05-30.** Cumulative: 9 phases · 31 plans · ~32k LOC TypeScript · 983 SPA + 18 server tests GREEN. v1.1 audit verdict: `passed` (15/15 v1.1 requirements satisfied; 3 non-blocking tech-debt items documented).
+**v1.2 shipped 2026-06-02.** Cumulative: 13 phases shipped (1 deferred to v5) · 41 plans · ~35k LOC TypeScript · 1183 SPA + 18 server tests GREEN. v1.2 audit verdict: `passed-with-caveats` (14/14 active v1.2 requirements satisfied; 2 AI requirements deferred to v5; 1 RED tech-debt item deferred to v1.3 — private repo URL → broken anonymous README link; 3 documented AMBER items for v1.3 polish).
 
-After v1.0 + v1.1: the brownfield prototype is now a robust tool. Persistence hides IndexedDB + SQLite behind the FINAL StorageAdapter. The tax engine produces print-ready returns for all four AU entity types with correct family Medicare levy + MLS. The year-end wizard walks a non-accountant from messy real-world TB import to finalised working paper. Per-report CSV exports + Sidebar anomaly fix-it deep-links + Apache 2.0 LICENSE + clone-and-run.
+After v1.0 + v1.1 + v1.2: the tool is **live at `https://aussieledger.techtaitan.com`** as an installable PWA with full security headers, IDB hardening (persist/quota/backup-nag/iOS ITP/pre-unload guard), demo route with isolated `aussieledger-demo` IDB, and a privacy page with 12 verifiable trust signals. Anyone can try it in their browser without installing anything; data stays in their browser; PWA install resets the iOS Safari 7-day ITP wipe timer; zero third-party scripts; zero analytics; zero hosted user data.
 
-**v1.1 closed every v1.0 known gap** — FND-02 CSV exports shipped, family Medicare engine shipped, cosmetic + Nyquist sweep landed, plus bonus correction of 4 stale Phase-5 single-Medicare constants to FY2025-26 values. Honest record: only ~2 days of intense work because v1.0 set up clean foundations.
+**v1.2 deferred AI features (Phase 12) to v5** — hosted AI requires user-supplied keys + direct browser-to-Google calls; CSP allowlist for `generativelanguage.googleapis.com` already pre-positioned in vercel.json so v5 wiring is mechanical. Self-host AI (server-side `GEMINI_API_KEY`) continues to work as today.
 
-## Current Milestone: v1.2 — Public Hosting + IndexedDB Hardening
+## Current Milestone: v1.3 — Polish + Cleanup
+
+**Goal:** Close the documented tech debt from v1.2 audit (private repo URL, legacy-migration demo-DB coupling, `<button>`-in-`<button>` Sidebar warning carried from Phase 6) + ship the entity-aware tax-nav UX polish + tidy the deferred-from-POL-04 README items (real screenshot, persona-segmented sections) + add an optional PWA install desktop CTA. **Two phases**, ~1 week, no architectural changes. Sets up a clean baseline before v2.0's sqlite-wasm + FSA + Tauri pivot.
+
+**Why now (sequencing decision):** v1.2 left 4 tech-debt items + 3 deferred polish items on the table. Knocking them out cleanly before v2.0 means v2.0 starts from a healthy baseline rather than carrying debt forward into a major architectural shift. Slow + thoughtful cadence — no hard deadline; each phase gets the time it needs.
+
+**Phase 15 — Code Polish (6 items):**
+- **Repo visibility fix** — flip `github.com/tech-taitan/AussieLedger` to public OR strip the URLs from README + PrivacyPage (user decision at execution time). Fixes the v1.2 audit RED.
+- **Legacy-migration demo-DB guard** — `src/storage/local.ts:117-122` should skip `migrateLegacyLocalStorage()` when constructed with `DB_NAME_DEMO`. Closes v1.2 audit AMBER.
+- **`<button>`-in-`<button>` Sidebar refactor** — anomaly badge → `<span role="button">` with keyboard handling. Pre-existing from Phase 6; carried through v1.1 + v1.2 audits.
+- **Entity-aware tax nav** — Sidebar filters tax-section nav items by `activeEntity.type` (Individual → Tax Assist only; Company → Company Tax only; Trust → Trust Tax only; Partnership → Partnership Tax only).
+- **Edit Entity Details in Settings** — duplicate (NOT move) the existing "Edit Entity Details" button into the Settings page.
+- **PWA install desktop CTA** — `beforeinstallprompt` button in Welcome banner or Settings.
+
+**Phase 16 — Docs Polish (2 items):**
+- **Real README screenshot** — manual capture of `/demo` state; replaces `> _Screenshot coming v1.3._` placeholder.
+- **Persona-segmented README sections** — "For business owners" / "For tax agents" / "For developers" subsections.
+
+**Explicit non-goals:**
+- File System Access API · sqlite-wasm · Tauri packaging — still v2.0 territory
+- AI features on hosted version — still v5 territory; CSP pre-positioning stays
+- Multi-user accounts / auth — explicit non-goal still
+- New entity-type or tax-form additions — out of v1.3 scope
+- New tests beyond the polish-item assertions — no test-coverage drive
+
+## ~~Previous Milestone~~ v1.2 — Public Hosting + IndexedDB Hardening (SHIPPED 2026-06-02)
 
 **Goal:** Put AussieLedger on a public URL so anyone can use it in a browser, backed entirely by the existing v1.0 IndexedDB persistence — zero third-party databases, zero hosted user data, zero ongoing service costs. Harden the IndexedDB-only path (persistent-storage permission, backup-nag UX, quota checks) so users who arrive at the hosted SPA cold can trust it with their tax data. Polish the open-source release surface for the new "go to the URL, start using it" audience.
 
