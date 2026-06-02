@@ -280,24 +280,32 @@ export function Sidebar({
                 badge={anomalyCounts.accounts}
                 onBadgeClick={anomalyCounts.accounts > 0 ? handleAccountsBadgeClick : undefined}
               />
-              <NavButton
-                active={view === 'tax-return'}
-                onClick={() => setView('tax-return')}
-                icon={<Calculator size={18} />}
-                label="Tax Assistant"
-              />
-              <NavButton
-                active={view === 'company-tax'}
-                onClick={() => setView('company-tax')}
-                icon={<Building2 size={18} />}
-                label="Company Tax"
-              />
-              <NavButton
-                active={view === 'trust-tax'}
-                onClick={() => setView('trust-tax')}
-                icon={<Landmark size={18} />}
-                label="Trust Tax"
-              />
+              {/* POL-CODE-04 — tax-section nav entries filter by activeEntity.type. Partnership has no Form P view today; BAS/IAS universal. */}
+              {(activeEntity.type === 'Individual' || activeEntity.type === 'SoleTrader') && (
+                <NavButton
+                  active={view === 'tax-return'}
+                  onClick={() => setView('tax-return')}
+                  icon={<Calculator size={18} />}
+                  label="Tax Assistant"
+                />
+              )}
+              {activeEntity.type === 'Company' && (
+                <NavButton
+                  active={view === 'company-tax'}
+                  onClick={() => setView('company-tax')}
+                  icon={<Building2 size={18} />}
+                  label="Company Tax"
+                />
+              )}
+              {activeEntity.type === 'Trust' && (
+                <NavButton
+                  active={view === 'trust-tax'}
+                  onClick={() => setView('trust-tax')}
+                  icon={<Landmark size={18} />}
+                  label="Trust Tax"
+                />
+              )}
+              {/* BAS/IAS — universal across all entity types. GST applies regardless of type. */}
               <NavButton
                 active={view === 'bas-ias'}
                 onClick={() => setView('bas-ias')}
