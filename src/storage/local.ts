@@ -31,6 +31,23 @@
  *    launch under Phase 11.
  *  - All timestamps route through nowIso() from src/lib/period.ts (single source
  *    of Date for the codebase per Phase 2 invariant + Plan 11-1 Task 3 lint).
+ *
+ * Phase 14 (Plan 14-1 Task 2):
+ *  - Constructor widened to accept optional `dbName: string = DB_NAME_PROD`.
+ *    Zero-arg call sites (src/storage/index.ts + tests) keep working byte-
+ *    identically. The demo route passes DB_NAME_DEMO to isolate from production
+ *    data per PITFALLS §4 HARD-BLOCK.
+ *  - Two new exported constants: DB_NAME_PROD = 'aussieledger' (production),
+ *    DB_NAME_DEMO = 'aussieledger-demo' (demo). IDB DB-names are origin-scoped
+ *    strings; namespace isolation is the only safe mitigation for cross-DB
+ *    contamination per PITFALLS §4.
+ *  - New duck-typed `getDbName()` accessor (test-only introspection) — NOT on
+ *    the StorageAdapter interface; consistent with Phase 11's duck-typed
+ *    accessor pattern (getPersistGranted / getStorageEstimate / getLastWriteAt
+ *    / setLastWriteAt).
+ *  - The legacy-migration Web Lock name ('aussieledger-legacy-migration') stays
+ *    HARD-CODED — the lock is origin-scoped and serialises a one-time idempotent
+ *    legacy-localStorage check; sharing it across prod + demo is harmless.
  */
 import { openDB, type IDBPDatabase, type DBSchema } from 'idb';
 import type { StorageAdapter } from './adapter';
@@ -40,7 +57,12 @@ import { CURRENT_VERSION } from '../lib/migrations';
 import { migrateLegacyLocalStorage } from './legacy-migration';
 import { nowIso } from '../lib/period';
 
-const DB_NAME = 'aussieledger';
+/** Production IDB database name. Used by default-constructed adapters and
+ *  every existing call site in src/storage/index.ts. */
+export const DB_NAME_PROD = 'aussieledger';
+/** Demo IDB database name. Used by the /demo route per PITFALLS §4 HARD-BLOCK
+ *  — keeping demo writes byte-isolated from the production 'aussieledger' DB. */
+export const DB_NAME_DEMO = 'aussieledger-demo';
 const DB_VERSION = 1;
 const SINGLETON_KEY = '__singleton__';
 const META_LAST_EXPORT = 'lastExportAt';
@@ -58,8 +80,10 @@ export class LocalAdapter implements StorageAdapter {
   private db!: IDBPDatabase<AussieLedgerDB>;
   private readyPromise: Promise<void>;
   private _persistGranted: boolean | null = null;
+  private readonly dbName: string;
 
-  constructor() {
+  constructor(dbName: string = DB_NAME_PROD) {
+    this.dbName = dbName;
     this.readyPromise = this.init();
   }
 
@@ -68,7 +92,7 @@ export class LocalAdapter implements StorageAdapter {
   }
 
   private async init(): Promise<void> {
-    this.db = await openDB<AussieLedgerDB>(DB_NAME, DB_VERSION, {
+    this.db = await openDB<AussieLedgerDB>(this.dbName, DB_VERSION, {
       upgrade(db) {
         if (!db.objectStoreNames.contains('entities')) db.createObjectStore('entities');
         if (!db.objectStoreNames.contains('accounts')) db.createObjectStore('accounts');
@@ -293,5 +317,15 @@ export class LocalAdapter implements StorageAdapter {
    *  through bumpWriteAt() internally. */
   async setLastWriteAt(iso: string): Promise<void> {
     await this.db.put('meta', iso, META_LAST_WRITE);
+  }
+
+  // ── Phase 14 duck-typed accessor (NOT on StorageAdapter interface) ─────────
+
+  /** Return the IDB DB-name this adapter was constructed against.
+   *  Test-only introspection — used by Plan 14-1 Task 4's initAdapter routing
+   *  tests to assert /demo and / dispatch the correct DB without relying on
+   *  fake-indexeddb's databases() API. Do NOT rely on this in production code. */
+  getDbName(): string {
+    return this.dbName;
   }
 }
