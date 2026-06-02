@@ -19,4 +19,19 @@ describe('DisclaimerFooter', () => {
     const { container } = render(<DisclaimerFooter className="custom-cls" />);
     expect(container.querySelector('footer.custom-cls')).toBeInTheDocument();
   });
+
+  // Phase 14 Plan 14-2 Task 4 — /privacy sibling link
+  it('renders a /privacy link as a sibling element with anchor text "Privacy"', () => {
+    render(<DisclaimerFooter />);
+    const link = screen.getByTestId('disclaimer-privacy-link');
+    expect(link.getAttribute('href')).toBe('/privacy');
+    expect(link.textContent).toBe('Privacy');
+  });
+
+  it('preserves the byte-identical Phase 01 verbatim disclaimer copy after widening', () => {
+    render(<DisclaimerFooter />);
+    const footer = screen.getByRole('contentinfo', { name: /compliance disclaimer/i });
+    const footerText = footer.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+    expect(footerText).toContain(EXACT_DISCLAIMER);
+  });
 });
