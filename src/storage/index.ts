@@ -14,10 +14,20 @@
  *
  * Subsequent `initAdapter()` calls are memoised — the underlying adapter
  * Promise is returned verbatim.
+ *
+ * Phase 14 (Plan 14-1 Task 4): pathname-based DB selection on LocalAdapter
+ * branches — `/demo` → DB_NAME_DEMO + seedDemoData(); else → DB_NAME_PROD.
+ * ServerAdapter branches are UNCHANGED (demo mode is local-only by design;
+ * ServerAdapter has no demo-DB concept and the demo route is a hosted-mode
+ * affordance that should not affect any server-backed deployment). The
+ * routing decision routes through `getRouteKind()` from src/lib/route.ts
+ * so App.tsx (Plan 14-2) shares the same source of truth for view dispatch.
  */
 import type { StorageAdapter, AdapterKind, HealthResponse } from './adapter';
-import { LocalAdapter } from './local';
+import { LocalAdapter, DB_NAME_DEMO, DB_NAME_PROD } from './local';
 import { ServerAdapter } from './server';
+import { getRouteKind } from '../lib/route';
+import { seedDemoData } from './demo-seed';
 
 const PROBE_TIMEOUT_MS = 500;
 const PROBE_RETRIES = 6;
@@ -64,8 +74,11 @@ export async function initAdapter(): Promise<StorageAdapter> {
     if (forced === 'local') {
       adapterKind = 'local';
       fellBackToLocal = false;
-      const a = new LocalAdapter();
+      const routeKind = getRouteKind();
+      const dbName = routeKind === 'demo' ? DB_NAME_DEMO : DB_NAME_PROD;
+      const a = new LocalAdapter(dbName);
       await a.ready();
+      if (routeKind === 'demo') await seedDemoData(a);
       return a;
     }
     if (forced === 'server') {
@@ -89,8 +102,11 @@ export async function initAdapter(): Promise<StorageAdapter> {
     // so Plan 03-4's banner can render.
     adapterKind = 'local';
     fellBackToLocal = true;
-    const a = new LocalAdapter();
+    const routeKind = getRouteKind();
+    const dbName = routeKind === 'demo' ? DB_NAME_DEMO : DB_NAME_PROD;
+    const a = new LocalAdapter(dbName);
     await a.ready();
+    if (routeKind === 'demo') await seedDemoData(a);
     return a;
   })();
   return adapterPromise;
