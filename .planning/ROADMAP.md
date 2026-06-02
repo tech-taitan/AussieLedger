@@ -47,7 +47,7 @@
 
 **Theme:** Polish + Cleanup. Close v1.2 audit tech debt + ship entity-aware nav UX + reactivate deferred POL-04 README items + add optional PWA install desktop CTA. Two phases, slow + thoughtful cadence, no architectural changes. Sets up a clean baseline before v2.0.
 
-- [ ] **Phase 15: Code Polish** — POL-CODE-01..06 (repo-visibility-fix · legacy-migration-demo-guard · `<button>`-in-`<button>` Sidebar refactor · entity-aware tax-nav · Edit Entity Details in Settings · PWA install desktop CTA)
+- [~] **Phase 15: Code Polish** — POL-CODE-01..05 (POL-CODE-06 deferred) — repo-visibility-fix · legacy-migration-demo-guard · `<button>`-in-`<button>` Sidebar refactor · entity-aware tax-nav · Edit Entity Details in Settings — 2/2 plans complete (15-1 done; 15-2 done); ready for `/gsd:verify-phase 15`
 - [ ] **Phase 16: Docs Polish** — POL-DOCS-01..02 (real README screenshot · persona-segmented README sections)
 
 **Phase numbering note:** Phases 15+16 (NOT 12+13) because Phase 12 was deferred to v5 during v1.2 and its slot is preserved per the v1.2 commit-history-stability policy. Phases 14 → 15 is sequential continuation.
@@ -242,7 +242,7 @@ Plans:
 | 12. ~~User-Supplied AI Key + Direct-Browser Gemini~~ | v1.2 | - | DEFERRED → v5 | 2026-06-01 |
 | 13. PWA Wrapper | v1.2 | 2/2 | Complete | 2026-06-02 |
 | 14. Release Polish | v1.2 | 3/3 | Complete | 2026-06-02 |
-| 15. Code Polish | v1.3 | 1/2 | In Progress | - |
+| 15. Code Polish | v1.3 | 2/2 | Plans Complete (pending verify) | 2026-06-03 |
 | 16. Docs Polish | v1.3 | 0/TBD | Not started | - |
 
 ## Research Flags
