@@ -200,3 +200,68 @@ describe('Sidebar POL-CODE-03 — keyboard a11y on anomaly badge', () => {
     expect(onAnomalyScroll).toHaveBeenCalledWith('journals', 0);
   });
 });
+
+describe('Sidebar POL-CODE-04 — entity-type-aware tax-nav filter', () => {
+  it('ET.1: Individual entity → Tax Assistant present; Company Tax + Trust Tax absent; BAS present', () => {
+    renderSidebar({ activeEntity: { ...baseEntity, type: 'Individual' } });
+    expect(screen.getByRole('button', { name: /tax assistant/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /company tax/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /trust tax/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /bas/i })).toBeTruthy();
+  });
+
+  it('ET.2: Company entity → Company Tax present; Tax Assistant + Trust Tax absent; BAS present', () => {
+    renderSidebar({ activeEntity: { ...baseEntity, type: 'Company' } });
+    expect(screen.getByRole('button', { name: /company tax/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /tax assistant/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /trust tax/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /bas/i })).toBeTruthy();
+  });
+
+  it('ET.3: Trust entity → Trust Tax present; Tax Assistant + Company Tax absent; BAS present', () => {
+    renderSidebar({ activeEntity: { ...baseEntity, type: 'Trust' } });
+    expect(screen.getByRole('button', { name: /trust tax/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /tax assistant/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /company tax/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /bas/i })).toBeTruthy();
+  });
+
+  it('ET.4: Partnership entity → none of the 3 specialised tax sections; BAS present (universal)', () => {
+    renderSidebar({ activeEntity: { ...baseEntity, type: 'Partnership' } });
+    expect(screen.queryByRole('button', { name: /tax assistant/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /company tax/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /trust tax/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /bas/i })).toBeTruthy();
+  });
+
+  it('ET.5: SoleTrader entity (demo-seed discriminator) → Tax Assistant present; other 2 absent', () => {
+    // Phase 14 demo-seed.ts uses type: 'SoleTrader' (verified at execution). SoleTrader
+    // maps to the same Form-I branch as Individual per CONTEXT decision.
+    renderSidebar({ activeEntity: { ...baseEntity, type: 'SoleTrader' } });
+    expect(screen.getByRole('button', { name: /tax assistant/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /company tax/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /trust tax/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /bas/i })).toBeTruthy();
+  });
+
+  it('ET.6: no active entity → none of the 4 tax-section entries render (entity-scoped block empty)', () => {
+    renderSidebar({ activeEntity: undefined });
+    expect(screen.queryByRole('button', { name: /tax assistant/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /company tax/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /trust tax/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /bas/i })).toBeNull();
+  });
+
+  it.each(['Individual', 'Company', 'Trust', 'Partnership'])(
+    'ET.7: BAS/IAS universal — present for %s entity type',
+    (entityType) => {
+      renderSidebar({ activeEntity: { ...baseEntity, type: entityType } });
+      expect(screen.getByRole('button', { name: /bas/i })).toBeTruthy();
+    },
+  );
+
+  it('ET.8: Entity Dashboard universal (not filtered by type) — present for Partnership entity', () => {
+    renderSidebar({ activeEntity: { ...baseEntity, type: 'Partnership' } });
+    expect(screen.getByRole('button', { name: /entity dashboard/i })).toBeTruthy();
+  });
+});
