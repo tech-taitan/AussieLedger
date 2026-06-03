@@ -243,7 +243,7 @@ Plans:
 | 13. PWA Wrapper | v1.2 | 2/2 | Complete | 2026-06-02 |
 | 14. Release Polish | v1.2 | 3/3 | Complete | 2026-06-02 |
 | 15. Code Polish | v1.3 | 2/2 | Complete | 2026-06-03 |
-| 16. Docs Polish | v1.3 | 0/TBD | Not started | - |
+| 16. Docs Polish | v1.3 | 0/1 | Planned | - |
 
 ## Research Flags
 
