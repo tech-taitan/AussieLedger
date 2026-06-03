@@ -1,19 +1,28 @@
 ---
-title: /demo route shows no seeded data — investigate seedDemoData regression
+title: /demo PWA stale-cache symptom — UX hardening to prevent stale-bundle confusion
 created: 2026-06-03
-area: storage
+diagnosed: 2026-06-03
+area: pwa
 status: pending
+severity: medium (was: HIGH on initial report)
+root_cause: PWA service worker serving pre-Phase-14 cached bundle
+not_a_regression: seedDemoData wiring is correct + shipped + verified in CBEsXSYP bundle
 related_files:
+  - src/components/UpdateBanner.tsx
+  - src/hooks/useUpdateBanner.ts
+  - vite.pwa-options.ts
   - src/storage/demo-seed.ts
-  - src/storage/index.ts
-  - src/storage/local.ts
-  - src/components/MasterDashboard.tsx
 discovered_during: Phase 16 POL-DOCS-01 screenshot capture
+resolved_immediately_by: hard reload (Ctrl+Shift+R) bypassing PWA cache
 ---
 
-# /demo route shows no seeded data — investigate seedDemoData regression
+# /demo PWA stale-cache symptom — UX hardening to prevent stale-bundle confusion
 
-User observed at https://aussieledger.techtaitan.com/demo on 2026-06-03: **MasterDashboard appears empty** — no seeded sole-trader entity, no journals, no widgets populated. Reported during Phase 16 POL-DOCS-01 screenshot-capture checkpoint as the reason for `skip-screenshot` decision.
+**Initial report (2026-06-03):** User observed at https://aussieledger.techtaitan.com/demo: MasterDashboard appears empty — no seeded sole-trader entity, no journals, no widgets populated. Reported during Phase 16 POL-DOCS-01 screenshot-capture checkpoint as the reason for `skip-screenshot` decision.
+
+**Diagnosis (2026-06-03):** NOT a `seedDemoData` regression. Bundle inspection (CBEsXSYP) confirms `aussieledger-demo`, `seedDemoData`, `Demo Sole Trader`, `getRouteKind` all present in shipped JS. The user's browser was serving a pre-Phase-14 cached bundle via the Phase 13 PWA service worker. **Hard reload (Ctrl+Shift+R) bypassed the cache → demo seed fired → seeded entity + journals + dashboard widgets appeared as expected.**
+
+The root cause is the well-known PWA stale-cache UX risk: Phase 13's `registerType: 'prompt'` + UpdateBanner pattern is supposed to surface new versions to users, but if a user dismisses/snoozes the banner OR closes the tab before the SW detects the new version, they keep seeing the cached old bundle indefinitely.
 
 ## Expected behaviour (per Phase 14-1)
 
@@ -46,11 +55,25 @@ User observed at https://aussieledger.techtaitan.com/demo on 2026-06-03: **Maste
 
 ## Severity
 
-**HIGH** — `/demo` is a core POL-02 surface; if it shows nothing, first-visit users hit a wall and either leave or become confused. Same severity as a broken landing-page experience.
+**MEDIUM** (downgraded from HIGH after diagnosis). The seed code works; the issue is PWA stale-cache. Users who never had cached state see correct behaviour. Users with cached pre-Phase-14 bundles see the empty state until they hard-reload OR clear site data OR let the UpdateBanner surface + click Update.
 
-## Suggested v1.4 fix scope
+## Suggested v1.4 fix scope (PWA stale-cache UX hardening)
 
-Reproduce → identify failure mode → patch → add a "demo seed populated" assertion to `initAdapter-demo-routing.test.ts` that runs against the real browser IDB (Playwright or Cypress) since fake-indexeddb may not catch it.
+Pick one (or layer):
+
+1. **Force update-check on `/demo` visit** — when `getRouteKind() === 'demo'`, call `registration.update()` to nudge SW to check for new version. Faster than waiting for the periodic check.
+2. **More aggressive UpdateBanner** — surface as a modal on the first /demo visit if a new SW is detected (instead of the current low-key banner).
+3. **Periodic auto-check** — schedule `registration.update()` every N minutes in active tabs. Workbox supports this.
+4. **Cache-bust on bundle hash mismatch** — embed bundle hash in HTML `<meta>`; on JS load, compare embedded hash to the running bundle's hash; force reload on mismatch. Heavy-handed but reliable.
+5. **Re-seed guard widening** — in addition to "0 entities" check, also check a `demoSeededAt` meta key in IDB. If absent OR > 90 days old, re-seed. Mitigates the "user wiped demo data manually then re-visited" scenario (orthogonal but useful).
+
+Recommended starting point: option 1 (force update-check on /demo navigation) is the smallest patch with the highest leverage. Add a Playwright/Cypress E2E test in v1.4 to assert that a stale bundle gets the seed once the new bundle loads.
+
+## Out of scope for this todo
+
+- Replacing the demo seed with different data shape
+- Adding a "reset demo" button (separate UX consideration)
+- Multi-entity demo (single sole-trader is locked per Phase 14 CONTEXT)
 
 ## Out of scope for this todo
 
