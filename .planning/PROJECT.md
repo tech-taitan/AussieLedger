@@ -2,13 +2,18 @@
 
 ## Current State
 
-**v1.2 shipped 2026-06-02.** Cumulative: 13 phases shipped (1 deferred to v5) · 41 plans · ~35k LOC TypeScript · 1183 SPA + 18 server tests GREEN. v1.2 audit verdict: `passed-with-caveats` (14/14 active v1.2 requirements satisfied; 2 AI requirements deferred to v5; 1 RED tech-debt item deferred to v1.3 — private repo URL → broken anonymous README link; 3 documented AMBER items for v1.3 polish).
+**v1.3 shipped 2026-06-03.** Cumulative: 15 phases shipped (1 deferred to v5) · 44 plans · ~36k LOC TypeScript · 1206 SPA + 18 server tests GREEN. v1.3 audit verdict: `passed-with-caveats` (6/7 active v1.3 requirements satisfied + UAT signed off by user 2026-06-03 across 36 walkthrough steps; POL-DOCS-01 real screenshot deferred to v1.4 alongside PWA stale-cache UX hardening; POL-CODE-06 PWA install CTA deferred at discuss-time; 5 documented tech-debt items for v1.4).
 
-After v1.0 + v1.1 + v1.2: the tool is **live at `https://aussieledger.techtaitan.com`** as an installable PWA with full security headers, IDB hardening (persist/quota/backup-nag/iOS ITP/pre-unload guard), demo route with isolated `aussieledger-demo` IDB, and a privacy page with 12 verifiable trust signals. Anyone can try it in their browser without installing anything; data stays in their browser; PWA install resets the iOS Safari 7-day ITP wipe timer; zero third-party scripts; zero analytics; zero hosted user data.
+**Repo is now PUBLIC** at https://github.com/tech-taitan/AussieLedger — Apache 2.0 license visible to anonymous browsers; README + PrivacyPage open-source-promise links resolve cleanly (v1.2 audit RED closed via POL-CODE-01).
 
-**v1.2 deferred AI features (Phase 12) to v5** — hosted AI requires user-supplied keys + direct browser-to-Google calls; CSP allowlist for `generativelanguage.googleapis.com` already pre-positioned in vercel.json so v5 wiring is mechanical. Self-host AI (server-side `GEMINI_API_KEY`) continues to work as today.
+After v1.0 + v1.1 + v1.2 + v1.3: the tool is **live at `https://aussieledger.techtaitan.com`** as an installable open-source PWA with full security headers, IDB hardening, isolated demo route, privacy page, entity-aware Sidebar navigation (Individual → Tax Assistant only; Company → Company Tax; Trust → Trust Tax; Partnership → BAS/IAS only; BAS/IAS universal), Settings duplicate access to Edit Entity Details, persona-segmented README with explicit For developers section, and zero `<button>`-in-`<button>` accessibility regressions (carried from Phase 6, finally fixed). Data stays in user browsers; zero third-party scripts; zero analytics; zero hosted user data.
 
-## Current Milestone: v1.3 — Polish + Cleanup
+**v1.2 deferred AI features (Phase 12) to v5** — hosted AI requires user-supplied keys + direct browser-to-Google calls; CSP allowlist for `generativelanguage.googleapis.com` was tightened back out of `vercel.json` during v1.2 close (will be re-added when v5 ships). Self-host AI (server-side `GEMINI_API_KEY`) continues to work as today.
+
+<details>
+<summary>v1.3 — Polish + Cleanup (SHIPPED 2026-06-03)</summary>
+
+## ~~Previous Milestone~~ v1.3 — Polish + Cleanup
 
 **Goal:** Close the documented tech debt from v1.2 audit (private repo URL, legacy-migration demo-DB coupling, `<button>`-in-`<button>` Sidebar warning carried from Phase 6) + ship the entity-aware tax-nav UX polish + tidy the deferred-from-POL-04 README items (real screenshot, persona-segmented sections) + add an optional PWA install desktop CTA. **Two phases**, ~1 week, no architectural changes. Sets up a clean baseline before v2.0's sqlite-wasm + FSA + Tauri pivot.
 
@@ -33,6 +38,19 @@ After v1.0 + v1.1 + v1.2: the tool is **live at `https://aussieledger.techtaitan
 - Multi-user accounts / auth — explicit non-goal still
 - New entity-type or tax-form additions — out of v1.3 scope
 - New tests beyond the polish-item assertions — no test-coverage drive
+
+## Next Milestone: v1.4 — TBD
+
+**Carry-forward backlog from v1.3 audit** (`.planning/milestones/v1.3-MILESTONE-AUDIT.md`):
+1. **POL-DOCS-01 (real /demo screenshot) + PWA stale-cache hardening** — paired Phase 17 candidate; ship together so the PWA stale-cache fix lands first then the screenshot captures the corrected state
+2. **GitHub repo metadata polish** — ~60 second fix; description + topics + homepage URL alignment with custom domain
+3. **POL-CODE-06 PWA install desktop CTA** — only on user research evidence
+4. **v1.2 audit AMBER #3 UpdateBanner z-index** — only if a third floating banner accrues
+5. **Standalone desktop app with local backend** (long-standing todo from 2026-05-28) — v2.0 territory
+
+Scope locked via `/gsd:new-milestone v1.4` once user picks theme.
+
+</details>
 
 ## ~~Previous Milestone~~ v1.2 — Public Hosting + IndexedDB Hardening (SHIPPED 2026-06-02)
 
