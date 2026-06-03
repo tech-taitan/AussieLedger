@@ -48,7 +48,7 @@
 **Theme:** Polish + Cleanup. Close v1.2 audit tech debt + ship entity-aware nav UX + reactivate deferred POL-04 README items + add optional PWA install desktop CTA. Two phases, slow + thoughtful cadence, no architectural changes. Sets up a clean baseline before v2.0.
 
 - [~] **Phase 15: Code Polish** — POL-CODE-01..05 (POL-CODE-06 deferred) — repo-visibility-fix · legacy-migration-demo-guard · `<button>`-in-`<button>` Sidebar refactor · entity-aware tax-nav · Edit Entity Details in Settings — 2/2 plans complete (15-1 done; 15-2 done); ready for `/gsd:verify-phase 15`
-- [ ] **Phase 16: Docs Polish** — POL-DOCS-01..02 (real README screenshot · persona-segmented README sections)
+- [~] **Phase 16: Docs Polish** — POL-DOCS-02 shipped (persona-segmented README sections); POL-DOCS-01 (real /demo screenshot) DEFERRED to v1.4 per user `skip-screenshot` reply at Task 1 checkpoint — empty demo observed at `/demo` (possible seedDemoData regression or stale cached IDB; v1.4 investigation todo). 1/1 plans complete; ready for `/gsd:verify-phase 16` and `/gsd:audit-milestone v1.3`.
 
 **Phase numbering note:** Phases 15+16 (NOT 12+13) because Phase 12 was deferred to v5 during v1.2 and its slot is preserved per the v1.2 commit-history-stability policy. Phases 14 → 15 is sequential continuation.
 
@@ -243,7 +243,7 @@ Plans:
 | 13. PWA Wrapper | v1.2 | 2/2 | Complete | 2026-06-02 |
 | 14. Release Polish | v1.2 | 3/3 | Complete | 2026-06-02 |
 | 15. Code Polish | v1.3 | 2/2 | Complete | 2026-06-03 |
-| 16. Docs Polish | v1.3 | 0/1 | Planned | - |
+| 16. Docs Polish | v1.3 | 1/1 | Complete (POL-DOCS-02 shipped; POL-DOCS-01 deferred to v1.4) | 2026-06-03 |
 
 ## Research Flags
 
