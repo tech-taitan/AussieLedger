@@ -54,8 +54,8 @@ describe('README.md (DEP-03)', () => {
     expect(content).toMatch(/^##\s+Privacy/m);
   });
 
-  it('contains the v5-deferral language for AI (POL-04)', () => {
-    expect(content).toContain('planned for v5');
+  it('documents the hosted browser-only storage pin (POL-04)', () => {
+    expect(content).toContain('pins the public build to browser-only IndexedDB storage');
   });
 
   it('contains "Try the demo" Quick Start sub-heading (POL-04)', () => {
@@ -65,5 +65,20 @@ describe('README.md (DEP-03)', () => {
   it('is at least 100 lines (POL-04 length sanity)', () => {
     const lineCount = content.split('\n').length;
     expect(lineCount).toBeGreaterThanOrEqual(100);
+  });
+
+  it('Test A.5 README has ### For business owners persona section (POL-DOCS-02)', () => {
+    expect(content).toMatch(/^###\s+For business owners\s*$/m);
+    expect(content).toMatch(/plain English|walk away with/);
+  });
+
+  it('Test A.6 README has ### For tax agents persona section (POL-DOCS-02)', () => {
+    expect(content).toMatch(/^###\s+For tax agents\s*$/m);
+    expect(content).toMatch(/multi-client|fast entity switching/);
+  });
+
+  it('Test A.7 README has ### For developers persona section (POL-DOCS-02)', () => {
+    expect(content).toMatch(/^###\s+For developers\s*$/m);
+    expect(content).toMatch(/StorageAdapter|pure functions/);
   });
 });
