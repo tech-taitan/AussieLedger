@@ -291,3 +291,35 @@ None.
 - POL-DOCS-02 closed end-to-end; POL-DOCS-01 deferred to v1.4 with user-observed empty-demo flag attached
 
 Plan 16-1 closed; Phase 16 complete; POL-DOCS-01 deferred to v1.4; v1.3 milestone ready for `/gsd:verify-phase 16` and `/gsd:audit-milestone v1.3`.
+
+## Amendment (2026-06-03) — UAT walkthrough docs landed; POL-DOCS-01 stays deferred
+
+After Plan 16-1 closed, the user requested two amendments in sequence:
+
+1. **First pivot — reactivate POL-DOCS-01 in-milestone** (after PWA stale-cache root-cause diagnosis confirmed the demo data was correct under the hood, only the SW cache was stale). The orchestrator presented the Task 1-followup checkpoint with the verbatim 7-step capture brief from Plan 16-1 Task 1 STEP 1. **Status:** awaiting `captured` reply.
+
+2. **Second pivot — cancel the screenshot capture entirely; write UAT walkthrough docs instead**. POL-DOCS-01 STAYS DEFERRED to v1.4 (no change from this plan's main close-out). PWA stale-cache hardening remains a separate v1.4 investigation per `.planning/todos/pending/2026-06-03-demo-route-shows-no-seeded-data.md`.
+
+**UAT docs delivered:**
+
+- `.planning/phases/15-code-polish/15-UAT.md` (NEW; 141 lines) — 5 scenarios × ~5 steps = **24 manual walkthrough steps** covering POL-CODE-01 (repo public + Apache 2.0 visible to anonymous; 5 steps), POL-CODE-02 (legacy-migration demo-DB guard — unit-test-covered; 2 steps), POL-CODE-03 (Sidebar badge keyboard-a11y + no React nested-interactive warning; 6 steps), POL-CODE-04 (entity-aware tax-nav 5 type sub-cases incl. SoleTrader=Individual + no-entity-selected + demo regression; 6 steps), POL-CODE-05 (Settings Active Entity section + ViewRouter:179 header button preserved; 6 steps). Pre-UAT automated verification table + per-requirement signoff table. POL-CODE-06 PWA install CTA marked DEFERRED out of UAT scope. Shipped via commit `797945e`.
+
+- `.planning/phases/16-docs-polish/16-UAT.md` (NEW; 110 lines) — 2 scenarios × ~6 + 2 steps = **12 manual walkthrough steps** covering POL-DOCS-02 (Scenario 1: public GitHub README walkthrough — 10 steps incl. CONTRIBUTING.md link click + FND-12 phrase spot-checks; Scenario 2: focused vitest run for readme.test.ts — 2 steps). Pre-UAT automated verification table (1206 SPA + 17 readme.test.ts + 18 server + lint + build + scan-aiza + line-count floor 118 + FND-12 grep guard 11 matches). POL-DOCS-01 marked DEFERRED with reactivation refs to Plan 16-1 Task 1 brief + PWA stale-cache investigation todo. Shipped via commit `4bd14ea`.
+
+**Test counts UNCHANGED from Plan 16-1 main close-out:** 1206 SPA GREEN + 11 todo + 0 RED; 17 readme.test.ts GREEN; 18 server GREEN; lint EXIT 0; build EXIT 0 incl. scan-aiza: OK. README still 118 lines. FND-12 byte-identical preservation grep guard still 11 matches. Source code untouched in the amendment — UAT docs are planning-tier only.
+
+**v1.3 milestone status after amendment:** 6 of 7 active requirements closed end-to-end (POL-CODE-01..05 + POL-DOCS-02); POL-DOCS-01 deferred to v1.4 with explicit user decision + PWA-stale-cache investigation flag attached. Awaiting user UAT signoff on both `15-UAT.md` (24 steps) + `16-UAT.md` (12 steps) before `/gsd:audit-milestone v1.3` can run. Total 36 walkthrough steps to gate v1.3 acceptance.
+
+**Amendment commits:**
+
+| # | Hash      | Type | Files                                                              | Co-Author |
+| - | --------- | ---- | ------------------------------------------------------------------ | --------- |
+| 4 | `797945e` | docs | .planning/phases/15-code-polish/15-UAT.md (NEW; 141 lines)         | Claude Opus 4.7 |
+| 5 | `4bd14ea` | docs | .planning/phases/16-docs-polish/16-UAT.md (NEW; 110 lines)         | Claude Opus 4.7 |
+| 6 | (this commit) | docs | 16-1-SUMMARY.md amendment + STATE.md + ROADMAP.md UAT-landed notes | Claude Opus 4.7 |
+
+Plan 16-1 main close-out: 3 commits (cc5713e RED + 5959773 GREEN + 20add92 metadata).
+Plan 16-1 amendment: 3 commits (797945e 15-UAT + 4bd14ea 16-UAT + this metadata commit).
+Total across plan + amendment: **6 commits** on `origin/main`.
+
+POL-DOCS-01 stays deferred. v1.3 ready for user UAT walkthrough + milestone audit.
