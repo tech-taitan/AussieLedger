@@ -28,6 +28,7 @@
 import type { LocalAdapter } from './local';
 import type { Entity, Account, JournalEntry } from '../types';
 import { CURRENT_VERSION } from '../lib/migrations';
+import { getDefaultCoaFor } from '../lib/coa';
 
 const DEMO_ENTITY_ID = 'demo-entity-sole-trader-001';
 
@@ -43,22 +44,27 @@ const DEMO_ENTITY: Entity = {
   fyEndDate: '06-30',
 };
 
-// Chart of Accounts — 5-type-covering minimum for a sole-trader narrative.
-// Codes follow the AU small-biz convention (1xxx Asset, 2xxx Liability,
-// 3xxx Equity, 4xxx Revenue, 5xxx Expense). gstCode 'N-T' on capital/
-// equity moves; 'GST' on taxable supplies; 'FRE' on out-of-scope.
-const DEMO_ACCOUNTS: Account[] = [
-  { _v: CURRENT_VERSION, id: 'acc-1000', code: '1000', name: 'Cash at Bank',     type: 'Asset',     gstCode: 'N-T' },
-  { _v: CURRENT_VERSION, id: 'acc-1100', code: '1100', name: 'Equipment',        type: 'Asset',     gstCode: 'CAP' },
-  { _v: CURRENT_VERSION, id: 'acc-2000', code: '2000', name: 'GST Payable',      type: 'Liability', gstCode: 'N-T' },
-  { _v: CURRENT_VERSION, id: 'acc-2100', code: '2100', name: 'Loans Payable',    type: 'Liability', gstCode: 'N-T' },
-  { _v: CURRENT_VERSION, id: 'acc-3000', code: '3000', name: "Owner's Capital",  type: 'Equity',    gstCode: 'N-T' },
-  { _v: CURRENT_VERSION, id: 'acc-3100', code: '3100', name: "Owner's Drawings", type: 'Equity',    gstCode: 'N-T' },
-  { _v: CURRENT_VERSION, id: 'acc-4000', code: '4000', name: 'Sales Revenue',    type: 'Revenue',   gstCode: 'GST' },
-  { _v: CURRENT_VERSION, id: 'acc-5000', code: '5000', name: 'Rent Expense',     type: 'Expense',   gstCode: 'GST' },
-  { _v: CURRENT_VERSION, id: 'acc-5100', code: '5100', name: 'Utilities Expense', type: 'Expense',  gstCode: 'GST' },
-  { _v: CURRENT_VERSION, id: 'acc-5200', code: '5200', name: 'Office Supplies',  type: 'Expense',   gstCode: 'GST' },
-];
+// Chart of Accounts — full FY2026 Individual / sole-trader spine so the
+// demo accurately reflects what a real sole owner gets after the startup
+// wizard. The 197 rows cover Asset/Liability/Equity/Revenue/Expense with
+// tax labels pre-mapped to NAT 2541 + NAT 2543. The 15 demo journals
+// below post to a handful of these accounts to keep the Trial Balance
+// non-trivial; the remaining rows show as nil-balance (the user can
+// hide them via the standard TB toggle).
+const DEMO_ACCOUNTS: Account[] = getDefaultCoaFor('Individual', 'FY2026');
+
+// Account-ID aliases used by the demo journals below. The FY2026 seed
+// uses deterministic ids of the form `coa-FY2026-<code>`, so each demo
+// journal line points to a row already present in DEMO_ACCOUNTS.
+const ACC_BANK         = 'coa-FY2026-1020'; // Business Bank Account
+const ACC_EQUIPMENT    = 'coa-FY2026-1510'; // Plant & Equipment (at cost)
+const ACC_GST_PAYABLE  = 'coa-FY2026-2100'; // GST Collected (Output Tax)
+const ACC_OWNER_CAP    = 'coa-FY2026-3010'; // Owner's Capital Contribution
+const ACC_OWNER_DRAW   = 'coa-FY2026-3020'; // Owner's Drawings
+const ACC_SALES        = 'coa-FY2026-4020'; // Sales of Services
+const ACC_RENT         = 'coa-FY2026-6200'; // Rent — Business Premises
+const ACC_UTILITIES    = 'coa-FY2026-6230'; // Utilities — Electricity
+const ACC_OFFICE       = 'coa-FY2026-6600'; // Printing & Stationery
 
 // 15 FY2025-26 journals (1 Jul 2025 – 30 Jun 2026). Each entry is balanced
 // (sum debits === sum credits). Literal ISO dates per structural-lint
@@ -74,8 +80,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-1000', description: 'Cash deposit',     debit: 10000, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-3000', description: 'Capital introduced', debit: 0, credit: 10000, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Cash deposit',     debit: 10000, credit: 0, taxAmount: 0 },
+      { accountId: ACC_OWNER_CAP, description: 'Capital introduced', debit: 0, credit: 10000, taxAmount: 0 },
     ],
   },
   {
@@ -87,8 +93,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-1100', description: 'Laptop + tools', debit: 3000, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-1000', description: 'Bank payment',   debit: 0, credit: 3000, taxAmount: 0 },
+      { accountId: ACC_EQUIPMENT, description: 'Laptop + tools', debit: 3000, credit: 0, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Bank payment',   debit: 0, credit: 3000, taxAmount: 0 },
     ],
   },
   {
@@ -100,9 +106,9 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-1000', description: 'Cash received',  debit: 1100, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-4000', description: 'Sales (ex GST)', debit: 0, credit: 1000, taxAmount: 100 },
-      { accountId: 'acc-2000', description: 'GST collected',  debit: 0, credit: 100, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Cash received',  debit: 1100, credit: 0, taxAmount: 0 },
+      { accountId: ACC_SALES, description: 'Sales (ex GST)', debit: 0, credit: 1000, taxAmount: 100 },
+      { accountId: ACC_GST_PAYABLE, description: 'GST collected',  debit: 0, credit: 100, taxAmount: 0 },
     ],
   },
   {
@@ -114,8 +120,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-5000', description: 'Rent expense', debit: 800, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-1000', description: 'Bank payment', debit: 0, credit: 800, taxAmount: 0 },
+      { accountId: ACC_RENT, description: 'Rent expense', debit: 800, credit: 0, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Bank payment', debit: 0, credit: 800, taxAmount: 0 },
     ],
   },
   {
@@ -127,8 +133,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-5100', description: 'Electricity bill', debit: 150, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-1000', description: 'Bank payment',     debit: 0, credit: 150, taxAmount: 0 },
+      { accountId: ACC_UTILITIES, description: 'Electricity bill', debit: 150, credit: 0, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Bank payment',     debit: 0, credit: 150, taxAmount: 0 },
     ],
   },
   {
@@ -140,9 +146,9 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-1000', description: 'Cash received',  debit: 2200, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-4000', description: 'Sales (ex GST)', debit: 0, credit: 2000, taxAmount: 200 },
-      { accountId: 'acc-2000', description: 'GST collected',  debit: 0, credit: 200, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Cash received',  debit: 2200, credit: 0, taxAmount: 0 },
+      { accountId: ACC_SALES, description: 'Sales (ex GST)', debit: 0, credit: 2000, taxAmount: 200 },
+      { accountId: ACC_GST_PAYABLE, description: 'GST collected',  debit: 0, credit: 200, taxAmount: 0 },
     ],
   },
   {
@@ -154,8 +160,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-5200', description: 'Stationery + ink', debit: 300, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-1000', description: 'Bank payment',     debit: 0, credit: 300, taxAmount: 0 },
+      { accountId: ACC_OFFICE, description: 'Stationery + ink', debit: 300, credit: 0, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Bank payment',     debit: 0, credit: 300, taxAmount: 0 },
     ],
   },
   {
@@ -167,9 +173,9 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-1000', description: 'Cash received',  debit: 1650, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-4000', description: 'Sales (ex GST)', debit: 0, credit: 1500, taxAmount: 150 },
-      { accountId: 'acc-2000', description: 'GST collected',  debit: 0, credit: 150, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Cash received',  debit: 1650, credit: 0, taxAmount: 0 },
+      { accountId: ACC_SALES, description: 'Sales (ex GST)', debit: 0, credit: 1500, taxAmount: 150 },
+      { accountId: ACC_GST_PAYABLE, description: 'GST collected',  debit: 0, credit: 150, taxAmount: 0 },
     ],
   },
   {
@@ -181,8 +187,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-2000', description: 'GST Payable clear', debit: 450, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-1000', description: 'Bank payment',      debit: 0, credit: 450, taxAmount: 0 },
+      { accountId: ACC_GST_PAYABLE, description: 'GST Payable clear', debit: 450, credit: 0, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Bank payment',      debit: 0, credit: 450, taxAmount: 0 },
     ],
   },
   {
@@ -194,8 +200,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-3100', description: 'Drawings',     debit: 500, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-1000', description: 'Bank payment', debit: 0, credit: 500, taxAmount: 0 },
+      { accountId: ACC_OWNER_DRAW, description: 'Drawings',     debit: 500, credit: 0, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Bank payment', debit: 0, credit: 500, taxAmount: 0 },
     ],
   },
   {
@@ -207,8 +213,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-5100', description: 'Electricity + water', debit: 180, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-1000', description: 'Bank payment',        debit: 0, credit: 180, taxAmount: 0 },
+      { accountId: ACC_UTILITIES, description: 'Electricity + water', debit: 180, credit: 0, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Bank payment',        debit: 0, credit: 180, taxAmount: 0 },
     ],
   },
   {
@@ -220,9 +226,9 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-1000', description: 'Cash received',  debit: 2750, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-4000', description: 'Sales (ex GST)', debit: 0, credit: 2500, taxAmount: 250 },
-      { accountId: 'acc-2000', description: 'GST collected',  debit: 0, credit: 250, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Cash received',  debit: 2750, credit: 0, taxAmount: 0 },
+      { accountId: ACC_SALES, description: 'Sales (ex GST)', debit: 0, credit: 2500, taxAmount: 250 },
+      { accountId: ACC_GST_PAYABLE, description: 'GST collected',  debit: 0, credit: 250, taxAmount: 0 },
     ],
   },
   {
@@ -234,8 +240,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-5000', description: 'Rent expense', debit: 800, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-1000', description: 'Bank payment', debit: 0, credit: 800, taxAmount: 0 },
+      { accountId: ACC_RENT, description: 'Rent expense', debit: 800, credit: 0, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Bank payment', debit: 0, credit: 800, taxAmount: 0 },
     ],
   },
   {
@@ -247,8 +253,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-5100', description: 'Closing utilities', debit: 175, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-1000', description: 'Bank payment',      debit: 0, credit: 175, taxAmount: 0 },
+      { accountId: ACC_UTILITIES, description: 'Closing utilities', debit: 175, credit: 0, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Bank payment',      debit: 0, credit: 175, taxAmount: 0 },
     ],
   },
   {
@@ -260,8 +266,8 @@ const DEMO_JOURNALS: JournalEntry[] = [
     isPosted: true,
     status: 'posted',
     lines: [
-      { accountId: 'acc-3100', description: 'Drawings',     debit: 400, credit: 0, taxAmount: 0 },
-      { accountId: 'acc-1000', description: 'Bank payment', debit: 0, credit: 400, taxAmount: 0 },
+      { accountId: ACC_OWNER_DRAW, description: 'Drawings',     debit: 400, credit: 0, taxAmount: 0 },
+      { accountId: ACC_BANK, description: 'Bank payment', debit: 0, credit: 400, taxAmount: 0 },
     ],
   },
 ];

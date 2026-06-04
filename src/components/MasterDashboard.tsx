@@ -21,6 +21,8 @@ interface MasterDashboardProps {
   onDelete: () => void;
   onClearSelection: () => void;
   onAddEntity: () => void;
+  /** Optional — when provided, the WelcomeBanner empty state surfaces a Sole Owner setup CTA. */
+  onSoleOwnerSetup?: () => void;
   onConfigureAccounts: () => void;
   onSelectEntity: (id: string) => void;
   setView: (v: View) => void;
@@ -75,6 +77,7 @@ export function MasterDashboard({
   onDelete,
   onClearSelection,
   onAddEntity,
+  onSoleOwnerSetup,
   onConfigureAccounts,
   onSelectEntity,
 }: MasterDashboardProps) {
@@ -88,7 +91,10 @@ export function MasterDashboard({
   if (activeEntities.length === 0) {
     return (
       <div className="space-y-6" data-testid="master-dashboard-empty">
-        <WelcomeBanner onCreateEntity={onAddEntity} />
+        <WelcomeBanner
+          onCreateEntity={onAddEntity}
+          onSoleOwnerSetup={onSoleOwnerSetup}
+        />
       </div>
     );
   }

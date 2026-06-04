@@ -15,9 +15,11 @@
 
 interface WelcomeBannerProps {
   onCreateEntity: () => void;
+  /** Optional — when provided, surfaces a friendlier 4-step sole-owner setup affordance. */
+  onSoleOwnerSetup?: () => void;
 }
 
-export function WelcomeBanner({ onCreateEntity }: WelcomeBannerProps) {
+export function WelcomeBanner({ onCreateEntity, onSoleOwnerSetup }: WelcomeBannerProps) {
   return (
     <section
       role="region"
@@ -32,9 +34,22 @@ export function WelcomeBanner({ onCreateEntity }: WelcomeBannerProps) {
         Your data stays in your browser — no servers, no accounts.
       </p>
       <div className="flex flex-col sm:flex-row justify-center gap-3">
+        {onSoleOwnerSetup && (
+          <button
+            onClick={onSoleOwnerSetup}
+            className="bg-[var(--ink)] text-white px-6 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+            data-testid="welcome-sole-owner-setup"
+          >
+            Sole owner setup
+          </button>
+        )}
         <button
           onClick={onCreateEntity}
-          className="bg-[var(--ink)] text-white px-6 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+          className={
+            onSoleOwnerSetup
+              ? 'border border-[var(--line-strong)] bg-white text-[var(--ink)] px-6 py-2 text-sm font-medium hover:bg-gray-50 transition-colors'
+              : 'bg-[var(--ink)] text-white px-6 py-2 text-sm font-medium hover:opacity-90 transition-opacity'
+          }
           data-testid="welcome-create-entity"
         >
           Create your first entity

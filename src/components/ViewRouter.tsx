@@ -26,6 +26,7 @@ import { ImportTB } from './ImportTB';
 import { EntityForm } from './EntityForm';
 import { AuditTrail } from './AuditTrail';
 import { AccountManager } from './AccountManager';
+import { SoleOwnerStartupWizard } from './wizard/SoleOwnerStartupWizard';
 import { FinancialTrendChart } from './FinancialTrendChart';
 import { MasterDashboard } from './MasterDashboard';
 import { DataPage } from './DataPage';
@@ -674,6 +675,7 @@ export function ViewRouter({
                 setActiveEntityId(null);
                 setView('edit-entity');
               }}
+              onSoleOwnerSetup={() => setView('sole-owner-startup')}
               onConfigureAccounts={() => setView('coa-manager')}
               onSelectEntity={(id) => {
                 setActiveEntityId(id);
@@ -830,6 +832,18 @@ export function ViewRouter({
           )}
 
           {view === 'privacy' && <PrivacyPage />}
+
+          {view === 'sole-owner-startup' && (
+            <SoleOwnerStartupWizard
+              onCancel={() => setView('master-dashboard')}
+              onCreate={(entity) => {
+                void entityActions.createEntity(entity).then(() => {
+                  setActiveEntityId(entity.id);
+                  setView('dashboard');
+                });
+              }}
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>

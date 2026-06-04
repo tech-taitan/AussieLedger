@@ -23,7 +23,8 @@ export type View =
   | 'data'
   | 'year-end'
   | 'settings'
-  | 'privacy';
+  | 'privacy'
+  | 'sole-owner-startup';
 
 export interface Entity {
   _v?: number;

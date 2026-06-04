@@ -49,6 +49,22 @@ export const AccountManager: React.FC<AccountManagerProps> = ({
   // Set: GST / FRE / INP (Input-taxed) / N-T / CAP. CONTEXT "CoA shape" decisions.
   const GST_CODES = ['GST', 'FRE', 'INP', 'N-T', 'CAP'];
 
+  // Resolve a human-readable group label for an account row. Child rows
+  // show the parent header's name (e.g. "Current Assets"); root header
+  // rows show their type (e.g. "Asset (Header)"). Used to label every
+  // account in the table so users can see at-a-glance which section it
+  // sits under.
+  const accountsByCode = React.useMemo(
+    () => Object.fromEntries(localAccounts.map((a) => [a.code, a])),
+    [localAccounts],
+  );
+  const groupLabelFor = (a: Account): string => {
+    if (a.parentCode && accountsByCode[a.parentCode]) {
+      return accountsByCode[a.parentCode].name;
+    }
+    return `${a.type} (Header)`;
+  };
+
   const handleStartEdit = (account: Account) => {
     setEditingId(account.id);
     setEditFormData({ ...account });
@@ -253,23 +269,31 @@ export const AccountManager: React.FC<AccountManagerProps> = ({
                         className="w-full p-1 border border-[var(--line-strong)] focus:outline-none"
                       />
                     ) : (
-                      <span className="flex items-center gap-1">
-                        {account.name}
-                        {account.isDefault && (
-                          <span
-                            className="text-[9px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-1 rounded uppercase tracking-wider"
-                            data-testid={`default-badge-row-${account.code}`}
-                          >
-                            default
-                          </span>
-                        )}
-                        {account.isArchived && (
-                          <span className="text-[9px] font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 px-1 rounded uppercase">archived</span>
-                        )}
-                        {account._needsReview && (
-                          <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1 rounded">review</span>
-                        )}
-                      </span>
+                      <div>
+                        <span className="flex items-center gap-1">
+                          {account.name}
+                          {account.isDefault && (
+                            <span
+                              className="text-[9px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-1 rounded uppercase tracking-wider"
+                              data-testid={`default-badge-row-${account.code}`}
+                            >
+                              default
+                            </span>
+                          )}
+                          {account.isArchived && (
+                            <span className="text-[9px] font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 px-1 rounded uppercase">archived</span>
+                          )}
+                          {account._needsReview && (
+                            <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1 rounded">review</span>
+                          )}
+                        </span>
+                        <span
+                          className="text-[10px] text-gray-400 mt-0.5 block"
+                          data-testid={`account-group-${account.code}`}
+                        >
+                          {groupLabelFor(account)}
+                        </span>
+                      </div>
                     )}
                   </td>
                   <td className="p-2 text-xs">
