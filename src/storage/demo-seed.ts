@@ -275,17 +275,35 @@ const DEMO_JOURNALS: JournalEntry[] = [
 /**
  * Seed the demo IDB with a sole-trader fixture set.
  *
- * Idempotent: if the adapter already has any entities, returns immediately
- * without writing. This protects users mid-exploration from being
- * overwritten when initAdapter() runs again on a subsequent /demo visit
- * within the same browser.
+ * First-visit path: writes entity + accounts + journals.
+ *
+ * Stale-demo migration: if the user visited /demo before this build and
+ * still has the pre-expansion 10-row fixture (`acc-NNNN` ids, <30 rows),
+ * we replace the accounts AND journals with the FY2026 197-row spine.
+ * This is safe because the demo is a tour, not a working space — and
+ * the new journals are functionally equivalent (same narrative, new ids).
+ *
+ * Already-migrated path: no-op. Mid-exploration users who already have
+ * the new 197-row seed (or any other non-old-demo state) are left alone,
+ * preserving the original idempotence guarantee.
  *
  * Audit logs are NOT seeded — demo doesn't need a fake history.
  */
 export async function seedDemoData(adapter: LocalAdapter): Promise<void> {
   const existing = await adapter.getEntities();
-  if (existing.length > 0) return;
-  await adapter.saveEntities([DEMO_ENTITY]);
-  await adapter.saveAccounts(DEMO_ACCOUNTS);
-  await adapter.saveEntries({ [DEMO_ENTITY_ID]: DEMO_JOURNALS });
+  if (existing.length === 0) {
+    await adapter.saveEntities([DEMO_ENTITY]);
+    await adapter.saveAccounts(DEMO_ACCOUNTS);
+    await adapter.saveEntries({ [DEMO_ENTITY_ID]: DEMO_JOURNALS });
+    return;
+  }
+  const accounts = await adapter.getAccounts();
+  const isOldDemo =
+    accounts.length > 0 &&
+    accounts.length < 30 &&
+    accounts.every((a) => /^acc-\d{4}$/.test(a.id));
+  if (isOldDemo) {
+    await adapter.saveAccounts(DEMO_ACCOUNTS);
+    await adapter.saveEntries({ [DEMO_ENTITY_ID]: DEMO_JOURNALS });
+  }
 }
