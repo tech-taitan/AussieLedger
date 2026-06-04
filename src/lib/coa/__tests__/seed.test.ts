@@ -17,14 +17,14 @@ describe('Default CoA structural integrity (per entity type)', () => {
   it('Company default CoA size', () => {
     const coa = getDefaultCoaFor('Company', 'FY2026');
     expect(coa.length).toBeGreaterThanOrEqual(80);
-    expect(coa.length).toBeLessThanOrEqual(150);
+    expect(coa.length).toBeLessThanOrEqual(250);
   });
 
   it('per-type CoA sizes', () => {
     for (const t of ENTITY_TYPES) {
       const coa = getDefaultCoaFor(t, 'FY2026');
       expect(coa.length, `${t} CoA size`).toBeGreaterThanOrEqual(80);
-      expect(coa.length, `${t} CoA size`).toBeLessThanOrEqual(150);
+      expect(coa.length, `${t} CoA size`).toBeLessThanOrEqual(250);
     }
   });
 

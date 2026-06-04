@@ -6,15 +6,17 @@ import type { DefaultAccountSeed } from '../types';
 
 /**
  * Australian SME default Chart of Accounts spine — FY2026.
- * 121 rows; codes per Xero AU / MYOB AU convention (1xxx Asset, 2xxx Liability,
+ * 189 rows; codes per Xero AU / MYOB AU convention (1xxx Asset, 2xxx Liability,
  * 3xxx Equity, 4xxx Revenue, 5xxx COGS, 6xxx Expense).
  *
  * Source: .planning/phases/04-bookkeeping-core/04-RESEARCH.md
- * "Default Australian SME Chart of Accounts (~120 rows, FY2026)" — verbatim.
+ * "Default Australian SME Chart of Accounts" — original 121 rows + comprehensive
+ * extension to cover FBT, AASB 16 split, R&D, contra-revenue, foreign income,
+ * UPE-style controls, etc. Users can hide nil-balance rows in the TB.
  *
  * Structure:
- *   Assets (22) + Liabilities (18) + Equity (10) + Revenue (15)
- *   + COGS (6) + Operating Expenses (50) = 121 rows
+ *   Assets (38) + Liabilities (32) + Equity (13) + Revenue (26)
+ *   + COGS (10) + Operating Expenses (70) = 189 rows
  *
  * Header rows have parentCode: null and N-T GST; they appear as subtotals on TB.
  * Tax-label columns are FY2026 label IDs from src/lib/tax/labels/fy2026.ts
@@ -241,5 +243,131 @@ export const FY2026_BASE_SPINE: DefaultAccountSeed[] = [
     notes: 'Coy 30%/25%; Phase 5 tax-engine reads this for COY reconciliation.' },
   { code: '6990', name: 'Sundry Expenses',                 type: 'Expense',   parentCode: '6000', gstCode: 'GST',
     taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2' },
+
+  // ── Extended coverage — comprehensive AU SME additions ─────────────────
+  // Designed for a long-tail chart. Nil-balance rows are hidden by the TB
+  // toggle, so width here costs nothing operationally.
+
+  // Assets — extended (16 rows: clearings, bonds, inventory split,
+  // investments, PPE split, AASB 16 right-of-use, capitalised software)
+  { code: '1050', name: 'Undeposited Funds',                type: 'Asset',     parentCode: '1000', gstCode: 'N-T', notes: 'Clearing — receipts not yet banked' },
+  { code: '1115', name: 'Security Deposits Paid',           type: 'Asset',     parentCode: '1000', gstCode: 'N-T', notes: 'Rental bonds, utility deposits' },
+  { code: '1210', name: 'Inventory — Work in Progress',     type: 'Asset',     parentCode: '1000', gstCode: 'N-T' },
+  { code: '1220', name: 'Inventory — Finished Goods',       type: 'Asset',     parentCode: '1000', gstCode: 'N-T' },
+  { code: '1410', name: 'Investments — Listed Shares',      type: 'Asset',     parentCode: '1500', gstCode: 'N-T', notes: 'CGT asset' },
+  { code: '1420', name: 'Investments — Term Deposits',      type: 'Asset',     parentCode: '1500', gstCode: 'N-T' },
+  { code: '1560', name: 'Computer Equipment (at cost)',     type: 'Asset',     parentCode: '1500', gstCode: 'CAP', notes: 'G10 on acquisition' },
+  { code: '1565', name: 'Accum. Depreciation — Computers',  type: 'Asset',     parentCode: '1500', gstCode: 'N-T', notes: 'Contra' },
+  { code: '1570', name: 'Furniture & Fittings (at cost)',   type: 'Asset',     parentCode: '1500', gstCode: 'CAP' },
+  { code: '1575', name: 'Accum. Depreciation — F&F',        type: 'Asset',     parentCode: '1500', gstCode: 'N-T', notes: 'Contra' },
+  { code: '1580', name: 'Leasehold Improvements (at cost)', type: 'Asset',     parentCode: '1500', gstCode: 'CAP' },
+  { code: '1585', name: 'Accum. Depreciation — Leasehold',  type: 'Asset',     parentCode: '1500', gstCode: 'N-T', notes: 'Contra' },
+  { code: '1610', name: 'Software — Capitalised',           type: 'Asset',     parentCode: '1600', gstCode: 'CAP' },
+  { code: '1615', name: 'Accum. Amortisation — Software',   type: 'Asset',     parentCode: '1600', gstCode: 'N-T', notes: 'Contra' },
+  { code: '1630', name: 'Right-of-Use Asset (AASB 16)',     type: 'Asset',     parentCode: '1500', gstCode: 'N-T', notes: 'Pairs with 2400/2530 lease liability' },
+  { code: '1635', name: 'Accum. Depreciation — ROU Asset',  type: 'Asset',     parentCode: '1500', gstCode: 'N-T', notes: 'Contra' },
+
+  // Liabilities — extended (14 rows: overdraft, ATO ICA, FBT, deferred tax,
+  // unearned revenue, refunds, provisions, AASB 16 split, related-party loans)
+  { code: '2030', name: 'Bank Overdraft',                   type: 'Liability', parentCode: '2000', gstCode: 'N-T' },
+  { code: '2040', name: 'ATO Integrated Client Account',    type: 'Liability', parentCode: '2000', gstCode: 'N-T', notes: 'BAS/IAS net liability clearing' },
+  { code: '2125', name: 'HECS/HELP Withholding Payable',    type: 'Liability', parentCode: '2000', gstCode: 'N-T' },
+  { code: '2155', name: 'Net Pay Clearing',                 type: 'Liability', parentCode: '2000', gstCode: 'N-T', notes: 'Payroll suspense' },
+  { code: '2180', name: 'FBT Payable',                      type: 'Liability', parentCode: '2000', gstCode: 'N-T' },
+  { code: '2190', name: 'Deferred Tax Liability',           type: 'Liability', parentCode: '2000', gstCode: 'N-T', notes: 'AASB 112 — timing differences' },
+  { code: '2210', name: 'Unearned Revenue',                 type: 'Liability', parentCode: '2000', gstCode: 'N-T', notes: 'Income received in advance' },
+  { code: '2220', name: 'Customer Refunds Payable',         type: 'Liability', parentCode: '2000', gstCode: 'N-T' },
+  { code: '2350', name: 'Provision for Warranty',           type: 'Liability', parentCode: '2000', gstCode: 'N-T' },
+  { code: '2360', name: 'Provision for Sick Leave',         type: 'Liability', parentCode: '2000', gstCode: 'N-T' },
+  { code: '2400', name: 'Lease Liability — Current Portion',type: 'Liability', parentCode: '2000', gstCode: 'N-T', notes: 'AASB 16 — current portion of 2530' },
+  { code: '2540', name: 'Loan from Director',               type: 'Liability', parentCode: '2500', gstCode: 'N-T' },
+  { code: '2550', name: 'Loan from Shareholder',            type: 'Liability', parentCode: '2500', gstCode: 'N-T', notes: 'Coy only — Div 7A relevance' },
+  { code: '2560', name: 'Loan from Related Party',          type: 'Liability', parentCode: '2500', gstCode: 'N-T' },
+
+  // Equity — extended (3 rows: reserves and contributed capital above par)
+  { code: '3100', name: 'Asset Revaluation Reserve',        type: 'Equity',    parentCode: '3000', gstCode: 'N-T' },
+  { code: '3110', name: 'General Reserve',                  type: 'Equity',    parentCode: '3000', gstCode: 'N-T' },
+  { code: '3120', name: 'Share Premium / Contributed Capital', type: 'Equity', parentCode: '3000', gstCode: 'N-T', notes: 'Coy — contributions above paid-up' },
+
+  // Revenue — extended (11 rows: contra-revenue, distribution income received,
+  // foreign income, capital gains, asset disposal gain, FX gain, grants,
+  // bad debt recovery, freight recovered). All carry ≥1 tax label per seed test.
+  { code: '4050', name: 'Sales Returns & Allowances',       type: 'Revenue',   parentCode: '4000', gstCode: 'GST',
+    taxLabel: '6S', companyTaxLabel: '6A', trustTaxLabel: '5B', partnershipTaxLabel: 'P1',
+    notes: 'Contra-revenue — debit reduces gross sales' },
+  { code: '4060', name: 'Discounts Allowed',                type: 'Revenue',   parentCode: '4000', gstCode: 'GST',
+    taxLabel: '6S', companyTaxLabel: '6A', trustTaxLabel: '5B', partnershipTaxLabel: 'P1',
+    notes: 'Contra-revenue' },
+  { code: '4230', name: 'Trust Distribution Income Received', type: 'Revenue', parentCode: '4000', gstCode: 'FRE',
+    taxLabel: '6S', companyTaxLabel: '6F', trustTaxLabel: '11J', partnershipTaxLabel: 'P1',
+    notes: 'When this entity is a beneficiary' },
+  { code: '4240', name: 'Partnership Distribution Received', type: 'Revenue',  parentCode: '4000', gstCode: 'FRE',
+    taxLabel: '6S', companyTaxLabel: '6F', trustTaxLabel: '11J', partnershipTaxLabel: 'P1' },
+  { code: '4250', name: 'Foreign Source Income',            type: 'Revenue',   parentCode: '4000', gstCode: 'FRE',
+    taxLabel: '6S', companyTaxLabel: '6F', trustTaxLabel: '11J', partnershipTaxLabel: 'P1',
+    notes: 'Item 20 individual schedule; FITO may apply' },
+  { code: '4260', name: 'Assessable Capital Gain',          type: 'Revenue',   parentCode: '4000', gstCode: 'FRE',
+    taxLabel: '6S', companyTaxLabel: '6F', trustTaxLabel: '11J', partnershipTaxLabel: 'P1',
+    notes: 'Post-CGT-discount assessable portion' },
+  { code: '4270', name: 'Gain on Disposal of Asset',        type: 'Revenue',   parentCode: '4000', gstCode: 'GST',
+    taxLabel: '6S', companyTaxLabel: '6A', trustTaxLabel: '5B', partnershipTaxLabel: 'P1' },
+  { code: '4280', name: 'Foreign Exchange Gain',            type: 'Revenue',   parentCode: '4000', gstCode: 'N-T',
+    taxLabel: '6S', companyTaxLabel: '6A', trustTaxLabel: '5B', partnershipTaxLabel: 'P1' },
+  { code: '4290', name: 'Government Grants (Assessable)',   type: 'Revenue',   parentCode: '4000', gstCode: 'N-T',
+    taxLabel: '6S', companyTaxLabel: '6A', trustTaxLabel: '5B', partnershipTaxLabel: 'P1',
+    notes: 'Cashflow boost / JobKeeper-style; check assessability' },
+  { code: '4450', name: 'Bad Debts Recovered',              type: 'Revenue',   parentCode: '4000', gstCode: 'N-T',
+    taxLabel: '6S', companyTaxLabel: '6A', trustTaxLabel: '5B', partnershipTaxLabel: 'P1' },
+  { code: '4470', name: 'Freight Recovered / Delivery Charged', type: 'Revenue', parentCode: '4000', gstCode: 'GST',
+    taxLabel: '6S', companyTaxLabel: '6A', trustTaxLabel: '5B', partnershipTaxLabel: 'P1' },
+
+  // COGS — extended (4 rows)
+  { code: '5060', name: 'Freight Inwards',                  type: 'Expense',   parentCode: '5000', gstCode: 'GST',
+    taxLabel: '6Q', companyTaxLabel: '6X', trustTaxLabel: '5E', partnershipTaxLabel: 'P2' },
+  { code: '5070', name: 'Customs Duty & Import Costs',      type: 'Expense',   parentCode: '5000', gstCode: 'FRE',
+    taxLabel: '6Q', companyTaxLabel: '6X', trustTaxLabel: '5E', partnershipTaxLabel: 'P2' },
+  { code: '5080', name: 'Stocktake / Inventory Adjustment', type: 'Expense',   parentCode: '5000', gstCode: 'N-T',
+    taxLabel: '6Q', companyTaxLabel: '6X', trustTaxLabel: '5E', partnershipTaxLabel: 'P2' },
+  { code: '5090', name: 'Stock Obsolescence / Write-down',  type: 'Expense',   parentCode: '5000', gstCode: 'N-T',
+    taxLabel: '6Q', companyTaxLabel: '6X', trustTaxLabel: '5E', partnershipTaxLabel: 'P2' },
+
+  // Operating Expenses — extended (14 rows: FBT, recruitment, uniforms,
+  // entertainment-NDed, IT consumables, ATO GIC, lease interest, FX wire fees,
+  // income protection / D&O / key-man insurance, R&D, plant hire, TPAR subs)
+  { code: '6045', name: 'FBT Expense',                      type: 'Expense',   parentCode: '6000', gstCode: 'FRE',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2',
+    notes: 'Fringe Benefits Tax — separate from payroll tax' },
+  { code: '6075', name: 'Recruitment & Agency Fees',        type: 'Expense',   parentCode: '6000', gstCode: 'GST',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2' },
+  { code: '6085', name: 'Staff Uniforms',                   type: 'Expense',   parentCode: '6000', gstCode: 'GST',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2' },
+  { code: '6535', name: 'Entertainment — Non-deductible',   type: 'Expense',   parentCode: '6000', gstCode: 'N-T',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2',
+    notes: 'Split from 6530 — non-deductible portion under 50/50 method' },
+  { code: '6635', name: 'Computer Consumables',             type: 'Expense',   parentCode: '6000', gstCode: 'GST',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2' },
+  { code: '6705', name: 'ATO General Interest Charge',      type: 'Expense',   parentCode: '6000', gstCode: 'FRE',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2',
+    notes: 'GIC — deductible (cf. 6940 non-deductible fines)' },
+  { code: '6715', name: 'Interest Expense — Lease (AASB 16)', type: 'Expense', parentCode: '6000', gstCode: 'FRE',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2',
+    notes: 'Effective-interest component of lease payments' },
+  { code: '6745', name: 'Currency Conversion / Wire Fees',  type: 'Expense',   parentCode: '6000', gstCode: 'FRE',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2' },
+  { code: '6830', name: 'Insurance — Income Protection',    type: 'Expense',   parentCode: '6000', gstCode: 'FRE',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2',
+    notes: 'Sole trader: deductible; salary: personal claim' },
+  { code: '6840', name: 'Insurance — Directors & Officers', type: 'Expense',   parentCode: '6000', gstCode: 'GST',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2' },
+  { code: '6850', name: 'Insurance — Key-Man',              type: 'Expense',   parentCode: '6000', gstCode: 'GST',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2' },
+  { code: '6960', name: 'R&D Expenditure',                  type: 'Expense',   parentCode: '6000', gstCode: 'GST',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2',
+    notes: 'Eligible R&D — may attract R&D tax incentive offset' },
+  { code: '6970', name: 'Equipment & Plant Hire',           type: 'Expense',   parentCode: '6000', gstCode: 'GST',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2' },
+  { code: '6980', name: 'Subcontractor — TPAR Reportable',  type: 'Expense',   parentCode: '6000', gstCode: 'GST',
+    taxLabel: '6N', companyTaxLabel: '6X', trustTaxLabel: '5N', partnershipTaxLabel: 'P2',
+    notes: 'Taxable Payments Annual Report — building/cleaning/courier/IT/road/security' },
 ];
 
