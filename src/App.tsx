@@ -54,13 +54,13 @@ export default function App() {
   // owns a synchronous migration useEffect.
   const { auditLogs, addLog } = useAuditLog();
   const { settings, setSettings, clearSettings } = useSettings();
-  const { accounts, updateAccount, saveAll } = useAccounts(addLog);
+  const { accounts, updateAccount, saveAll, reload: reloadAccounts } = useAccounts(addLog);
   const {
     entities,
     selectedEntityIds,
     activeEntityId,
     setActiveEntityId,
-    createEntity,
+    createEntity: rawCreateEntity,
     updateEntity,
     archiveEntity,
     deactivateEntity,
@@ -68,6 +68,18 @@ export default function App() {
     toggleSelection,
     clearSelection,
   } = useEntities(addLog);
+
+  // Wrap createEntity so the AccountManager picks up the seeded CoA. The
+  // entity-creation flow in useEntities writes the FY2026 default rows
+  // directly to the storage adapter — useAccounts keeps its own in-memory
+  // mirror, so we must reload() after the seed lands.
+  const createEntity = useCallback(
+    async (entity: Parameters<typeof rawCreateEntity>[0]) => {
+      await rawCreateEntity(entity);
+      await reloadAccounts();
+    },
+    [rawCreateEntity, reloadAccounts],
+  );
   const journalsHook = useJournals(addLog, activeEntityId);
 
   // Close sidebar on view change (mobile).

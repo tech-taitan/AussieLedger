@@ -82,7 +82,11 @@ export function YearEndWizard({
   const step = entity.wizardState?.[fy]?.step ?? 1;
   const status = entity.returnStatusByFy?.[fy] ?? 'draft';
 
-  // Compute unmapped accounts: referenced in posted entries but no taxLabel
+  // Compute unmapped accounts: Revenue/Expense rows referenced in posted entries
+  // whose ENTITY-SPECIFIC tax label is missing. Company entities need
+  // companyTaxLabel; Trust → trustTaxLabel; Partnership → partnershipTaxLabel;
+  // Individual / Sole Trader → taxLabel. Asset/Liability/Equity rows are
+  // never tax-return inputs so they're excluded.
   const unmappedAccounts = useMemo(() => {
     const postedAccountIds = new Set<string>();
     for (const entry of entries) {
@@ -93,10 +97,18 @@ export function YearEndWizard({
         postedAccountIds.add(line.accountId);
       }
     }
+    const labelField: keyof Account =
+      entity.type === 'Company'      ? 'companyTaxLabel' :
+      entity.type === 'Trust'        ? 'trustTaxLabel' :
+      entity.type === 'Partnership'  ? 'partnershipTaxLabel' :
+                                       'taxLabel';
     return accounts.filter(
-      (a) => postedAccountIds.has(a.id) && (!a.taxLabel || a.taxLabel === ''),
+      (a) =>
+        postedAccountIds.has(a.id) &&
+        (a.type === 'Revenue' || a.type === 'Expense') &&
+        !a[labelField],
     );
-  }, [accounts, entries]);
+  }, [accounts, entries, entity.type]);
 
   const hasBlockingIssues = unmappedAccounts.length > 0;
 

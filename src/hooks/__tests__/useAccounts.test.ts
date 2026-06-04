@@ -13,13 +13,20 @@ import { useAccounts } from '../useAccounts';
 import type { Account, JournalEntry } from '../../types';
 import { getAdapter } from '../../storage';
 
-const CHART_SIZE = 16;
+// Minimum size of the FY2026 Company default CoA seeded by useAccounts when the
+// adapter is empty on first run. See `src/lib/coa/__tests__/seed.test.ts` for
+// the contract (per-type size: 80..250).
+const SEED_MIN_SIZE = 80;
 
 describe('useAccounts', () => {
-  it('starts with CHART_OF_ACCOUNTS default (16 accounts)', () => {
+  it('starts empty in-memory, then seeds FY2026 Company default after mount', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useAccounts(addLog));
-    expect(result.current.accounts).toHaveLength(CHART_SIZE);
+    // Synchronous initial state is empty — useEffect populates the seed.
+    expect(result.current.accounts).toHaveLength(0);
+    await waitFor(() => {
+      expect(result.current.accounts.length).toBeGreaterThanOrEqual(SEED_MIN_SIZE);
+    });
   });
 
   it('loads from adapter on mount when present', async () => {
@@ -46,7 +53,7 @@ describe('useAccounts', () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useAccounts(addLog));
     await waitFor(() => {
-      expect(result.current.accounts).toHaveLength(CHART_SIZE);
+      expect(result.current.accounts.length).toBeGreaterThanOrEqual(SEED_MIN_SIZE);
     });
     const firstAccount = result.current.accounts[0];
     act(() => {
@@ -60,17 +67,21 @@ describe('useAccounts', () => {
     });
   });
 
-  it('calls addLog on updateAccount', () => {
+  it('calls addLog on updateAccount', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useAccounts(addLog));
+    await waitFor(() => {
+      expect(result.current.accounts.length).toBeGreaterThanOrEqual(SEED_MIN_SIZE);
+    });
     const firstAccount = result.current.accounts[0];
     act(() => {
       result.current.updateAccount({ ...firstAccount, name: 'Test Account' });
     });
-    expect(addLog).toHaveBeenCalledOnce();
-    const [action, details] = addLog.mock.calls[0];
-    expect(action).toBe('IMPORT_DATA');
-    expect(details).toContain('Test Account');
+    // First addLog is the seed's saveAll (if any); find the IMPORT_DATA edit log.
+    const editCall = addLog.mock.calls.find(
+      (c) => c[0] === 'IMPORT_DATA' && (c[1] as string).includes('Test Account'),
+    );
+    expect(editCall).toBeDefined();
   });
 
   it('saveAll replaces all accounts and calls addLog', () => {

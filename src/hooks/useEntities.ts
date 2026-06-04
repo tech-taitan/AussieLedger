@@ -44,7 +44,13 @@ export interface EntitiesHook {
   activeEntityId: string | null;
   setActiveEntityId: (id: string | null) => void;
   setEntities: (entities: Entity[]) => void;
-  createEntity: (entity: Entity) => void;
+  /**
+   * Adds the entity to in-memory state and (for AU four-type entities) seeds
+   * the FY2026 default CoA into the storage adapter. Resolves after the seed
+   * write completes — callers (e.g. App.tsx) should await before calling
+   * `useAccounts.reload()` so the AccountManager picks up the new rows.
+   */
+  createEntity: (entity: Entity) => Promise<void>;
   updateEntity: (entity: Entity) => void;
   archiveEntity: (ids: string[]) => void;
   deactivateEntity: (ids: string[]) => void;
@@ -97,7 +103,7 @@ export function useEntities(addLog: AddLog): EntitiesHook {
   }, [entities, ready]);
 
   const createEntity = useCallback(
-    (entity: Entity) => {
+    async (entity: Entity) => {
       setEntities((prev) => [...prev, entity]);
       addLog(
         'CREATE_ENTITY',
@@ -105,24 +111,22 @@ export function useEntities(addLog: AddLog): EntitiesHook {
         entity.id,
       );
 
-      // Phase 4 — seed default CoA per entity type (fire-and-forget).
-      // Uses the adapter directly to avoid coupling useEntities to useAccounts.
+      // Phase 4 — seed default CoA per entity type. Awaited so App.tsx can
+      // chain `useAccounts.reload()` after the seed lands in storage.
       const t = entity.type as EntityCoaType;
       if ((AU_FOUR as string[]).includes(t)) {
-        (async () => {
-          try {
-            const adapter = await getAdapter();
-            const existing = await adapter.getAccounts();
-            const seed = getDefaultCoaFor(t, 'FY2026');
-            const byId = Object.fromEntries(existing.map((a) => [a.id, a]));
-            for (const s of seed) {
-              if (!byId[s.id]) byId[s.id] = s;
-            }
-            await adapter.saveAccounts(Object.values(byId));
-          } catch (err) {
-            console.error('default CoA seeding failed', err);
+        try {
+          const adapter = await getAdapter();
+          const existing = await adapter.getAccounts();
+          const seed = getDefaultCoaFor(t, 'FY2026');
+          const byId = Object.fromEntries(existing.map((a) => [a.id, a]));
+          for (const s of seed) {
+            if (!byId[s.id]) byId[s.id] = s;
           }
-        })();
+          await adapter.saveAccounts(Object.values(byId));
+        } catch (err) {
+          console.error('default CoA seeding failed', err);
+        }
       }
     },
     [addLog],
