@@ -19,6 +19,8 @@ interface SettingsProps {
   activeEntity?: Entity;
   /** Phase 15 POL-CODE-05 — invoked when the Active Entity Edit button is clicked; delegates to setView('edit-entity'). */
   onEditActiveEntity?: () => void;
+  /** Invoked when the Add Entity button in the Primary Entity card is clicked. Delegates to ViewRouter's create-entity flow. */
+  onAddEntity?: () => void;
 }
 
 export function Settings({
@@ -28,6 +30,7 @@ export function Settings({
   entities,
   activeEntity,
   onEditActiveEntity,
+  onAddEntity,
 }: SettingsProps): React.JSX.Element {
   const mode = settings?.mode ?? 'owner';
 
@@ -57,33 +60,55 @@ export function Settings({
         </select>
       </section>
 
-      {mode === 'owner' && entities.length >= 2 && (
+      {mode === 'owner' && (
         <section className="bg-white border border-[var(--line-strong)] p-6 space-y-3">
           <h3 className="font-bold text-sm uppercase tracking-wider">
             Primary Entity
           </h3>
-          <p className="text-xs text-gray-500">
-            Select which entity is your primary when in owner mode.
-          </p>
-          <div
-            data-testid="settings-primary-entity"
-            className="space-y-2"
-          >
-            {entities.map((e) => (
-              <label key={e.id} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="primary-entity"
-                  value={e.id}
-                  checked={settings?.primaryEntityId === e.id}
-                  onChange={() => onChange({ mode, primaryEntityId: e.id })}
-                  className="accent-[var(--ink)]"
-                />
-                <span className="text-sm">{e.name}</span>
-                <span className="text-xs text-gray-400">({e.type})</span>
-              </label>
-            ))}
-          </div>
+          {entities.length >= 2 ? (
+            <>
+              <p className="text-xs text-gray-500">
+                Select which entity is your primary when in owner mode.
+              </p>
+              <div
+                data-testid="settings-primary-entity"
+                className="space-y-2"
+              >
+                {entities.map((e) => (
+                  <label key={e.id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="primary-entity"
+                      value={e.id}
+                      checked={settings?.primaryEntityId === e.id}
+                      onChange={() => onChange({ mode, primaryEntityId: e.id })}
+                      className="accent-[var(--ink)]"
+                    />
+                    <span className="text-sm">{e.name}</span>
+                    <span className="text-xs text-gray-400">({e.type})</span>
+                  </label>
+                ))}
+              </div>
+            </>
+          ) : entities.length === 1 ? (
+            <p className="text-xs text-gray-500">
+              <span className="text-sm text-gray-700 font-medium">{entities[0].name}</span>
+              <span className="text-gray-400"> ({entities[0].type})</span> — your primary entity. Add another to choose.
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500">
+              No entities yet. Add your first to start tracking transactions.
+            </p>
+          )}
+          {onAddEntity && (
+            <button
+              data-testid="settings-add-entity"
+              onClick={onAddEntity}
+              className="text-sm text-blue-600 hover:underline font-medium"
+            >
+              + Add Entity
+            </button>
+          )}
         </section>
       )}
 

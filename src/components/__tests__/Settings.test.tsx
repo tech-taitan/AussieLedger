@@ -97,7 +97,10 @@ describe('Settings POL-CODE-05 — Active Entity section', () => {
       />
     );
     expect(screen.getByRole('heading', { name: /active entity/i })).toBeTruthy();
-    expect(screen.getByText(/acme pty ltd/i)).toBeTruthy();
+    // Acme appears in both the Primary Entity card (1-entity display) and
+    // the Active Entity card — assert presence via getAllByText, then
+    // confirm the Edit button (Active Entity card affordance) is rendered.
+    expect(screen.getAllByText(/acme pty ltd/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: /edit entity details/i })).toBeTruthy();
   });
 

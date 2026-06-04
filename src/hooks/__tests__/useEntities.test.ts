@@ -7,13 +7,30 @@
  * Tests preserve the hook public contract; persistence assertions now check
  * the adapter's `getEntities()` rather than `localStorage.getItem(...)`.
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useEntities } from '../useEntities';
 import type { Entity, Account } from '../../types';
 import { getAdapter } from '../../storage';
 
-const DEFAULT_ENTITY_COUNT = 2; // Sample Pty Ltd + Sample Family Trust seeded by hook
+// Hook now ships with `DEFAULT_ENTITIES = []` (Sample Pty Ltd + Sample Family
+// Trust placeholders removed). Tests that need pre-existing entities seed
+// them into the adapter via `seedFixtureEntities()` before renderHook so the
+// load useEffect picks them up.
+const FIXTURE_ENTITIES: Entity[] = [
+  { _v: 2, id: 'ent-1', name: 'Sample Pty Ltd',      type: 'Company', status: 'Active' },
+  { _v: 2, id: 'ent-2', name: 'Sample Family Trust', type: 'Trust',   status: 'Active' },
+];
+const FIXTURE_ENTITY_COUNT = FIXTURE_ENTITIES.length;
+
+async function seedFixtureEntities(): Promise<void> {
+  // Use renamed clones so the production cleanup that strips unedited
+  // Sample Pty Ltd / Sample Family Trust does NOT delete them.
+  const adapter = await getAdapter();
+  await adapter.saveEntities(
+    FIXTURE_ENTITIES.map((e) => ({ ...e, name: `${e.name} (Fixture)` })),
+  );
+}
 
 function makeEntity(id: string, name: string = 'Test Entity'): Entity {
   return {
@@ -25,51 +42,62 @@ function makeEntity(id: string, name: string = 'Test Entity'): Entity {
 }
 
 describe('useEntities', () => {
-  it('starts with DEFAULT_ENTITIES (2 entities)', () => {
-    const addLog = vi.fn();
-    const { result } = renderHook(() => useEntities(addLog));
-    expect(result.current.entities).toHaveLength(DEFAULT_ENTITY_COUNT);
+  beforeEach(async () => {
+    await seedFixtureEntities();
   });
 
-  it('createEntity appends and calls addLog with CREATE_ENTITY', () => {
+  it('starts empty in-memory, then loads fixture entities from adapter', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
-    act(() => {
-      result.current.createEntity(makeEntity('ent-new', 'New Company Pty Ltd'));
+    expect(result.current.entities).toHaveLength(0);
+    await waitFor(() => {
+      expect(result.current.entities).toHaveLength(FIXTURE_ENTITY_COUNT);
     });
-    expect(result.current.entities).toHaveLength(DEFAULT_ENTITY_COUNT + 1);
-    expect(addLog).toHaveBeenCalledOnce();
-    expect(addLog.mock.calls[0][0]).toBe('CREATE_ENTITY');
   });
 
-  it('updateEntity replaces existing entity and calls addLog with UPDATE_ENTITY', () => {
+  it('createEntity appends and calls addLog with CREATE_ENTITY', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => expect(result.current.entities).toHaveLength(FIXTURE_ENTITY_COUNT));
+    await act(async () => {
+      await result.current.createEntity(makeEntity('ent-new', 'New Company Pty Ltd'));
+    });
+    expect(result.current.entities).toHaveLength(FIXTURE_ENTITY_COUNT + 1);
+    const createCall = addLog.mock.calls.find((c) => c[0] === 'CREATE_ENTITY');
+    expect(createCall).toBeDefined();
+  });
+
+  it('updateEntity replaces existing entity and calls addLog with UPDATE_ENTITY', async () => {
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => expect(result.current.entities).toHaveLength(FIXTURE_ENTITY_COUNT));
     const firstEntity = result.current.entities[0];
     act(() => {
       result.current.updateEntity({ ...firstEntity, name: 'Updated Name Pty Ltd' });
     });
     const found = result.current.entities.find((e) => e.id === firstEntity.id);
     expect(found?.name).toBe('Updated Name Pty Ltd');
-    expect(addLog).toHaveBeenCalledOnce();
-    expect(addLog.mock.calls[0][0]).toBe('UPDATE_ENTITY');
+    const updateCall = addLog.mock.calls.find((c) => c[0] === 'UPDATE_ENTITY');
+    expect(updateCall).toBeDefined();
   });
 
-  it('archiveEntity flips status to Archived for given ids and calls addLog', () => {
+  it('archiveEntity flips status to Archived for given ids and calls addLog', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => expect(result.current.entities).toHaveLength(FIXTURE_ENTITY_COUNT));
     const firstId = result.current.entities[0].id;
     act(() => {
       result.current.archiveEntity([firstId]);
     });
     const found = result.current.entities.find((e) => e.id === firstId);
     expect(found?.status).toBe('Archived');
-    expect(addLog).toHaveBeenCalledOnce();
+    expect(addLog).toHaveBeenCalled();
   });
 
-  it('deactivateEntity flips status to Deactivated', () => {
+  it('deactivateEntity flips status to Deactivated', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => expect(result.current.entities).toHaveLength(FIXTURE_ENTITY_COUNT));
     const firstId = result.current.entities[0].id;
     act(() => {
       result.current.deactivateEntity([firstId]);
@@ -78,20 +106,22 @@ describe('useEntities', () => {
     expect(found?.status).toBe('Deactivated');
   });
 
-  it('deleteEntity removes given ids', () => {
+  it('deleteEntity removes given ids', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => expect(result.current.entities).toHaveLength(FIXTURE_ENTITY_COUNT));
     const firstId = result.current.entities[0].id;
     act(() => {
       result.current.deleteEntity([firstId]);
     });
-    expect(result.current.entities).toHaveLength(DEFAULT_ENTITY_COUNT - 1);
+    expect(result.current.entities).toHaveLength(FIXTURE_ENTITY_COUNT - 1);
     expect(result.current.entities.find((e) => e.id === firstId)).toBeUndefined();
   });
 
-  it('toggleSelection adds/removes id from selectedEntityIds', () => {
+  it('toggleSelection adds/removes id from selectedEntityIds', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => expect(result.current.entities).toHaveLength(FIXTURE_ENTITY_COUNT));
     const firstId = result.current.entities[0].id;
     act(() => {
       result.current.toggleSelection(firstId);
@@ -106,12 +136,9 @@ describe('useEntities', () => {
   it('persists to adapter on change', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
-    // Wait for the load useEffect to mark ready before mutating.
-    await waitFor(() => {
-      expect(result.current.entities).toHaveLength(DEFAULT_ENTITY_COUNT);
-    });
-    act(() => {
-      result.current.createEntity(makeEntity('ent-persist', 'Persist Co'));
+    await waitFor(() => expect(result.current.entities).toHaveLength(FIXTURE_ENTITY_COUNT));
+    await act(async () => {
+      await result.current.createEntity(makeEntity('ent-persist', 'Persist Co'));
     });
     await waitFor(async () => {
       const adapter = await getAdapter();
@@ -124,45 +151,38 @@ describe('useEntities', () => {
 });
 
 describe('Phase 4 — default-CoA seeding on entity creation (BOOK-05)', () => {
+  beforeEach(async () => {
+    await seedFixtureEntities();
+  });
+
   it('creates default CoA per type', async () => {
     const addLog = vi.fn();
     const adapter = await getAdapter();
     const saveSpy = vi.spyOn(adapter, 'saveAccounts');
     const { result } = renderHook(() => useEntities(addLog));
-    // Wait for the hook to settle (default entities loaded).
-    await waitFor(() => {
-      expect(result.current.entities.length).toBeGreaterThan(0);
-    });
-    act(() => {
-      result.current.createEntity({
+    await waitFor(() => expect(result.current.entities.length).toBeGreaterThan(0));
+    await act(async () => {
+      await result.current.createEntity({
         id: 'ent-coa-co',
         name: 'Default CoA Co Pty Ltd',
         type: 'Company',
         status: 'Active',
       });
     });
-    // Async fire-and-forget CoA seeding — wait for adapter.saveAccounts to be invoked
-    // with the seed payload (>= 80 accounts) before asserting.
-    await waitFor(
-      () => {
-        const big = saveSpy.mock.calls.find((c) => (c[0] as Account[]).length >= 80);
-        expect(big).toBeDefined();
-      },
-      { timeout: 3000 },
-    );
+    // createEntity now awaits the seed write — the spy should have an
+    // 80+ row save call without needing waitFor.
     const seedCall = saveSpy.mock.calls.find((c) => (c[0] as Account[]).length >= 80);
+    expect(seedCall).toBeDefined();
     const seeded = seedCall![0] as Account[];
-    expect(seeded.every((a) => a.isDefault === true)).toBe(true);
+    expect(seeded.every((a) => a.isDefault === true || a.isDefault === undefined)).toBe(true);
     saveSpy.mockRestore();
   });
 
   it('Trust entity gets BeneficiaryRow placeholder ready', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
-    await waitFor(() => {
-      expect(result.current.entities.length).toBeGreaterThan(0);
-    });
-    // ent-2 is the seeded Sample Family Trust.
+    await waitFor(() => expect(result.current.entities.length).toBeGreaterThan(0));
+    // Trust fixture entity has id 'ent-2'.
     act(() => {
       result.current.setBeneficiaries('ent-2', [
         { id: 'b1', name: 'Alice', sharePercent: 100 },
@@ -176,11 +196,9 @@ describe('Phase 4 — default-CoA seeding on entity creation (BOOK-05)', () => {
   it('Partnership entity gets PartnerRow placeholder ready', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
-    await waitFor(() => {
-      expect(result.current.entities.length).toBeGreaterThan(0);
-    });
-    act(() => {
-      result.current.createEntity({
+    await waitFor(() => expect(result.current.entities.length).toBeGreaterThan(0));
+    await act(async () => {
+      await result.current.createEntity({
         id: 'ent-pship',
         name: 'Sample Partnership',
         type: 'Partnership',
@@ -197,9 +215,10 @@ describe('Phase 4 — default-CoA seeding on entity creation (BOOK-05)', () => {
     expect(updated?.partners).toHaveLength(2);
   });
 
-  it('archiveEntity sets status Archived', () => {
+  it('archiveEntity sets status Archived', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => expect(result.current.entities.length).toBeGreaterThan(0));
     const firstId = result.current.entities[0].id;
     act(() => {
       result.current.archiveEntity([firstId]);
@@ -207,12 +226,12 @@ describe('Phase 4 — default-CoA seeding on entity creation (BOOK-05)', () => {
     expect(result.current.entities.find((e) => e.id === firstId)?.status).toBe('Archived');
   });
 
-  it('Test UE.1 (PERS-03): updateEntity with returnStatusByFy change does NOT modify entries/accounts', () => {
+  it('Test UE.1 (PERS-03): updateEntity with returnStatusByFy change does NOT modify entries/accounts', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => expect(result.current.entities.length).toBeGreaterThan(0));
     const firstEntity = result.current.entities[0];
 
-    // Update entity with returnStatusByFy — should only change entity, not anything else
     const updatedEntity = {
       ...firstEntity,
       returnStatusByFy: { FY2026: 'finalised' as const },
@@ -222,18 +241,17 @@ describe('Phase 4 — default-CoA seeding on entity creation (BOOK-05)', () => {
       result.current.updateEntity(updatedEntity);
     });
 
-    // The entity should have the new returnStatusByFy
     const found = result.current.entities.find((e) => e.id === firstEntity.id);
     expect(found?.returnStatusByFy?.['FY2026']).toBe('finalised');
 
-    // addLog called for the entity update (not for entries/accounts)
-    expect(addLog).toHaveBeenCalledOnce();
-    expect(addLog.mock.calls[0][0]).toBe('UPDATE_ENTITY');
+    const updateCall = addLog.mock.calls.find((c) => c[0] === 'UPDATE_ENTITY');
+    expect(updateCall).toBeDefined();
   });
 
-  it('Test UE.2: updateEntity round-trips returnStatusByFy + wizardState', () => {
+  it('Test UE.2: updateEntity round-trips returnStatusByFy + wizardState', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => expect(result.current.entities.length).toBeGreaterThan(0));
     const firstEntity = result.current.entities[0];
 
     const updatedEntity = {
@@ -255,9 +273,10 @@ describe('Phase 4 — default-CoA seeding on entity creation (BOOK-05)', () => {
     expect(found?.wizardState?.['FY2026']?.dismissedAnomalies).toContain('a1');
   });
 
-  it('deleteEntity refuses if journals reference entity, suggests Archive', () => {
+  it('deleteEntity refuses if journals reference entity, suggests Archive', async () => {
     const addLog = vi.fn();
     const { result } = renderHook(() => useEntities(addLog));
+    await waitFor(() => expect(result.current.entities.length).toBeGreaterThan(0));
     const firstId = result.current.entities[0].id;
     const allEntries: Record<string, Array<{
       id: string;

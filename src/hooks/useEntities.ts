@@ -10,31 +10,32 @@ import { getAdapter } from '../storage';
 import { getDefaultCoaFor, type EntityCoaType } from '../lib/coa';
 
 /**
- * Default entities seeded on first run (when the adapter returns an empty entities array).
- * Duplicated from App.tsx to avoid hook->App import cycle.
+ * Default entities seeded on first run. Production ships empty — users
+ * start with no entities and create their own via the WelcomeBanner /
+ * "Add Entity" affordances. The previous Sample Pty Ltd + Sample Family
+ * Trust placeholders were removed because they cluttered the Settings
+ * Primary Entity card.
+ *
+ * Tests that depend on a pre-populated entity list seed the adapter
+ * themselves via `adapter.saveEntities([...])` before calling
+ * `renderHook(useEntities)`.
  */
-const DEFAULT_ENTITIES: Entity[] = [
-  {
-    _v: 2,
-    id: 'ent-1',
-    name: 'Sample Pty Ltd',
-    type: 'Company',
-    registrationNumber: 'ABN 11 111 111 111',
-    businessAddress: '1 Sample Street, Sydney NSW 2000',
-    contactPerson: 'Demo Contact',
-    status: 'Active',
-  },
-  {
-    _v: 2,
-    id: 'ent-2',
-    name: 'Sample Family Trust',
-    type: 'Trust',
-    registrationNumber: 'ABN 22 222 222 222',
-    businessAddress: '2 Sample Lane, Melbourne VIC 3000',
-    contactPerson: 'Demo Contact',
-    status: 'Active',
-  },
-];
+const DEFAULT_ENTITIES: Entity[] = [];
+
+/**
+ * Match the two sample entities that earlier app versions seeded into
+ * IDB (`Sample Pty Ltd` + `Sample Family Trust`). On load, we filter
+ * these out for existing users so their Settings → Primary Entity card
+ * doesn't carry placeholder noise. Only matches if id + exact original
+ * name + type are unchanged — a renamed sample is treated as real data
+ * the user adopted and is preserved.
+ */
+function isUnusedSampleEntity(e: Entity): boolean {
+  return (
+    (e.id === 'ent-1' && e.name === 'Sample Pty Ltd' && e.type === 'Company') ||
+    (e.id === 'ent-2' && e.name === 'Sample Family Trust' && e.type === 'Trust')
+  );
+}
 
 const AU_FOUR: EntityCoaType[] = ['Individual', 'Company', 'Trust', 'Partnership'];
 
@@ -84,7 +85,11 @@ export function useEntities(addLog: AddLog): EntitiesHook {
       const adapter = await getAdapter();
       const loaded = await adapter.getEntities();
       if (cancelled) return;
-      if (loaded.length > 0) setEntities(loaded);
+      // Strip the unused Sample Pty Ltd / Sample Family Trust placeholders
+      // that earlier versions seeded — preserves anything the user has
+      // actually touched.
+      const cleaned = loaded.filter((e) => !isUnusedSampleEntity(e));
+      if (cleaned.length > 0) setEntities(cleaned);
       setReady(true);
     })().catch((err) => {
       console.error('useEntities load failed', err);

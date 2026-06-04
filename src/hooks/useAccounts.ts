@@ -13,6 +13,25 @@ export type AddLog = (
   entityId?: string,
 ) => void;
 
+/**
+ * Detect the pre-Phase-4 legacy 16-row CHART_OF_ACCOUNTS seed that some
+ * existing users still have persisted. The legacy seed had a unique ID
+ * pattern of `{typePrefix}-{code}` (e.g. `1-1110`, `2-2100`), no `_v`
+ * stamp, no `isDefault` flag, and no `parentCode` (it was flat). All
+ * four conjuncts must hold — keeps user-curated accounts and demo data
+ * safe even when they happen to lack one signal.
+ */
+function isLegacyCoa(loaded: Account[]): boolean {
+  if (loaded.length === 0 || loaded.length > 20) return false;
+  return loaded.every(
+    (a) =>
+      a._v === undefined &&
+      a.isDefault === undefined &&
+      a.parentCode === undefined &&
+      /^\d-\d{4}$/.test(a.id),
+  );
+}
+
 export interface AccountsHook {
   accounts: Account[];
   updateAccount: (updated: Account) => void;
@@ -42,15 +61,24 @@ export function useAccounts(addLog: AddLog): AccountsHook {
       const adapter = await getAdapter();
       const loaded = await adapter.getAccounts();
       if (cancelled) return;
-      if (loaded.length > 0) {
-        setAccounts(loaded);
-      } else {
+      if (loaded.length === 0) {
         // First run — seed the comprehensive FY2026 Company default CoA
         // so the AccountManager shows a usable starting set. Subsequent
         // entity creations merge their entity-type overlays on top (via
         // `useEntities.createEntity` direct adapter write + `reload()`).
         const seed = getDefaultCoaFor('Company', 'FY2026');
         setAccounts(seed);
+      } else if (isLegacyCoa(loaded)) {
+        // One-time replacement — pre-Phase-4 users have the legacy 16-row
+        // CHART_OF_ACCOUNTS from constants.ts persisted in IDB. It's
+        // inadequate for AU SME bookkeeping; swap it for the FY2026
+        // Company default so they get the same comprehensive set fresh
+        // users get. Replacement is safe because the legacy seed has no
+        // `_v` stamp and no `isDefault` flag — distinguishable from
+        // user-curated accounts.
+        setAccounts(getDefaultCoaFor('Company', 'FY2026'));
+      } else {
+        setAccounts(loaded);
       }
       setReady(true);
     })().catch((err) => {

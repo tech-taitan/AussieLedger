@@ -822,6 +822,10 @@ export function ViewRouter({
               entities={entities}
               activeEntity={activeEntity}
               onEditActiveEntity={() => setView('edit-entity')}
+              onAddEntity={() => {
+                setActiveEntityId(null);
+                setView('edit-entity');
+              }}
             />
           )}
 
