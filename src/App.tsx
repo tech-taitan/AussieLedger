@@ -80,6 +80,13 @@ export default function App() {
     },
     [rawCreateEntity, reloadAccounts],
   );
+
+  // ImportTB "Create new account" callback — append-only CoA write.
+  const appendAccounts = useCallback(
+    (newAccounts: Parameters<typeof saveAll>[0]) =>
+      saveAll([...accounts, ...newAccounts]),
+    [accounts, saveAll],
+  );
   const journalsHook = useJournals(addLog, activeEntityId);
 
   // Close sidebar on view change (mobile).
@@ -210,6 +217,7 @@ export default function App() {
             saveAll(updated);
             setView('master-dashboard');
           }}
+          onAppendAccounts={appendAccounts}
           onUpdateAccount={updateAccount}
           settings={settings}
           setSettings={setSettings}

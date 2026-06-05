@@ -28,6 +28,12 @@ interface TrialBalanceProps {
   entityName?: string;
   entityId?: string;
   addLog?: (action: AuditAction, details: string, entityId?: string) => void;
+  /**
+   * Hard-delete every journal entry for the active entity (TB reset).
+   * When provided, the TB header surfaces a "Delete all data" button
+   * guarded by a window.confirm. The CoA and entity are not touched.
+   */
+  onClearAll?: () => void;
 }
 
 function triggerCsvDownload(csv: string, filename: string): void {
@@ -62,6 +68,7 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
   entityName,
   entityId,
   addLog,
+  onClearAll,
 }) => {
   const [internalPeriod, setInternalPeriod] = useState<Period>(
     periodProp ?? { type: 'fy', fy: currentFy() },
@@ -197,6 +204,23 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
           >
             Export CSV
           </button>
+          {onClearAll && (
+            <button
+              onClick={() => {
+                if (
+                  window.confirm(
+                    'Delete ALL journal entries for this entity? This wipes the Trial Balance and cannot be undone. Your Chart of Accounts and entity details are preserved.',
+                  )
+                ) {
+                  onClearAll();
+                }
+              }}
+              className="no-print px-3 py-1 bg-rose-600 text-white rounded text-sm hover:bg-rose-700"
+              data-testid="clear-tb-button"
+            >
+              Delete all data
+            </button>
+          )}
           <label className="flex items-center gap-1">
             <span className="text-[10px] font-bold uppercase text-gray-500">
               Period

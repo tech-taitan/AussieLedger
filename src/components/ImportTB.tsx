@@ -14,7 +14,7 @@ import {
   ArrowRight,
   Settings2,
 } from 'lucide-react';
-import type { ImportedAccount, JournalEntry, JournalLine, Account } from '../types';
+import type { ImportedAccount, JournalEntry, JournalLine, Account, AccountType } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { isAiEnabled, GEMINI_MODEL } from '../lib/ai';
 import { fuzzyMatch, HIGH_CONFIDENCE_THRESHOLD } from '../lib/import/match';
@@ -56,6 +56,37 @@ interface ImportTBProps {
    * App.tsx SHOULD wire this prop via useJournals.supersedeImport).
    */
   onReplace?: (existingId: string, newEntry: JournalEntry) => void;
+  /**
+   * Called when the user clicked "Create new account" on one or more review
+   * rows and accepted the import. Receives the freshly-built Account objects
+   * (with deterministic ids already wired into the opening-balances journal
+   * lines). App.tsx forwards these to useAccounts so the new rows show up
+   * in the CoA and the journal can resolve its accountId references.
+   */
+  onCreateAccounts?: (newAccounts: Account[]) => void;
+}
+
+/**
+ * Map an external-system account code to one of the AU SME types. We honour
+ * the 4-digit prefix convention (1xxx Asset, 2xxx Liability, 3xxx Equity,
+ * 4xxx Revenue, 5xxx/6xxx Expense). When the code is missing or non-numeric,
+ * fall back to a debit/credit heuristic — debit-heavy looks like an Expense,
+ * credit-heavy like a Liability. Worst case the user fixes the type in the
+ * Configure Accounts editor; the row still imports without data loss.
+ */
+function guessAccountType(code: string, debit: number, credit: number): AccountType {
+  const m = code.match(/^(\d)/);
+  if (m) {
+    switch (m[1]) {
+      case '1': return 'Asset';
+      case '2': return 'Liability';
+      case '3': return 'Equity';
+      case '4': return 'Revenue';
+      case '5':
+      case '6': return 'Expense';
+    }
+  }
+  return debit >= credit ? 'Expense' : 'Liability';
 }
 
 export const ImportTB: React.FC<ImportTBProps> = ({
@@ -64,6 +95,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({
   activeEntityId,
   existingEntries,
   onReplace,
+  onCreateAccounts,
 }) => {
   // ── Deterministic parse stage ─────────────────────────────────────────────
   const [parsedRows, setParsedRows] = useState<RawRow[] | null>(null);
@@ -540,12 +572,35 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     fingerprint: string | undefined,
     options?: { replacesEntryId?: string; referenceSuffix?: string },
   ): JournalEntry => {
-    const lines: JournalLine[] = rows
-      .filter(
-        (r) =>
-          r.mappedAccountId &&
-          !r.mappedAccountId.startsWith('NEW:'), // unresolved create-new is dropped at post; user must pick a real account or skip
-      )
+    // IMP-07: resolve "Create new account" sentinels by minting a real
+    // Account for each NEW:-tagged row. The Account ids are reused as the
+    // mapped accountId on the journal line so debits/credits land on the
+    // correct row even before the parent's account state has settled.
+    const newAccountsCreated: Account[] = [];
+    const resolvedRows: ReviewRow[] = rows.map((r) => {
+      if (r.mappedAccountId && r.mappedAccountId.startsWith('NEW:')) {
+        const code = (r.externalCode || '').trim() || `IMP-${Date.now()}`;
+        const name = (r.externalName || '').trim() || 'Imported account';
+        const newAccount: Account = {
+          _v: 3,
+          id: `acc-imp-${crypto.randomUUID()}`,
+          code,
+          name,
+          type: guessAccountType(code, r.debit, r.credit),
+          gstCode: 'N-T',
+          isDefault: false,
+        };
+        newAccountsCreated.push(newAccount);
+        return { ...r, mappedAccountId: newAccount.id };
+      }
+      return r;
+    });
+    if (newAccountsCreated.length > 0 && onCreateAccounts) {
+      onCreateAccounts(newAccountsCreated);
+    }
+
+    const lines: JournalLine[] = resolvedRows
+      .filter((r) => r.mappedAccountId && !r.mappedAccountId.startsWith('NEW:'))
       .map((r) => ({
         accountId: r.mappedAccountId!,
         description: `Opening: ${r.externalName}`,

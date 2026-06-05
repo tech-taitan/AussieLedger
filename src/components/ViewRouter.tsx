@@ -67,6 +67,8 @@ interface ViewRouterProps {
   >;
   onSaveCOA: (updated: Account[]) => void;
   onUpdateAccount: (updated: Account) => void;
+  /** Appends newly-minted accounts (e.g. from ImportTB "Create new account") to the CoA without nav side-effects. */
+  onAppendAccounts?: (newAccounts: Account[]) => void;
   /** Plan 06-3 additions — settings + mode-gated routing */
   settings?: SettingsType | null;
   setSettings?: (s: SettingsType) => void;
@@ -559,6 +561,7 @@ function TrialBalanceView({ accounts, journals, entityName, entityId, addLog }: 
           entityName={entityName}
           entityId={entityId}
           addLog={addLog}
+          onClearAll={entityId ? journals.clearAllEntries : undefined}
         />
     </div>
   );
@@ -581,6 +584,7 @@ export function ViewRouter({
   entityActions,
   onSaveCOA,
   onUpdateAccount,
+  onAppendAccounts,
   settings,
   setSettings,
   clearSettings,
@@ -799,6 +803,7 @@ export function ViewRouter({
                 activeEntityId ? (journals.allEntries[activeEntityId] ?? []) : []
               }
               onReplace={journals.supersedeImport}
+              onCreateAccounts={onAppendAccounts}
             />
           )}
 

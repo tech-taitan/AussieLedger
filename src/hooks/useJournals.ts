@@ -48,6 +48,12 @@ export interface JournalsHook {
    * (which filters out `status === 'superseded'`) would double-count.
    */
   supersedeImport: (existingId: string, newEntry: JournalEntry) => void;
+  /**
+   * Hard-deletes every journal entry for the active entity. Used by the
+   * TrialBalance "Delete all data" affordance. No-op when there's no
+   * active entity. The Account / Entity lists are not touched.
+   */
+  clearAllEntries: () => void;
 }
 
 export function useJournals(
@@ -335,6 +341,20 @@ export function useJournals(
     [activeEntityId, emitAudit],
   );
 
+  const clearAllEntries = useCallback(() => {
+    if (!activeEntityId) return;
+    let cleared = 0;
+    setAllEntries((prev) => {
+      cleared = (prev[activeEntityId] ?? []).length;
+      return { ...prev, [activeEntityId]: [] };
+    });
+    addLog(
+      'DELETE_JOURNAL',
+      `Cleared all ${cleared} journal entries for entity (Trial Balance reset)`,
+      activeEntityId,
+    );
+  }, [activeEntityId, addLog]);
+
   return {
     allEntries,
     entries,
@@ -353,5 +373,6 @@ export function useJournals(
     voidDraft,
     searchJournals,
     supersedeImport,
+    clearAllEntries,
   };
 }
