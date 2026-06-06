@@ -12,6 +12,7 @@ import { AnomalyBadge } from './AnomalyBadge';
 import { AccountPicker } from './AccountPicker';
 import { NewAccountModal, type NewAccountSpec } from './NewAccountModal';
 import { ImportIssuesPanel } from './ImportIssuesPanel';
+import { ImportConfirmDialog } from './ImportConfirmDialog';
 import { computeImportIssues, hasBlockingErrors } from '../lib/import/validateReview';
 
 /**
@@ -90,6 +91,23 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
   const issues = useMemo(() => computeImportIssues(rows as ReviewRow[]), [rows]);
   const blocking = hasBlockingErrors(issues);
 
+  const totals = useMemo(() => {
+    let debit = 0;
+    let credit = 0;
+    let included = 0;
+    let newAccounts = 0;
+    for (const r of rows) {
+      if ((r as ReviewRow)._include === false) continue;
+      included += 1;
+      debit += Number(r.debit) || 0;
+      credit += Number(r.credit) || 0;
+      if (r.mappedAccountId?.startsWith('NEW:')) newAccounts += 1;
+    }
+    return { debit, credit, included, newAccounts };
+  }, [rows]);
+
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const updateRow = (idx: number, patch: Partial<ReviewRow>) => {
     const next = rows.map((r, i) => (i === idx ? { ...r, ...patch } : r));
     onUpdate(next);
@@ -121,7 +139,7 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={onAccept}
+            onClick={() => setShowConfirm(true)}
             className={cn(
               'px-4 py-2 rounded text-sm text-white',
               blocking ? 'bg-rose-600 hover:bg-rose-700' : 'bg-blue-600 hover:bg-blue-700',
@@ -298,6 +316,29 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
               );
             })}
           </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-[var(--ink)] font-bold text-xs">
+              <td className="py-2 px-2 text-right" colSpan={3}>
+                Totals ({totals.included} row{totals.included === 1 ? '' : 's'})
+              </td>
+              <td className="py-2 px-2 text-right font-mono" data-testid="review-total-debit">
+                {totals.debit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </td>
+              <td className="py-2 px-2 text-right font-mono" data-testid="review-total-credit">
+                {totals.credit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </td>
+            </tr>
+            <tr className="text-[10px] text-gray-500">
+              <td className="py-1 px-2 text-right" colSpan={3}>
+                Difference
+              </td>
+              <td colSpan={2} className="py-1 px-2 text-right font-mono" data-testid="review-total-diff">
+                {Math.abs(totals.debit - totals.credit) < 0.005
+                  ? 'Balanced'
+                  : `Out by ${Math.abs(totals.debit - totals.credit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 
@@ -319,6 +360,21 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
           existingAccounts={accounts}
           onConfirm={(spec) => handleConfirmNewAccount(modalRowIndex, spec)}
           onCancel={() => setModalRowIndex(-1)}
+        />
+      )}
+
+      {showConfirm && (
+        <ImportConfirmDialog
+          includedCount={totals.included}
+          newAccountsCount={totals.newAccounts}
+          totalDebit={totals.debit}
+          totalCredit={totals.credit}
+          issues={issues}
+          onConfirm={() => {
+            setShowConfirm(false);
+            onAccept();
+          }}
+          onCancel={() => setShowConfirm(false)}
         />
       )}
     </section>

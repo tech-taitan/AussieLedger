@@ -43,6 +43,12 @@ export const AccountManager: React.FC<AccountManagerProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Account>>({});
   const [showArchived, setShowArchived] = useState(false);
+  // View mode: 'table' for the editable per-row surface (tax labels + GST +
+  // actions); 'tree' for hierarchical browsing. Defaults to 'table' because
+  // editing — the common task — happens here. The toggle removes the
+  // previous duplication of rendering BOTH surfaces simultaneously.
+  const [viewMode, setViewMode] = useState<'tree' | 'table'>('table');
+  const effectiveViewMode: 'tree' | 'table' = editingId ? 'table' : viewMode;
 
   const ACCOUNT_TYPES: AccountType[] = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
   // Phase 4 — corrected to the AU GST set per RESEARCH Pitfall 9.
@@ -194,23 +200,59 @@ export const AccountManager: React.FC<AccountManagerProps> = ({
           </div>
         )}
 
-        {/* Phase 4 — archived-toggle (CONTEXT: archived accounts hidden by default,
-            filterable to show; consistent with journal-picker behaviour). */}
-        <label
-          className="flex items-center gap-2 text-sm mb-3"
-          data-testid="show-archived-toggle"
-        >
-          <input
-            type="checkbox"
-            checked={showArchived}
-            onChange={(e) => setShowArchived(e.target.checked)}
-          />
-          Show archived accounts
-        </label>
+        <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+          <label
+            className="flex items-center gap-2 text-sm"
+            data-testid="show-archived-toggle"
+          >
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+            />
+            Show archived accounts
+          </label>
 
-        {/* Phase 4 — tree view for browse mode (BOOK-07 parent/child). Inline edit
-            stays per-row in the table below when editingId is set. */}
-        {!editingId && (
+          {!editingId && (
+            <div
+              role="group"
+              aria-label="View mode"
+              data-testid="view-mode-toggle"
+              className="inline-flex border border-[var(--line)] rounded overflow-hidden text-xs font-medium"
+            >
+              <button
+                type="button"
+                onClick={() => setViewMode('tree')}
+                data-testid="view-mode-tree"
+                aria-pressed={viewMode === 'tree'}
+                className={cn(
+                  'px-3 py-1',
+                  viewMode === 'tree'
+                    ? 'bg-[var(--ink)] text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50',
+                )}
+              >
+                Tree
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                data-testid="view-mode-table"
+                aria-pressed={viewMode === 'table'}
+                className={cn(
+                  'px-3 py-1 border-l border-[var(--line)]',
+                  viewMode === 'table'
+                    ? 'bg-[var(--ink)] text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50',
+                )}
+              >
+                Table
+              </button>
+            </div>
+          )}
+        </div>
+
+        {effectiveViewMode === 'tree' && (
           <div className="mb-4 border border-[var(--line)] rounded">
             <CoaTreeView
               accounts={localAccounts}
@@ -227,6 +269,7 @@ export const AccountManager: React.FC<AccountManagerProps> = ({
           </div>
         )}
 
+        {effectiveViewMode === 'table' && (
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -430,6 +473,7 @@ export const AccountManager: React.FC<AccountManagerProps> = ({
             </tbody>
           </table>
         </div>
+        )}
 
         <div className="mt-8 pt-6 border-t border-[var(--line)] flex justify-end gap-3">
           <button

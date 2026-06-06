@@ -311,6 +311,75 @@ describe('ImportReviewPane (IMP-03)', () => {
     expect(screen.getByTestId('accept-import').textContent).toMatch(/^Accept import$/);
   });
 
+  it('totals footer shows debits, credits, and balance status', () => {
+    const rows: ImportedAccount[] = [
+      { externalCode: '1100', externalName: 'Bank', debit: 1500, credit: 0, mappedAccountId: 'acc-1', confidence: 0.95 },
+      { externalCode: '4100', externalName: 'Sales', debit: 0, credit: 1500, mappedAccountId: 'acc-2', confidence: 0.95 },
+    ];
+    render(
+      <ImportReviewPane
+        rows={rows}
+        accounts={ACCOUNTS}
+        onUpdate={vi.fn()}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('review-total-debit').textContent).toContain('1,500');
+    expect(screen.getByTestId('review-total-credit').textContent).toContain('1,500');
+    expect(screen.getByTestId('review-total-diff').textContent).toMatch(/Balanced/i);
+  });
+
+  it('Accept import opens the confirm dialog and only posts after Post journal', () => {
+    const onAccept = vi.fn();
+    const rows: ImportedAccount[] = [
+      { externalCode: '1100', externalName: 'Bank', debit: 1000, credit: 0, mappedAccountId: 'acc-1', confidence: 0.95 },
+      { externalCode: '4100', externalName: 'Sales', debit: 0, credit: 1000, mappedAccountId: 'acc-2', confidence: 0.95 },
+    ];
+    render(
+      <ImportReviewPane
+        rows={rows}
+        accounts={ACCOUNTS}
+        onUpdate={vi.fn()}
+        onAccept={onAccept}
+        onReject={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('accept-import'));
+    expect(screen.getByTestId('import-confirm-dialog')).not.toBeNull();
+    // Totals visible in the dialog.
+    expect(screen.getByTestId('confirm-included').textContent).toBe('2');
+    expect(screen.getByTestId('confirm-total-debit').textContent).toContain('1,000');
+    expect(screen.getByTestId('confirm-total-credit').textContent).toContain('1,000');
+    expect(screen.getByTestId('confirm-balance-status').textContent).toMatch(/Balanced/i);
+    // onAccept NOT called yet — the post only fires after the user confirms.
+    expect(onAccept).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('confirm-post'));
+    expect(onAccept).toHaveBeenCalledTimes(1);
+  });
+
+  it('Back to review closes the confirm dialog without posting', () => {
+    const onAccept = vi.fn();
+    const rows: ImportedAccount[] = [
+      { externalCode: '1100', externalName: 'Bank', debit: 100, credit: 0, mappedAccountId: 'acc-1', confidence: 0.95 },
+      { externalCode: '4100', externalName: 'Sales', debit: 0, credit: 100, mappedAccountId: 'acc-2', confidence: 0.95 },
+    ];
+    render(
+      <ImportReviewPane
+        rows={rows}
+        accounts={ACCOUNTS}
+        onUpdate={vi.fn()}
+        onAccept={onAccept}
+        onReject={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('accept-import'));
+    expect(screen.getByTestId('import-confirm-dialog')).not.toBeNull();
+    fireEvent.click(screen.getByTestId('confirm-cancel'));
+    expect(screen.queryByTestId('import-confirm-dialog')).toBeNull();
+    expect(onAccept).not.toHaveBeenCalled();
+  });
+
   it('REGRESSION: omitting Phase 7 props (Phase 4 caller) does not render banner, badge, or panel', () => {
     const row: ImportedAccount = {
       externalCode: '1000',

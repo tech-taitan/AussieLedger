@@ -174,6 +174,8 @@ describe('AccountManager', () => {
           onCancel={vi.fn()}
         />,
       );
+      // Default view is table — switch to tree for the coa-row testids.
+      fireEvent.click(screen.getByTestId('view-mode-tree'));
       const rows = screen.getAllByTestId(/^coa-row-/);
       const parentIndex = rows.findIndex((r) => r.getAttribute('data-testid') === 'coa-row-6000');
       const childIndex = rows.findIndex((r) => r.getAttribute('data-testid') === 'coa-row-6010');
@@ -261,8 +263,12 @@ describe('AccountManager', () => {
           onCancel={vi.fn()}
         />,
       );
-      // Tree-view badge (CoaTreeView renders one per default account).
-      expect(screen.getByTestId('default-badge-4100')).toBeDefined();
+      // Default badge in the table view (always rendered as "default-badge-row-{code}");
+      // the tree view also renders a "default-badge-{code}" — assert at least one default badge exists.
+      expect(
+        screen.queryByTestId('default-badge-row-4100') ??
+        screen.queryByTestId('default-badge-4100'),
+      ).not.toBeNull();
     });
 
     it('archived accounts hidden from default view', () => {
@@ -283,9 +289,32 @@ describe('AccountManager', () => {
           onCancel={vi.fn()}
         />,
       );
-      // Tree should hide the archived row by default.
+      // Switch to tree to inspect coa-row testids.
+      fireEvent.click(screen.getByTestId('view-mode-tree'));
       expect(screen.queryByTestId('coa-row-4200')).toBeNull();
       expect(screen.getByTestId('coa-row-4100')).toBeDefined();
+    });
+
+    it('renders ONLY one of tree/table at a time (no duplicate sections)', () => {
+      const accounts: Account[] = [
+        { id: 'acc-1', code: '4100', name: 'Sales', type: 'Revenue', gstCode: 'GST' },
+      ];
+      render(
+        <AccountManager
+          accounts={accounts}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      // Default is table mode — the editable table headers are present
+      // and the tree's coa-row is not rendered.
+      expect(screen.getByText(/Tax Mapping/i)).toBeDefined();
+      expect(screen.queryByTestId('coa-row-4100')).toBeNull();
+
+      // Toggle to tree — table headers disappear, coa-row appears.
+      fireEvent.click(screen.getByTestId('view-mode-tree'));
+      expect(screen.queryByText(/Tax Mapping/i)).toBeNull();
+      expect(screen.queryByTestId('coa-row-4100')).not.toBeNull();
     });
 
     it('archived accounts surface via filter toggle', () => {
@@ -306,6 +335,7 @@ describe('AccountManager', () => {
           onCancel={vi.fn()}
         />,
       );
+      fireEvent.click(screen.getByTestId('view-mode-tree'));
       const toggle = screen.getByTestId('show-archived-toggle').querySelector('input')!;
       fireEvent.click(toggle);
       expect(screen.getByTestId('coa-row-4200')).toBeDefined();
@@ -358,6 +388,7 @@ describe('AccountManager', () => {
           filterMissingMappings={true}
         />
       );
+      fireEvent.click(screen.getByTestId('view-mode-tree'));
       expect(screen.getByTestId('anomaly-filter-banner')).toBeTruthy();
     });
   });

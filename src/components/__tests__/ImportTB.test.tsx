@@ -325,8 +325,13 @@ describe('ImportTB', () => {
       await waitFor(() =>
         expect(screen.queryByTestId('import-review-pane')).not.toBeNull(),
       );
+      // Accept now opens the confirmation dialog first.
       await act(async () => {
         fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(screen.queryByTestId('import-confirm-dialog')).not.toBeNull());
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-post'));
       });
       await waitFor(() =>
         expect(
@@ -392,6 +397,10 @@ describe('ImportTB', () => {
       );
       await act(async () => {
         fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(screen.queryByTestId('import-confirm-dialog')).not.toBeNull());
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-post'));
       });
       await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1));
       const calledWith = onImport.mock.calls[0][0] as JournalEntry[];
@@ -466,9 +475,13 @@ describe('ImportTB', () => {
       expect(screen.getAllByText(/Will create new account/i).length).toBeGreaterThan(0);
       expect(screen.getByText(/Miscellaneous Tools & Supplies/i)).not.toBeNull();
 
-      // Accept the import.
+      // Accept the import — opens the confirm dialog, then Post.
       await act(async () => {
         fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(screen.queryByTestId('import-confirm-dialog')).not.toBeNull());
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-post'));
       });
       await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1));
 
@@ -783,9 +796,13 @@ describe('ImportTB', () => {
       await waitFor(() =>
         expect(screen.queryByTestId('import-review-pane')).not.toBeNull(),
       );
-      // Accept the import
+      // Accept the import — confirm dialog opens, then Post.
       await act(async () => {
         fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(screen.queryByTestId('import-confirm-dialog')).not.toBeNull());
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-post'));
       });
       await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1));
       const calledWith = onImport.mock.calls[0][0] as JournalEntry[];
