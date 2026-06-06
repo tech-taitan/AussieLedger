@@ -50,4 +50,52 @@ describe('computeImportFingerprint (IMP-05)', () => {
     const a = await computeImportFingerprint(rows(), MAPPING, 'e1', '2026-06-30');
     expect(a).toMatch(/^[0-9a-f]{64}$/);
   });
+
+  it('signed-balance mode: positive=DR splits {balance: +500} into debit 500, credit 0', async () => {
+    const signedRows: RawRow[] = [
+      { Code: '1000', Name: 'Cash',  Balance: '500' },
+      { Code: '4000', Name: 'Sales', Balance: '-500' },
+    ];
+    const SIGN_MAPPING = { code: 'Code', name: 'Name', debit: '', credit: '' };
+    const signedFp = await computeImportFingerprint(
+      signedRows,
+      SIGN_MAPPING,
+      'e1',
+      '2026-06-30',
+      { column: 'Balance', sign: 'positive-dr' },
+    );
+    // Equivalent separate-column rows should produce the SAME fingerprint —
+    // the dedup path catches re-imports that flip layout but preserve data.
+    const equivalentRows: RawRow[] = [
+      { Code: '1000', Name: 'Cash',  Debit: '500', Credit: '0' },
+      { Code: '4000', Name: 'Sales', Debit: '0',   Credit: '500' },
+    ];
+    const separateFp = await computeImportFingerprint(
+      equivalentRows,
+      { code: 'Code', name: 'Name', debit: 'Debit', credit: 'Credit' },
+      'e1',
+      '2026-06-30',
+    );
+    expect(signedFp).toBe(separateFp);
+  });
+
+  it('signed-balance mode: positive=CR inverts the split', async () => {
+    const signedRows: RawRow[] = [
+      { Code: '4000', Name: 'Sales', Balance: '500' },
+    ];
+    const fp = await computeImportFingerprint(
+      signedRows,
+      { code: 'Code', name: 'Name', debit: '', credit: '' },
+      'e1',
+      '2026-06-30',
+      { column: 'Balance', sign: 'positive-cr' },
+    );
+    const equivalent = await computeImportFingerprint(
+      [{ Code: '4000', Name: 'Sales', Debit: '0', Credit: '500' }],
+      { code: 'Code', name: 'Name', debit: 'Debit', credit: 'Credit' },
+      'e1',
+      '2026-06-30',
+    );
+    expect(fp).toBe(equivalent);
+  });
 });

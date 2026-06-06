@@ -11,6 +11,18 @@ export interface ColumnMappingByName {
   credit: string;
 }
 
+/**
+ * Optional signed-balance layout. When provided to
+ * `computeImportFingerprint`, the canonical row form derives debit + credit
+ * from a single signed column rather than reading `mapping.debit` /
+ * `mapping.credit`. `sign: 'positive-dr'` means positive values become debit
+ * and negatives become credit (the common Australian TB shape).
+ */
+export interface SignedBalanceMode {
+  column: string;
+  sign: 'positive-dr' | 'positive-cr';
+}
+
 export type RawRow = Record<string, string>;
 
 /**
@@ -20,19 +32,39 @@ export type RawRow = Record<string, string>;
  *   - stable across debit/credit number formatting (Number(x).toFixed(2))
  *   - distinct per entityId
  *   - distinct per asAtDate
+ *
+ * When `signedBalance` is supplied the canonical form is derived from the
+ * single signed column instead of separate debit/credit columns. The
+ * fingerprint shape is otherwise unchanged — a re-import that flips the
+ * layout between separate ↔ signed for the SAME underlying numbers will
+ * still collide via the dedup path because the debit/credit pair after
+ * sign-split is identical.
  */
 export async function computeImportFingerprint(
   rows: RawRow[],
   mapping: ColumnMappingByName,
   entityId: string,
   asAtDate: string,
+  signedBalance?: SignedBalanceMode,
 ): Promise<string> {
   const canonical = rows
     .map((r) => {
       const code = (r[mapping.code] ?? '').trim();
       const name = (r[mapping.name] ?? '').trim();
-      const debit = Number(r[mapping.debit] ?? 0).toFixed(2);
-      const credit = Number(r[mapping.credit] ?? 0).toFixed(2);
+      let debit: string;
+      let credit: string;
+      if (signedBalance) {
+        const raw = Number(r[signedBalance.column] ?? 0);
+        const v = Number.isFinite(raw) ? raw : 0;
+        const drIsPositive = signedBalance.sign === 'positive-dr';
+        const positiveSide = v >= 0 ? v : 0;
+        const negativeSide = v < 0 ? -v : 0;
+        debit = (drIsPositive ? positiveSide : negativeSide).toFixed(2);
+        credit = (drIsPositive ? negativeSide : positiveSide).toFixed(2);
+      } else {
+        debit = Number(r[mapping.debit] ?? 0).toFixed(2);
+        credit = Number(r[mapping.credit] ?? 0).toFixed(2);
+      }
       return `${code}|${name}|${debit}|${credit}`;
     })
     .sort()

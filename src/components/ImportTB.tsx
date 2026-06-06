@@ -24,6 +24,7 @@ import {
   computeImportFingerprint,
   type ColumnMappingByName,
   type RawRow,
+  type SignedBalanceMode,
 } from '../lib/import/fingerprint';
 import { detectHeaderRow, type HeaderDetectResult } from '../lib/import/headerDetect';
 import { parseCurrency } from '../lib/import/currencyParse';
@@ -89,6 +90,60 @@ function guessAccountType(code: string, debit: number, credit: number): AccountT
   return debit >= credit ? 'Expense' : 'Liability';
 }
 
+/**
+ * Render one mapping dropdown + a small data preview underneath. The preview
+ * shows the first ~6 non-empty values from the chosen column so users can
+ * confirm by eye instead of guessing from header names (#1).
+ */
+function renderMappingField(
+  role: string,
+  label: string,
+  value: string,
+  rows: RawRow[],
+  onChange: (v: string) => void,
+  headers: string[],
+): React.ReactElement {
+  const preview = value
+    ? rows
+        .map((r) => (r[value] ?? '').toString().trim())
+        .filter((v) => v !== '')
+        .slice(0, 6)
+    : [];
+  return (
+    <label key={role} className="flex flex-col text-sm">
+      <span className="text-[10px] font-bold uppercase text-gray-500 tracking-wider mb-1">
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={`map-${role}`}
+        className="border border-[var(--line)] px-2 py-1.5 bg-white"
+      >
+        <option value="">— select —</option>
+        {headers.map((h) => (
+          <option key={h} value={h}>
+            {h}
+          </option>
+        ))}
+      </select>
+      {value && (
+        <div
+          data-testid={`preview-${role}`}
+          className="mt-1 text-[10px] text-gray-500 bg-gray-50 border border-[var(--line)] rounded px-2 py-1"
+        >
+          <span className="font-bold uppercase tracking-wider text-gray-400 mr-1">Preview:</span>
+          {preview.length === 0 ? (
+            <span className="italic text-gray-400">(no values)</span>
+          ) : (
+            <span className="font-mono">{preview.join(' · ')}</span>
+          )}
+        </div>
+      )}
+    </label>
+  );
+}
+
 export const ImportTB: React.FC<ImportTBProps> = ({
   accounts,
   onImport,
@@ -123,6 +178,15 @@ export const ImportTB: React.FC<ImportTBProps> = ({
   const [columnMappingByName, setColumnMappingByName] =
     useState<ColumnMappingByName>({ code: '', name: '', debit: '', credit: '' });
   const [isColumnMapping, setIsColumnMapping] = useState(false);
+
+  // TB layout selector — 'separate' uses Debit + Credit columns (default);
+  // 'signed-balance' uses ONE signed numeric column where the sign chooses
+  // DR vs CR. Covers the common AU export shape (DR Movement / CR Movement
+  // is just 'separate' with renamed columns; Final Balance with positives =
+  // DR and negatives = CR is 'signed-balance' with sign='positive-dr').
+  const [layout, setLayout] = useState<'separate' | 'signed-balance'>('separate');
+  const [balanceColumn, setBalanceColumn] = useState<string>('');
+  const [signConvention, setSignConvention] = useState<'positive-dr' | 'positive-cr'>('positive-dr');
 
   // ── Review stage ──────────────────────────────────────────────────────────
   const [importedRows, setImportedRows] = useState<ReviewRow[]>([]);
@@ -298,8 +362,43 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     parsedRows.forEach((r, idx) => {
       const code = (r[columnMappingByName.code] ?? '').toString().trim();
       const name = (r[columnMappingByName.name] ?? '').toString().trim();
-      const rawDebit = (r[columnMappingByName.debit] ?? '').toString();
-      const rawCredit = (r[columnMappingByName.credit] ?? '').toString();
+
+      // Resolve rawDebit / rawCredit by layout. Signed-balance reads the
+      // single balance column and splits by sign; separate reads two
+      // dedicated columns. Downstream code (parseCurrency, subtotal
+      // detection, etc) stays unchanged because we still produce
+      // {rawDebit, rawCredit} strings.
+      let rawDebit: string;
+      let rawCredit: string;
+      if (layout === 'signed-balance') {
+        const rawBalance = (r[balanceColumn] ?? '').toString();
+        const balanceResult = parseCurrency(rawBalance);
+        if (rawBalance.trim() !== '' && balanceResult.confidence === 'high' && /[$,A]/.test(rawBalance)) tolerant++;
+        if (balanceResult.confidence === 'low' && balanceResult.decimal !== null) lowConf++;
+        if (balanceResult.decimal === null && rawBalance.trim() !== '') {
+          rejected.push({
+            rowIndex: idx,
+            reason: 'currency-unparseable',
+            rawCode: code,
+            rawName: name,
+            rawDebit: rawBalance,
+            rawCredit: '',
+            failingCellValue: rawBalance,
+            failingColumn: 'debit',
+          });
+          return;
+        }
+        const v = balanceResult.decimal ? balanceResult.decimal.toNumber() : 0;
+        const drIsPositive = signConvention === 'positive-dr';
+        const debitNumeric = drIsPositive ? Math.max(v, 0) : Math.max(-v, 0);
+        const creditNumeric = drIsPositive ? Math.max(-v, 0) : Math.max(v, 0);
+        rawDebit = debitNumeric === 0 ? '' : debitNumeric.toString();
+        rawCredit = creditNumeric === 0 ? '' : creditNumeric.toString();
+      } else {
+        rawDebit = (r[columnMappingByName.debit] ?? '').toString();
+        rawCredit = (r[columnMappingByName.credit] ?? '').toString();
+      }
+
       const debitResult = parseCurrency(rawDebit);
       const creditResult = parseCurrency(rawCredit);
 
@@ -643,11 +742,16 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     // existingEntries to compare against. Best-effort fallback otherwise.
     if (activeEntityId && parsedRows && parsedRows.length > 0) {
       try {
+        const signedBalance: SignedBalanceMode | undefined =
+          layout === 'signed-balance'
+            ? { column: balanceColumn, sign: signConvention }
+            : undefined;
         const fingerprint = await computeImportFingerprint(
           parsedRows,
           columnMappingByName,
           activeEntityId,
           asAtDate,
+          signedBalance,
         );
         const collision = (existingEntries ?? []).find(
           (e) => e.importFingerprint === fingerprint,
@@ -680,6 +784,9 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     setIsColumnMapping(false);
     setFingerprintCollision(null);
     setColumnMappingByName({ code: '', name: '', debit: '', credit: '' });
+    setLayout('separate');
+    setBalanceColumn('');
+    setSignConvention('positive-dr');
     // Phase 7 state reset
     setRawRows(null);
     setHeaderDetectResult(null);
@@ -850,32 +957,93 @@ export const ImportTB: React.FC<ImportTBProps> = ({
             </div>
           </div>
 
+          {/* Layout selector (#2): how the file represents debits / credits. */}
+          <fieldset
+            data-testid="layout-selector"
+            className="mb-4 border border-[var(--line)] rounded p-3 space-y-2"
+          >
+            <legend className="text-[10px] font-bold uppercase text-gray-500 tracking-wider px-1">
+              File layout
+            </legend>
+            <label className="flex items-start gap-2 cursor-pointer text-xs">
+              <input
+                type="radio"
+                name="tb-layout"
+                checked={layout === 'separate'}
+                onChange={() => setLayout('separate')}
+                data-testid="layout-separate"
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">Separate Debit + Credit columns</span>
+                <span className="text-gray-500"> — also use this if your file uses "DR Movement" + "CR Movement"</span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 cursor-pointer text-xs">
+              <input
+                type="radio"
+                name="tb-layout"
+                checked={layout === 'signed-balance'}
+                onChange={() => setLayout('signed-balance')}
+                data-testid="layout-signed-balance"
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">Single signed balance column</span>
+                <span className="text-gray-500"> — common Australian TB export ("Final Balance" with positive = DR)</span>
+              </span>
+            </label>
+            {layout === 'signed-balance' && (
+              <div className="ml-6 mt-2 pt-2 border-t border-[var(--line)] flex gap-4 text-xs">
+                <span className="font-medium text-gray-600">Sign convention:</span>
+                <label className="cursor-pointer flex items-center gap-1">
+                  <input
+                    type="radio"
+                    name="sign-convention"
+                    checked={signConvention === 'positive-dr'}
+                    onChange={() => setSignConvention('positive-dr')}
+                    data-testid="sign-positive-dr"
+                  />
+                  Positive = Debit (DR)
+                </label>
+                <label className="cursor-pointer flex items-center gap-1">
+                  <input
+                    type="radio"
+                    name="sign-convention"
+                    checked={signConvention === 'positive-cr'}
+                    onChange={() => setSignConvention('positive-cr')}
+                    data-testid="sign-positive-cr"
+                  />
+                  Positive = Credit (CR)
+                </label>
+              </div>
+            )}
+          </fieldset>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {(['code', 'name', 'debit', 'credit'] as const).map((role) => (
-              <label key={role} className="flex flex-col text-sm">
-                <span className="text-[10px] font-bold uppercase text-gray-500 tracking-wider mb-1">
-                  {role.charAt(0).toUpperCase() + role.slice(1)} column
-                </span>
-                <select
-                  value={columnMappingByName[role]}
-                  onChange={(e) =>
-                    setColumnMappingByName({
-                      ...columnMappingByName,
-                      [role]: e.target.value,
-                    })
-                  }
-                  aria-label={`map-${role}`}
-                  className="border border-[var(--line)] px-2 py-1.5 bg-white"
-                >
-                  <option value="">— select —</option>
-                  {parsedHeaders.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
+            {renderMappingField('code', 'Code column', columnMappingByName.code, parsedRows ?? [], (v) =>
+              setColumnMappingByName({ ...columnMappingByName, code: v }),
+              parsedHeaders,
+            )}
+            {renderMappingField('name', 'Name column', columnMappingByName.name, parsedRows ?? [], (v) =>
+              setColumnMappingByName({ ...columnMappingByName, name: v }),
+              parsedHeaders,
+            )}
+            {layout === 'separate' && (
+              <>
+                {renderMappingField('debit', 'Debit column', columnMappingByName.debit, parsedRows ?? [], (v) =>
+                  setColumnMappingByName({ ...columnMappingByName, debit: v }),
+                  parsedHeaders,
+                )}
+                {renderMappingField('credit', 'Credit column', columnMappingByName.credit, parsedRows ?? [], (v) =>
+                  setColumnMappingByName({ ...columnMappingByName, credit: v }),
+                  parsedHeaders,
+                )}
+              </>
+            )}
+            {layout === 'signed-balance' && (
+              renderMappingField('balance', 'Signed balance column', balanceColumn, parsedRows ?? [], setBalanceColumn, parsedHeaders)
+            )}
           </div>
 
           <div className="flex justify-end gap-2 mt-4">
@@ -892,8 +1060,9 @@ export const ImportTB: React.FC<ImportTBProps> = ({
               disabled={
                 !columnMappingByName.code ||
                 !columnMappingByName.name ||
-                !columnMappingByName.debit ||
-                !columnMappingByName.credit
+                (layout === 'separate'
+                  ? !columnMappingByName.debit || !columnMappingByName.credit
+                  : !balanceColumn)
               }
               className="bg-blue-600 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
               data-testid="confirm-mapping"

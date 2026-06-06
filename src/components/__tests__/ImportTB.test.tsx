@@ -501,6 +501,98 @@ describe('ImportTB', () => {
       expect(lineForMintedAccount!.debit).toBe(1000);
     });
 
+    it('data preview: each mapping dropdown shows actual values once a column is selected', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      render(<ImportTB accounts={FIXTURE_ACCOUNTS} onImport={vi.fn()} />);
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [makeCsvFile()] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+
+      fireEvent.change(screen.getByLabelText('map-code'), { target: { value: 'Code' } });
+      // Preview shows the first few values from the chosen column.
+      expect(screen.getByTestId('preview-code').textContent).toMatch(/4100/);
+      expect(screen.getByTestId('preview-code').textContent).toMatch(/6400/);
+
+      fireEvent.change(screen.getByLabelText('map-debit'), { target: { value: 'Debit' } });
+      expect(screen.getByTestId('preview-debit').textContent).toMatch(/500/);
+    });
+
+    it('signed balance layout: positive=DR rows split into debit, negatives into credit', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      const onImport = vi.fn();
+      // CSV with a single signed Balance column. Bank +1000 (DR), Sales -1000 (CR).
+      const signedCsv = new File(
+        [
+          'Code,Name,Balance\n' +
+          '1100,Bank,1000\n' +
+          '4100,Sales,-1000\n',
+        ],
+        'tb-signed.csv',
+        { type: 'text/csv' },
+      );
+      render(
+        <ImportTB
+          accounts={FIXTURE_ACCOUNTS}
+          onImport={onImport}
+          activeEntityId="entity-1"
+          existingEntries={[]}
+        />,
+      );
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [signedCsv] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+
+      // Switch to signed-balance layout.
+      fireEvent.click(screen.getByTestId('layout-signed-balance'));
+      // Map columns.
+      fireEvent.change(screen.getByLabelText('map-code'),    { target: { value: 'Code' } });
+      fireEvent.change(screen.getByLabelText('map-name'),    { target: { value: 'Name' } });
+      fireEvent.change(screen.getByLabelText('map-balance'), { target: { value: 'Balance' } });
+      // Preview should be visible for the balance column.
+      expect(screen.getByTestId('preview-balance').textContent).toMatch(/1000/);
+      expect(screen.getByTestId('preview-balance').textContent).toMatch(/-1000/);
+
+      fireEvent.click(screen.getByTestId('confirm-mapping'));
+      await waitFor(() => expect(screen.queryByTestId('import-review-pane')).not.toBeNull());
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(screen.queryByTestId('import-confirm-dialog')).not.toBeNull());
+      // Confirm dialog should show $1,000 on both sides — TB is balanced.
+      expect(screen.getByTestId('confirm-total-debit').textContent).toMatch(/1,000/);
+      expect(screen.getByTestId('confirm-total-credit').textContent).toMatch(/1,000/);
+      expect(screen.getByTestId('confirm-balance-status').textContent).toMatch(/Balanced/i);
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-post'));
+      });
+      await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1));
+
+      const entry = (onImport.mock.calls[0][0] as JournalEntry[])[0];
+      // Bank line: debit 1000 / credit 0; Sales line: debit 0 / credit 1000.
+      const bankLine = entry.lines.find((l) => l.accountId === 'acc-3');
+      const salesLine = entry.lines.find((l) => l.accountId === 'acc-1');
+      expect(bankLine?.debit).toBe(1000);
+      expect(bankLine?.credit).toBe(0);
+      expect(salesLine?.debit).toBe(0);
+      expect(salesLine?.credit).toBe(1000);
+    });
+
     it('AccountPicker: search input filters CoA dropdown by code or name', async () => {
       vi.doMock('../../lib/ai', () => ({
         isAiEnabled: () => false,
