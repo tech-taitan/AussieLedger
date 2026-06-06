@@ -446,8 +446,10 @@ describe('ImportTB', () => {
       await waitFor(() => expect(screen.queryByTestId('import-review-pane')).not.toBeNull());
 
       // Click "Create new account" — the modal should open with code+name prefilled.
-      const createButtons = screen.getAllByText(/Create new account/i);
-      fireEvent.click(createButtons[0]);
+      // The pre-import issues panel may also contain the literal string
+      // "Create new account" inside a warning message, so target the button
+      // via its data-testid rather than text match.
+      fireEvent.click(screen.getByTestId('create-new-1'));
       await waitFor(() => expect(screen.queryByTestId('new-account-modal')).not.toBeNull());
       expect((screen.getByTestId('new-acc-code') as HTMLInputElement).value).toBe('5999');
       expect((screen.getByTestId('new-acc-name') as HTMLInputElement).value).toBe('Misc Tools');

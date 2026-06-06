@@ -268,6 +268,49 @@ describe('ImportReviewPane (IMP-03)', () => {
     );
   });
 
+  it('pre-import issues panel surfaces unbalanced + unmapped warnings before accept', () => {
+    const rows: ImportedAccount[] = [
+      // 1100 Bank — mapped, debit only
+      { externalCode: '1100', externalName: 'Bank', debit: 1000, credit: 0, mappedAccountId: 'acc-1', confidence: 0.95 },
+      // 9999 Misc — unmapped, credit doesn't balance
+      { externalCode: '9999', externalName: 'Misc', debit: 0, credit: 950, mappedAccountId: undefined, confidence: 0 },
+    ];
+    render(
+      <ImportReviewPane
+        rows={rows}
+        accounts={ACCOUNTS}
+        onUpdate={vi.fn()}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('import-issues-panel')).not.toBeNull();
+    // One error (unbalanced) + one warning (unmapped) expected.
+    expect(screen.getAllByTestId('import-issue-error').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByTestId('import-issue-warning').length).toBeGreaterThanOrEqual(1);
+    // Accept button copy changes when there are blocking errors.
+    expect(screen.getByTestId('accept-import').textContent).toMatch(/with errors/i);
+  });
+
+  it('pre-import issues panel renders "ready to post" affordance when clean', () => {
+    const rows: ImportedAccount[] = [
+      { externalCode: '1100', externalName: 'Bank', debit: 1000, credit: 0, mappedAccountId: 'acc-1', confidence: 0.95 },
+      { externalCode: '4100', externalName: 'Sales', debit: 0, credit: 1000, mappedAccountId: 'acc-2', confidence: 0.95 },
+    ];
+    render(
+      <ImportReviewPane
+        rows={rows}
+        accounts={ACCOUNTS}
+        onUpdate={vi.fn()}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('import-issues-panel-ok')).not.toBeNull();
+    expect(screen.queryByTestId('import-issues-panel')).toBeNull();
+    expect(screen.getByTestId('accept-import').textContent).toMatch(/^Accept import$/);
+  });
+
   it('REGRESSION: omitting Phase 7 props (Phase 4 caller) does not render banner, badge, or panel', () => {
     const row: ImportedAccount = {
       externalCode: '1000',

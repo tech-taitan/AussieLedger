@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { Account, ImportedAccount } from '../types';
 import { HIGH_CONFIDENCE_THRESHOLD } from '../lib/import/match';
 import { cn } from '../lib/utils';
@@ -11,6 +11,8 @@ import { RejectedRowsPanel } from './RejectedRowsPanel';
 import { AnomalyBadge } from './AnomalyBadge';
 import { AccountPicker } from './AccountPicker';
 import { NewAccountModal, type NewAccountSpec } from './NewAccountModal';
+import { ImportIssuesPanel } from './ImportIssuesPanel';
+import { computeImportIssues, hasBlockingErrors } from '../lib/import/validateReview';
 
 /**
  * Row-level review UI between fuzzy match and post.
@@ -84,6 +86,10 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
   // Which row's NewAccountModal is currently open. -1 = none.
   const [modalRowIndex, setModalRowIndex] = useState<number>(-1);
 
+  // Pre-import health check — recomputed on every row mutation.
+  const issues = useMemo(() => computeImportIssues(rows as ReviewRow[]), [rows]);
+  const blocking = hasBlockingErrors(issues);
+
   const updateRow = (idx: number, patch: Partial<ReviewRow>) => {
     const next = rows.map((r, i) => (i === idx ? { ...r, ...patch } : r));
     onUpdate(next);
@@ -116,10 +122,14 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
           <button
             type="button"
             onClick={onAccept}
-            className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+            className={cn(
+              'px-4 py-2 rounded text-sm text-white',
+              blocking ? 'bg-rose-600 hover:bg-rose-700' : 'bg-blue-600 hover:bg-blue-700',
+            )}
             data-testid="accept-import"
+            title={blocking ? 'Resolve the errors above before posting (or click to post anyway)' : undefined}
           >
-            Accept import
+            {blocking ? 'Accept import (with errors)' : 'Accept import'}
           </button>
           <button
             type="button"
@@ -131,6 +141,8 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
           </button>
         </div>
       </div>
+
+      <ImportIssuesPanel issues={issues} />
 
       {/* Phase 7: tolerant-parse banner */}
       {(tolerantParseCount ?? 0) > 0 && (
