@@ -36,6 +36,7 @@ import { ImportReviewPane, type ReviewRow } from './ImportReviewPane';
 import { HeaderRowPicker } from './HeaderRowPicker';
 import type { RejectedRow } from './RejectedRowsPanel';
 import { AiGateNote } from './AiGateNote';
+import { RawUploadPreview } from './RawUploadPreview';
 import { today } from '../lib/period';
 
 interface ImportTBProps {
@@ -1048,6 +1049,20 @@ export const ImportTB: React.FC<ImportTBProps> = ({
               renderMappingField('balance', 'Signed balance column', balanceColumn, parsedRows ?? [], setBalanceColumn, parsedHeaders)
             )}
           </div>
+
+          {parsedRows && parsedRows.length > 0 && (
+            <RawUploadPreview
+              headers={parsedHeaders}
+              rows={parsedRows}
+              mapped={{
+                code: columnMappingByName.code || undefined,
+                name: columnMappingByName.name || undefined,
+                debit: layout === 'separate' ? (columnMappingByName.debit || undefined) : undefined,
+                credit: layout === 'separate' ? (columnMappingByName.credit || undefined) : undefined,
+                balance: layout === 'signed-balance' ? (balanceColumn || undefined) : undefined,
+              }}
+            />
+          )}
 
           <div className="flex justify-end gap-2 mt-4">
             <button

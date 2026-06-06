@@ -547,6 +547,36 @@ describe('ImportTB', () => {
       expect(checked).toBe(2);
     });
 
+    it('RawUploadPreview: column-mapping screen renders the full source table with all rows and headers; mapped columns get highlighted', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      render(<ImportTB accounts={FIXTURE_ACCOUNTS} onImport={vi.fn()} />);
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [makeCsvFile()] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+
+      // RawUploadPreview is visible during the mapping step.
+      expect(screen.getByTestId('raw-upload-preview')).not.toBeNull();
+      // All 4 source headers from makeCsvFile are header cells in the preview.
+      expect(screen.getByTestId('raw-header-Code')).not.toBeNull();
+      expect(screen.getByTestId('raw-header-Name')).not.toBeNull();
+      expect(screen.getByTestId('raw-header-Debit')).not.toBeNull();
+      expect(screen.getByTestId('raw-header-Credit')).not.toBeNull();
+      // All 3 data rows render (makeCsvFile has 3 data rows).
+      expect(screen.getAllByTestId(/^raw-row-/).length).toBe(3);
+
+      // Pick a mapping → the matching header cell takes the role label.
+      fireEvent.change(screen.getByLabelText('map-code'), { target: { value: 'Code' } });
+      const codeHeader = screen.getByTestId('raw-header-Code');
+      expect(codeHeader.textContent).toMatch(/\(code\)/i);
+    });
+
     it('data preview: each mapping dropdown shows actual values once a column is selected', async () => {
       vi.doMock('../../lib/ai', () => ({
         isAiEnabled: () => false,
