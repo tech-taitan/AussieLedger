@@ -2,13 +2,15 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import React from 'react';
+import React, { useState } from 'react';
 import type { Account, ImportedAccount } from '../types';
 import { HIGH_CONFIDENCE_THRESHOLD } from '../lib/import/match';
 import { cn } from '../lib/utils';
 import type { RejectedRow } from './RejectedRowsPanel';
 import { RejectedRowsPanel } from './RejectedRowsPanel';
 import { AnomalyBadge } from './AnomalyBadge';
+import { AccountPicker } from './AccountPicker';
+import { NewAccountModal, type NewAccountSpec } from './NewAccountModal';
 
 /**
  * Row-level review UI between fuzzy match and post.
@@ -48,13 +50,21 @@ interface ImportReviewPaneProps {
 }
 
 /**
- * Internal augmentation of `ImportedAccount` with the review-pane-only
- * `_include` flag. The runtime field lives on the same object instance
- * passed down from ImportTB; it never leaks into the persisted JournalEntry
- * because ImportTB filters by `_include !== false` before building lines.
+ * Internal augmentation of `ImportedAccount` with review-pane-only fields.
+ * The runtime fields live on the same object instance passed down from
+ * ImportTB; they never leak into the persisted JournalEntry because
+ * ImportTB filters by `_include !== false` before building lines and
+ * `_newAccountSpec` is consumed (then dropped) at mint time.
  */
 export interface ReviewRow extends ImportedAccount {
   _include?: boolean;
+  /**
+   * Set when the user has confirmed the NewAccountModal — carries the
+   * user-chosen code/name/type/gstCode/parentCode for the to-be-minted
+   * account. ImportTB.buildOpeningEntry reads this and falls back to
+   * guesses if absent.
+   */
+  _newAccountSpec?: NewAccountSpec;
 }
 
 export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
@@ -71,9 +81,20 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
   onIncludeAllSubtotals,
   onApplyToSimilar,
 }) => {
+  // Which row's NewAccountModal is currently open. -1 = none.
+  const [modalRowIndex, setModalRowIndex] = useState<number>(-1);
+
   const updateRow = (idx: number, patch: Partial<ReviewRow>) => {
     const next = rows.map((r, i) => (i === idx ? { ...r, ...patch } : r));
     onUpdate(next);
+  };
+
+  const handleConfirmNewAccount = (idx: number, spec: NewAccountSpec) => {
+    updateRow(idx, {
+      mappedAccountId: `NEW:${spec.code}:${spec.name}`,
+      _newAccountSpec: spec,
+    });
+    setModalRowIndex(-1);
   };
 
   const hasRejectedRows =
@@ -141,9 +162,11 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
           <tbody>
             {rows.map((r, idx) => {
               const matched = accounts.find((a) => a.id === r.mappedAccountId);
+              const isPendingNew = !!r.mappedAccountId?.startsWith('NEW:');
               const conf = r.confidence ?? 0;
-              const status =
-                matched && conf >= HIGH_CONFIDENCE_THRESHOLD
+              const status = isPendingNew
+                ? 'create'
+                : matched && conf >= HIGH_CONFIDENCE_THRESHOLD
                   ? 'auto'
                   : conf > 0
                     ? 'review'
@@ -175,12 +198,14 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
                       className={cn(
                         'text-xs px-2 py-1 rounded inline-block',
                         status === 'auto' && 'bg-green-100 text-green-800',
+                        status === 'create' && 'bg-blue-100 text-blue-800',
                         status === 'review' && 'bg-amber-100 text-amber-800',
                         status === 'nomatch' && 'bg-red-100 text-red-800',
                       )}
                       data-testid={`status-${idx}`}
                     >
                       {status === 'auto' && 'Auto-matched'}
+                      {status === 'create' && 'Will create new account'}
                       {status === 'review' && 'Review'}
                       {status === 'nomatch' && 'No match'}
                     </span>
@@ -189,34 +214,44 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
                         → {matched.code} {matched.name}
                       </div>
                     )}
-                    {status !== 'auto' && (
-                      <div className="mt-2 flex flex-wrap gap-2 items-center">
-                        <select
-                          value={r.mappedAccountId ?? ''}
-                          onChange={(e) =>
-                            updateRow(idx, {
-                              mappedAccountId: e.target.value || undefined,
-                            })
-                          }
-                          aria-label={`pick-account-${idx}`}
-                          className="border rounded px-2 py-1 text-xs"
-                        >
-                          <option value="">(unmapped)</option>
-                          {accounts
-                            .filter((a) => !a.isArchived)
-                            .map((a) => (
-                              <option key={a.id} value={a.id}>
-                                {a.code} — {a.name}
-                              </option>
-                            ))}
-                        </select>
+                    {isPendingNew && (
+                      <div className="text-xs mt-1 text-blue-700" data-testid={`pending-new-${idx}`}>
+                        → {(r as ReviewRow)._newAccountSpec?.code ?? r.externalCode}{' '}
+                        {(r as ReviewRow)._newAccountSpec?.name ?? r.externalName} (new)
+                        {(r as ReviewRow)._newAccountSpec?.type && (
+                          <span className="ml-1 text-[10px] uppercase text-blue-500">
+                            {(r as ReviewRow)._newAccountSpec!.type}
+                          </span>
+                        )}
                         <button
                           type="button"
                           onClick={() =>
                             updateRow(idx, {
-                              mappedAccountId: `NEW:${r.externalCode}:${r.externalName}`,
+                              mappedAccountId: undefined,
+                              _newAccountSpec: undefined,
                             })
                           }
+                          className="ml-2 underline text-blue-700"
+                          data-testid={`undo-create-${idx}`}
+                        >
+                          undo
+                        </button>
+                      </div>
+                    )}
+                    {status !== 'auto' && status !== 'create' && (
+                      <div className="mt-2 flex flex-wrap gap-2 items-center">
+                        <AccountPicker
+                          accounts={accounts}
+                          value={r.mappedAccountId}
+                          onChange={(id) =>
+                            updateRow(idx, { mappedAccountId: id })
+                          }
+                          ariaLabel={`pick-account-${idx}`}
+                          testIdPrefix={`pick-account-${idx}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setModalRowIndex(idx)}
                           className="text-xs text-blue-600 underline"
                           data-testid={`create-new-${idx}`}
                         >
@@ -262,6 +297,16 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
           onReparse={onRejectedRowReparse!}
           onIncludeAllSubtotals={onIncludeAllSubtotals!}
           onApplyToSimilar={onApplyToSimilar!}
+        />
+      )}
+
+      {modalRowIndex >= 0 && rows[modalRowIndex] && (
+        <NewAccountModal
+          initialCode={rows[modalRowIndex].externalCode || ''}
+          initialName={rows[modalRowIndex].externalName || ''}
+          existingAccounts={accounts}
+          onConfirm={(spec) => handleConfirmNewAccount(modalRowIndex, spec)}
+          onCancel={() => setModalRowIndex(-1)}
         />
       )}
     </section>

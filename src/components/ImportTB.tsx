@@ -573,21 +573,23 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     options?: { replacesEntryId?: string; referenceSuffix?: string },
   ): JournalEntry => {
     // IMP-07: resolve "Create new account" sentinels by minting a real
-    // Account for each NEW:-tagged row. The Account ids are reused as the
-    // mapped accountId on the journal line so debits/credits land on the
-    // correct row even before the parent's account state has settled.
+    // Account for each NEW:-tagged row. When the row carries a
+    // `_newAccountSpec` (set by the NewAccountModal), every field comes
+    // from the user. Otherwise we fall back to guessAccountType + N-T GST.
     const newAccountsCreated: Account[] = [];
     const resolvedRows: ReviewRow[] = rows.map((r) => {
       if (r.mappedAccountId && r.mappedAccountId.startsWith('NEW:')) {
-        const code = (r.externalCode || '').trim() || `IMP-${Date.now()}`;
-        const name = (r.externalName || '').trim() || 'Imported account';
+        const spec = r._newAccountSpec;
+        const code = (spec?.code ?? r.externalCode ?? '').trim() || `IMP-${Date.now()}`;
+        const name = (spec?.name ?? r.externalName ?? '').trim() || 'Imported account';
         const newAccount: Account = {
           _v: 3,
           id: `acc-imp-${crypto.randomUUID()}`,
           code,
           name,
-          type: guessAccountType(code, r.debit, r.credit),
-          gstCode: 'N-T',
+          type: spec?.type ?? guessAccountType(code, r.debit, r.credit),
+          gstCode: spec?.gstCode ?? 'N-T',
+          parentCode: spec?.parentCode,
           isDefault: false,
         };
         newAccountsCreated.push(newAccount);

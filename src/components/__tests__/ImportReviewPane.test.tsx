@@ -50,7 +50,7 @@ describe('ImportReviewPane (IMP-03)', () => {
     expect(badge.textContent).toContain('Auto-matched');
   });
 
-  it('create new account option', () => {
+  it('create new account opens NewAccountModal and confirms with the user spec', () => {
     const onUpdate = vi.fn();
     const row: ImportedAccount = {
       externalCode: 'X9',
@@ -68,12 +68,21 @@ describe('ImportReviewPane (IMP-03)', () => {
         onReject={vi.fn()}
       />,
     );
-    const createNewBtn = screen.getByTestId('create-new-0');
-    expect(createNewBtn).not.toBeNull();
-    fireEvent.click(createNewBtn);
-    expect(onUpdate).toHaveBeenCalledTimes(1);
-    const updatedRows = onUpdate.mock.calls[0][0];
-    expect(updatedRows[0].mappedAccountId).toMatch(/^NEW:/);
+    // Click "Create new account" — modal opens.
+    fireEvent.click(screen.getByTestId('create-new-0'));
+    expect(screen.getByTestId('new-account-modal')).not.toBeNull();
+    // Set a numeric code so the modal's duplicate check is satisfied.
+    fireEvent.change(screen.getByTestId('new-acc-code'), {
+      target: { value: '5500' },
+    });
+    fireEvent.click(screen.getByTestId('new-acc-confirm'));
+    // The pane should have received the user's spec on the row.
+    expect(onUpdate).toHaveBeenCalled();
+    const lastCall = onUpdate.mock.calls[onUpdate.mock.calls.length - 1][0];
+    expect(lastCall[0].mappedAccountId).toMatch(/^NEW:/);
+    expect(lastCall[0]._newAccountSpec).toBeDefined();
+    expect(lastCall[0]._newAccountSpec.code).toBe('5500');
+    expect(lastCall[0]._newAccountSpec.name).toBe('Mystery Account');
   });
 
   it('per-row include/exclude toggle', () => {
@@ -144,7 +153,7 @@ describe('ImportReviewPane (IMP-03)', () => {
     expect(onReject).toHaveBeenCalledTimes(1);
   });
 
-  it('archived accounts hidden from pick dropdown', () => {
+  it('archived accounts hidden from AccountPicker results', () => {
     const row: ImportedAccount = {
       externalCode: 'X1',
       externalName: 'Mystery',
@@ -161,11 +170,13 @@ describe('ImportReviewPane (IMP-03)', () => {
         onReject={vi.fn()}
       />,
     );
-    const select = screen.getByLabelText('pick-account-0') as HTMLSelectElement;
-    // The archived account ("Archived Account") MUST not be present in the options.
-    const optionTexts = Array.from(select.options).map((o) => o.textContent ?? '');
-    expect(optionTexts.some((t) => t.includes('Archived Account'))).toBe(false);
-    expect(optionTexts.some((t) => t.includes('Sales'))).toBe(true);
+    // Open the picker — the popover lists every non-archived account.
+    fireEvent.click(screen.getByTestId('pick-account-0-trigger'));
+    expect(screen.queryByTestId('pick-account-0-popover')).not.toBeNull();
+    // Sales (4100) and Wages (6400) are listed; the archived 9999 is not.
+    expect(screen.queryByTestId('pick-account-0-option-4100')).not.toBeNull();
+    expect(screen.queryByTestId('pick-account-0-option-6400')).not.toBeNull();
+    expect(screen.queryByTestId('pick-account-0-option-9999')).toBeNull();
   });
 
   // Phase 7 additions — backward-compatible new props

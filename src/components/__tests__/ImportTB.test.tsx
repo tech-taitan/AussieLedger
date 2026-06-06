@@ -14,6 +14,7 @@ import {
   fireEvent,
   waitFor,
   act,
+  cleanup,
 } from '@testing-library/react';
 import * as XLSX from 'xlsx';
 import type { Account, JournalEntry } from '../../types';
@@ -73,6 +74,7 @@ function makeXlsxFile(sheetNames: string[]): File {
 
 describe('ImportTB', () => {
   beforeEach(() => {
+    cleanup();
     // Clear module cache AND all registered mocks so doMock calls in one
     // test don't leak into the next. `resetModules` alone doesn't clear
     // doMock factories — `doUnmock` removes them so the next dynamic import
@@ -86,6 +88,7 @@ describe('ImportTB', () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -399,6 +402,134 @@ describe('ImportTB', () => {
       expect(typeof entry.importFingerprint).toBe('string');
       expect(entry.importFingerprint!.length).toBe(64);
       expect(entry.lines.length).toBeGreaterThan(0);
+    });
+
+    it('Create new account: opens NewAccountModal, lets the user edit the spec, mints account and posts journal', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      const onImport = vi.fn();
+      const onCreateAccounts = vi.fn();
+      // CSV with a code (5999 / "Misc Tools") that doesn't appear in
+      // FIXTURE_ACCOUNTS so the row stays unmapped after fuzzy match.
+      const unmatchedCsv = new File(
+        [
+          'Code,Name,Debit,Credit\n' +
+          '4100,Sales,0,1000\n' +
+          '5999,Misc Tools,1000,0\n',
+        ],
+        'tb.csv',
+        { type: 'text/csv' },
+      );
+      render(
+        <ImportTB
+          accounts={FIXTURE_ACCOUNTS}
+          onImport={onImport}
+          onCreateAccounts={onCreateAccounts}
+          activeEntityId="entity-1"
+          existingEntries={[]}
+        />,
+      );
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [unmatchedCsv] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+      fireEvent.change(screen.getByLabelText('map-code'),   { target: { value: 'Code' } });
+      fireEvent.change(screen.getByLabelText('map-name'),   { target: { value: 'Name' } });
+      fireEvent.change(screen.getByLabelText('map-debit'),  { target: { value: 'Debit' } });
+      fireEvent.change(screen.getByLabelText('map-credit'), { target: { value: 'Credit' } });
+      fireEvent.click(screen.getByTestId('confirm-mapping'));
+      await waitFor(() => expect(screen.queryByTestId('import-review-pane')).not.toBeNull());
+
+      // Click "Create new account" — the modal should open with code+name prefilled.
+      const createButtons = screen.getAllByText(/Create new account/i);
+      fireEvent.click(createButtons[0]);
+      await waitFor(() => expect(screen.queryByTestId('new-account-modal')).not.toBeNull());
+      expect((screen.getByTestId('new-acc-code') as HTMLInputElement).value).toBe('5999');
+      expect((screen.getByTestId('new-acc-name') as HTMLInputElement).value).toBe('Misc Tools');
+
+      // User overrides the name and switches GST to FRE before confirming.
+      fireEvent.change(screen.getByTestId('new-acc-name'), {
+        target: { value: 'Miscellaneous Tools & Supplies' },
+      });
+      fireEvent.change(screen.getByTestId('new-acc-gst'), { target: { value: 'FRE' } });
+      fireEvent.click(screen.getByTestId('new-acc-confirm'));
+      await waitFor(() => expect(screen.queryByTestId('new-account-modal')).toBeNull());
+
+      // After confirm the row shows the pending-new badge with the spec's values.
+      expect(screen.getAllByText(/Will create new account/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Miscellaneous Tools & Supplies/i)).not.toBeNull();
+
+      // Accept the import.
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1));
+
+      // onCreateAccounts called with the user-edited spec, NOT the original CSV name.
+      expect(onCreateAccounts).toHaveBeenCalledTimes(1);
+      const minted = onCreateAccounts.mock.calls[0][0] as Account[];
+      expect(minted.length).toBe(1);
+      expect(minted[0].code).toBe('5999');
+      expect(minted[0].name).toBe('Miscellaneous Tools & Supplies');
+      expect(minted[0].type).toBe('Expense'); // 5xxx prefix → Expense (modal default)
+      expect(minted[0].gstCode).toBe('FRE');
+
+      // The opening-balances journal references the minted account.
+      const entry = (onImport.mock.calls[0][0] as JournalEntry[])[0];
+      const lineForMintedAccount = entry.lines.find((l) => l.accountId === minted[0].id);
+      expect(lineForMintedAccount).toBeDefined();
+      expect(lineForMintedAccount!.debit).toBe(1000);
+    });
+
+    it('AccountPicker: search input filters CoA dropdown by code or name', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      // CSV row whose external code is not in FIXTURE_ACCOUNTS so it stays unmapped.
+      const unmatchedCsv = new File(
+        ['Code,Name,Debit,Credit\n9001,Unknown,100,0\n'],
+        'tb.csv',
+        { type: 'text/csv' },
+      );
+      render(
+        <ImportTB
+          accounts={FIXTURE_ACCOUNTS}
+          onImport={vi.fn()}
+          activeEntityId="entity-1"
+          existingEntries={[]}
+        />,
+      );
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [unmatchedCsv] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+      fireEvent.change(screen.getByLabelText('map-code'),   { target: { value: 'Code' } });
+      fireEvent.change(screen.getByLabelText('map-name'),   { target: { value: 'Name' } });
+      fireEvent.change(screen.getByLabelText('map-debit'),  { target: { value: 'Debit' } });
+      fireEvent.change(screen.getByLabelText('map-credit'), { target: { value: 'Credit' } });
+      fireEvent.click(screen.getByTestId('confirm-mapping'));
+      await waitFor(() => expect(screen.queryByTestId('import-review-pane')).not.toBeNull());
+
+      // Open the picker for the unmapped row.
+      fireEvent.click(screen.getByTestId('pick-account-0-trigger'));
+      await waitFor(() => expect(screen.queryByTestId('pick-account-0-popover')).not.toBeNull());
+      // Type to filter. Searching "wage" should only show Wages & Salaries.
+      fireEvent.change(screen.getByTestId('pick-account-0-search'), {
+        target: { value: 'wage' },
+      });
+      // The Wages option should render; Sales / Bank should not.
+      expect(screen.queryByTestId('pick-account-0-option-6400')).not.toBeNull();
+      expect(screen.queryByTestId('pick-account-0-option-4100')).toBeNull();
+      expect(screen.queryByTestId('pick-account-0-option-1100')).toBeNull();
     });
 
     it('XLSX flow opens sheet picker when multi-sheet', async () => {
