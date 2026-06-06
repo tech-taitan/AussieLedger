@@ -12,6 +12,10 @@ import type { ImportIssue } from '../lib/import/validateReview';
 
 interface ImportConfirmDialogProps {
   includedCount: number;
+  /** Rows that will be dropped because they have no mappedAccountId. Surfaced
+   *  prominently so the user knows the post will lose data unless they go
+   *  back and map them. */
+  unmappedDropCount?: number;
   newAccountsCount: number;
   totalDebit: number;
   totalCredit: number;
@@ -29,6 +33,7 @@ function fmt(n: number): string {
 
 export const ImportConfirmDialog: React.FC<ImportConfirmDialogProps> = ({
   includedCount,
+  unmappedDropCount = 0,
   newAccountsCount,
   totalDebit,
   totalCredit,
@@ -61,6 +66,12 @@ export const ImportConfirmDialog: React.FC<ImportConfirmDialogProps> = ({
             <dt className="text-gray-500">Rows to post</dt>
             <dd className="font-medium" data-testid="confirm-included">{includedCount}</dd>
           </div>
+          {unmappedDropCount > 0 && (
+            <div className="flex justify-between text-amber-700">
+              <dt>Unmapped rows dropped</dt>
+              <dd className="font-medium" data-testid="confirm-unmapped-dropped">{unmappedDropCount}</dd>
+            </div>
+          )}
           <div className="flex justify-between">
             <dt className="text-gray-500">New accounts to create</dt>
             <dd className="font-medium" data-testid="confirm-new-accounts">{newAccountsCount}</dd>

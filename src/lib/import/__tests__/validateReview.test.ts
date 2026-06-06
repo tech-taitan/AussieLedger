@@ -53,17 +53,49 @@ describe('computeImportIssues', () => {
     expect(issues.find((i) => i.kind === 'unbalanced')).toBeUndefined();
   });
 
-  it('flags unmapped rows as warning and excludes mapped from the count', () => {
+  it('flags zero-value unmapped rows as warning (no data loss)', () => {
     const rows: ReviewLike[] = [
       mk({ debit: 500, mappedAccountId: 'acc-1', externalCode: '1100' }),
-      mk({ debit: 500, mappedAccountId: undefined, externalCode: '9999' }),
-      mk({ credit: 1000, mappedAccountId: 'acc-2', externalCode: '3000' }),
+      // Zero-value unmapped — dropping doesn't change totals.
+      mk({ debit: 0, credit: 0, mappedAccountId: undefined, externalCode: '9999' }),
+      mk({ credit: 500, mappedAccountId: 'acc-2', externalCode: '3000' }),
     ];
     const issues = computeImportIssues(rows);
     const um = issues.find((i) => i.kind === 'unmapped');
     expect(um).toBeDefined();
     expect(um!.severity).toBe('warning');
     expect(um!.rowIndices).toEqual([1]);
+  });
+
+  it('flags value-carrying unmapped rows as ERROR (post will unbalance)', () => {
+    // The bug fix: a balanced upload with an unmapped row that carries
+    // value used to look balanced in the review, then unbalance on post.
+    const rows: ReviewLike[] = [
+      mk({ debit: 1500, mappedAccountId: 'acc-1', externalCode: '1100' }),
+      mk({ debit: 0, credit: 1000, mappedAccountId: 'acc-2', externalCode: '3000' }),
+      // Carries $500 credit — drop will leave the post out of balance.
+      mk({ debit: 0, credit: 500, mappedAccountId: undefined, externalCode: '9999' }),
+    ];
+    const issues = computeImportIssues(rows);
+    const um = issues.find((i) => i.kind === 'unmapped');
+    expect(um).toBeDefined();
+    expect(um!.severity).toBe('error');
+    expect(um!.message).toMatch(/credits 500/);
+  });
+
+  it('unbalanced check uses WILL-POST totals (excludes unmapped row amounts)', () => {
+    // 1500 DR mapped + 1500 CR (1000 mapped + 500 unmapped). The unmapped
+    // row is excluded from the post total, so DR 1500 vs CR 1000 should
+    // surface as unbalanced — that's what will actually happen at post.
+    const rows: ReviewLike[] = [
+      mk({ debit: 1500, mappedAccountId: 'acc-1', externalCode: '1100' }),
+      mk({ debit: 0, credit: 1000, mappedAccountId: 'acc-2', externalCode: '3000' }),
+      mk({ debit: 0, credit: 500, mappedAccountId: undefined, externalCode: '9999' }),
+    ];
+    const issues = computeImportIssues(rows);
+    const balErr = issues.find((i) => i.kind === 'unbalanced');
+    expect(balErr).toBeDefined();
+    expect(balErr!.message).toMatch(/difference 500/);
   });
 
   it('counts NEW: rows as info, not unmapped', () => {

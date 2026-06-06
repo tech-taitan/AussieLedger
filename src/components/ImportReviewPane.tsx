@@ -91,19 +91,31 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
   const issues = useMemo(() => computeImportIssues(rows as ReviewRow[]), [rows]);
   const blocking = hasBlockingErrors(issues);
 
+  // Totals reflect what will ACTUALLY POST to the journal — not just what
+  // the user has selected. Unmapped rows (no mappedAccountId) get silently
+  // filtered by ImportTB.buildOpeningEntry; previously their amounts were
+  // counted in the review totals, so a balanced upload looked balanced even
+  // though dropping unmapped rows would leave the post out of balance.
   const totals = useMemo(() => {
     let debit = 0;
     let credit = 0;
-    let included = 0;
+    let willPost = 0;
+    let selected = 0;
+    let unmapped = 0;
     let newAccounts = 0;
     for (const r of rows) {
       if ((r as ReviewRow)._include === false) continue;
-      included += 1;
+      selected += 1;
+      if (!r.mappedAccountId) {
+        unmapped += 1;
+        continue; // Don't count unmapped amounts — they won't post.
+      }
+      willPost += 1;
       debit += Number(r.debit) || 0;
       credit += Number(r.credit) || 0;
-      if (r.mappedAccountId?.startsWith('NEW:')) newAccounts += 1;
+      if (r.mappedAccountId.startsWith('NEW:')) newAccounts += 1;
     }
-    return { debit, credit, included, newAccounts };
+    return { debit, credit, willPost, selected, unmapped, newAccounts };
   }, [rows]);
 
   const [showConfirm, setShowConfirm] = useState(false);
@@ -319,7 +331,7 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
           <tfoot>
             <tr className="border-t-2 border-[var(--ink)] font-bold text-xs">
               <td className="py-2 px-2 text-right" colSpan={3}>
-                Totals ({totals.included} row{totals.included === 1 ? '' : 's'})
+                Totals to post ({totals.willPost} row{totals.willPost === 1 ? '' : 's'})
               </td>
               <td className="py-2 px-2 text-right font-mono" data-testid="review-total-debit">
                 {totals.debit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -338,6 +350,14 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
                   : `Out by ${Math.abs(totals.debit - totals.credit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </td>
             </tr>
+            {totals.unmapped > 0 && (
+              <tr className="text-[10px] text-amber-700 bg-amber-50">
+                <td colSpan={5} className="py-1 px-2 text-right" data-testid="review-unmapped-warning">
+                  {totals.unmapped} unmapped row{totals.unmapped === 1 ? '' : 's'} excluded from totals —
+                  they will be dropped unless mapped to an account or marked "Create new account".
+                </td>
+              </tr>
+            )}
           </tfoot>
         </table>
       </div>
@@ -365,7 +385,8 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
 
       {showConfirm && (
         <ImportConfirmDialog
-          includedCount={totals.included}
+          includedCount={totals.willPost}
+          unmappedDropCount={totals.unmapped}
           newAccountsCount={totals.newAccounts}
           totalDebit={totals.debit}
           totalCredit={totals.credit}

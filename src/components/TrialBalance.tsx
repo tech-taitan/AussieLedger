@@ -48,6 +48,24 @@ function triggerCsvDownload(csv: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Tax-label completeness check — mirrors CoaTreeView. An account is "missing
+ * labels" ONLY when it's a Revenue / Expense leaf with at least one of the
+ * four entity-specific fields blank. Asset / Liability / Equity rows and
+ * header rows never need labels and shouldn't show the warning.
+ */
+function isMissingTaxLabel(a: Account): boolean {
+  const isHeader = a.parentCode === null || a.parentCode === undefined;
+  if (isHeader) return false;
+  if (a.type !== 'Revenue' && a.type !== 'Expense') return false;
+  return (
+    !a.taxLabel ||
+    !a.companyTaxLabel ||
+    !a.trustTaxLabel ||
+    !a.partnershipTaxLabel
+  );
+}
+
 /** BOOK-09 status filter — only posted + reversed entries roll into the TB.
  *  A reversal entry is itself `status: 'posted'` (per ledger.makeReversal),
  *  so the "reversed" status applies to the ORIGINAL whose mirror cancels it. */
@@ -310,7 +328,7 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
                     {row.isParent && <span> (subtotal)</span>}
                     {!row.isParent &&
                       referencedAccountIds.has(row.account.id) &&
-                      (!row.account.taxLabel || row.account.taxLabel === '') && (
+                      isMissingTaxLabel(row.account) && (
                         <span className="ml-2 inline-block">
                           <AnomalyBadge
                             severity="warn"

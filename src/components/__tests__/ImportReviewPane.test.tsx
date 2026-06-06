@@ -285,10 +285,10 @@ describe('ImportReviewPane (IMP-03)', () => {
       />,
     );
     expect(screen.getByTestId('import-issues-panel')).not.toBeNull();
-    // One error (unbalanced) + one warning (unmapped) expected.
+    // Unmapped row carries value → severity escalates to error; the
+    // will-post totals (1000 DR vs 0 CR after dropping the unmapped 950 CR)
+    // also surface as an unbalanced error.
     expect(screen.getAllByTestId('import-issue-error').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByTestId('import-issue-warning').length).toBeGreaterThanOrEqual(1);
-    // Accept button copy changes when there are blocking errors.
     expect(screen.getByTestId('accept-import').textContent).toMatch(/with errors/i);
   });
 
@@ -328,6 +328,64 @@ describe('ImportReviewPane (IMP-03)', () => {
     expect(screen.getByTestId('review-total-debit').textContent).toContain('1,500');
     expect(screen.getByTestId('review-total-credit').textContent).toContain('1,500');
     expect(screen.getByTestId('review-total-diff').textContent).toMatch(/Balanced/i);
+  });
+
+  it('totals reflect WILL-POST rows only — unmapped row excluded so reviewer sees the actual post imbalance', () => {
+    // The bug this fixes: a balanced TB upload with one unmapped row
+    // showed as "Balanced" in the review, but the post dropped the
+    // unmapped row and committed an unbalanced journal.
+    const rows: ImportedAccount[] = [
+      { externalCode: '1100', externalName: 'Bank', debit: 1500, credit: 0, mappedAccountId: 'acc-1', confidence: 0.95 },
+      { externalCode: '4100', externalName: 'Sales', debit: 0, credit: 1000, mappedAccountId: 'acc-2', confidence: 0.95 },
+      // Unmapped — would have brought the credit total up to 1500 but
+      // it'll be dropped at post.
+      { externalCode: '5999', externalName: 'Misc', debit: 0, credit: 500, mappedAccountId: undefined, confidence: 0 },
+    ];
+    render(
+      <ImportReviewPane
+        rows={rows}
+        accounts={ACCOUNTS}
+        onUpdate={vi.fn()}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+      />,
+    );
+    // Debits 1500, credits 1000 (unmapped 500 excluded) — should show as imbalanced.
+    expect(screen.getByTestId('review-total-debit').textContent).toContain('1,500');
+    expect(screen.getByTestId('review-total-credit').textContent).toContain('1,000');
+    expect(screen.getByTestId('review-total-diff').textContent).toMatch(/Out by/i);
+    // The unmapped warning row surfaces in the tfoot.
+    expect(screen.getByTestId('review-unmapped-warning').textContent).toMatch(/1 unmapped row excluded/i);
+    // Pre-import check escalates to error because the dropped row carries value.
+    expect(screen.getAllByTestId('import-issue-error').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('confirm dialog shows WILL-POST totals + dropped unmapped count', () => {
+    const onAccept = vi.fn();
+    const rows: ImportedAccount[] = [
+      { externalCode: '1100', externalName: 'Bank', debit: 1500, credit: 0, mappedAccountId: 'acc-1', confidence: 0.95 },
+      { externalCode: '4100', externalName: 'Sales', debit: 0, credit: 1500, mappedAccountId: 'acc-2', confidence: 0.95 },
+      { externalCode: '5999', externalName: 'Misc', debit: 200, credit: 0, mappedAccountId: undefined, confidence: 0 },
+    ];
+    render(
+      <ImportReviewPane
+        rows={rows}
+        accounts={ACCOUNTS}
+        onUpdate={vi.fn()}
+        onAccept={onAccept}
+        onReject={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('accept-import'));
+    expect(screen.getByTestId('import-confirm-dialog')).not.toBeNull();
+    // Will-post count is 2 (the mapped rows), not 3 (the included rows).
+    expect(screen.getByTestId('confirm-included').textContent).toBe('2');
+    // Unmapped-dropped count surfaces in its own row.
+    expect(screen.getByTestId('confirm-unmapped-dropped').textContent).toBe('1');
+    // Totals reflect only the will-post rows.
+    expect(screen.getByTestId('confirm-total-debit').textContent).toContain('1,500');
+    expect(screen.getByTestId('confirm-total-credit').textContent).toContain('1,500');
+    expect(screen.getByTestId('confirm-balance-status').textContent).toMatch(/Balanced/i);
   });
 
   it('Accept import opens the confirm dialog and only posts after Post journal', () => {

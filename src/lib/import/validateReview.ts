@@ -58,11 +58,35 @@ export function computeImportIssues(rows: ReviewLike[]): ImportIssue[] {
     return issues;
   }
 
-  // Out-of-balance check (post-resolution: NEW: rows post too, so all
-  // included debit/credit values contribute).
+  // Unmapped rows — these get DROPPED at post (no journal line written).
+  // Surface them BEFORE the unbalanced check, and bump severity to error
+  // whenever the dropped amount makes the post unbalance — this is the
+  // common shape of "review showed balanced, post was unbalanced".
+  const unmapped = included.filter(({ row }) => !row.mappedAccountId);
+  const unmappedDebit = unmapped.reduce((s, { row }) => s + (Number(row.debit) || 0), 0);
+  const unmappedCredit = unmapped.reduce((s, { row }) => s + (Number(row.credit) || 0), 0);
+  if (unmapped.length > 0) {
+    const carriesValue =
+      Math.abs(unmappedDebit) > 0.005 || Math.abs(unmappedCredit) > 0.005;
+    issues.push({
+      severity: carriesValue ? 'error' : 'warning',
+      kind: 'unmapped',
+      message:
+        `${unmapped.length} ${unmapped.length === 1 ? 'row is' : 'rows are'} unmapped — ` +
+        `they will be dropped from the journal (debits ${unmappedDebit.toFixed(2)}, ` +
+        `credits ${unmappedCredit.toFixed(2)}). Map them to an existing account or click "Create new account".`,
+      rowIndices: unmapped.map(({ idx }) => idx),
+    });
+  }
+
+  // Out-of-balance check — totals of rows that will ACTUALLY post (mapped +
+  // included). Unmapped rows are excluded because they don't write a journal
+  // line; counting their amounts here would make a "balanced upload with
+  // unmapped row dropped" look balanced when the post is actually skewed.
+  const willPost = included.filter(({ row }) => Boolean(row.mappedAccountId));
   let totalDebit = 0;
   let totalCredit = 0;
-  for (const { row } of included) {
+  for (const { row } of willPost) {
     totalDebit += Number(row.debit) || 0;
     totalCredit += Number(row.credit) || 0;
   }
@@ -74,19 +98,6 @@ export function computeImportIssues(rows: ReviewLike[]): ImportIssue[] {
       message:
         `Trial Balance is out of balance — debits ${totalDebit.toFixed(2)} vs credits ${totalCredit.toFixed(2)} ` +
         `(difference ${diff.toFixed(2)}). The journal will post unbalanced.`,
-    });
-  }
-
-  // Unmapped rows — these get DROPPED at post (no journal line written).
-  const unmapped = included.filter(({ row }) => !row.mappedAccountId);
-  if (unmapped.length > 0) {
-    issues.push({
-      severity: 'warning',
-      kind: 'unmapped',
-      message:
-        `${unmapped.length} ${unmapped.length === 1 ? 'row is' : 'rows are'} unmapped — ` +
-        `they will be dropped from the journal. Map them to an existing account or click "Create new account".`,
-      rowIndices: unmapped.map(({ idx }) => idx),
     });
   }
 

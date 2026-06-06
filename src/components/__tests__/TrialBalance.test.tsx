@@ -225,7 +225,7 @@ describe('TrialBalance Phase 4 refactor (BOOK-07, BOOK-09)', () => {
 
 // ── Plan 06-3: TB.1–TB.3 (UX-02 + UX-04) ────────────────────────────────
 
-/** Account with no taxLabel — appears as unmapped. */
+/** Expense leaf with no tax labels — appears as unmapped on a tax return. */
 function makeUnmappedAccount(id: string, code: string): Account {
   return {
     _v: 3,
@@ -234,12 +234,13 @@ function makeUnmappedAccount(id: string, code: string): Account {
     name: `Unmapped ${code}`,
     type: 'Expense',
     gstCode: 'N-T',
-    // taxLabel intentionally absent
+    parentCode: '6000', // leaf, not header
+    // tax labels intentionally absent
   };
 }
 
 describe('TrialBalance — Plan 06-3 AnomalyBadge + overflow-x-auto (UX-02 + UX-04)', () => {
-  it('TB.1: account with no taxLabel referenced in posted entry shows anomaly-badge', () => {
+  it('TB.1: Revenue/Expense leaf with no tax labels referenced in posted entry shows anomaly-badge', () => {
     const unmapped = makeUnmappedAccount('um-1', '6099');
     const cash = makeAccount('a-cash', '1000', 'Cash', 'Asset');
     const entry = makeEntry('e1', '2026-01-15', [
@@ -257,15 +258,16 @@ describe('TrialBalance — Plan 06-3 AnomalyBadge + overflow-x-auto (UX-02 + UX-
     expect(badges.length).toBeGreaterThan(0);
   });
 
-  it('TB.2: all accounts mapped — no anomaly badges', () => {
+  it('TB.2: all accounts mapped (all four labels populated on Revenue/Expense) — no anomaly badges', () => {
     const mapped: Account = {
       _v: 3, id: 'mapped-1', code: '6010', name: 'Rent', type: 'Expense',
-      gstCode: 'N-T', taxLabel: 'E',
+      gstCode: 'N-T', parentCode: '6000',
+      taxLabel: '6N', companyTaxLabel: '6G', trustTaxLabel: '5F', partnershipTaxLabel: 'P2',
     };
-    // Cash account with taxLabel set — no anomaly expected
+    // Asset accounts never carry tax labels — must not flag.
     const cash: Account = {
       _v: 3, id: 'a-cash', code: '1000', name: 'Cash', type: 'Asset',
-      gstCode: 'N-T', taxLabel: '1A',
+      gstCode: 'N-T', parentCode: '1000',
     };
     const entry = makeEntry('e1', '2026-01-15', [
       makeLine('mapped-1', 100, 0),
@@ -280,6 +282,50 @@ describe('TrialBalance — Plan 06-3 AnomalyBadge + overflow-x-auto (UX-02 + UX-
     );
     const badges = document.querySelectorAll('[data-testid="anomaly-badge"]');
     expect(badges.length).toBe(0);
+  });
+
+  it('TB.4: Equity account with no taxLabel does NOT show anomaly badge (Equity is never on a tax return)', () => {
+    const equity: Account = {
+      _v: 3, id: 'eq-1', code: '3010', name: "Owner's Capital", type: 'Equity',
+      gstCode: 'N-T', parentCode: '3000',
+    };
+    const cash = makeAccount('a-cash', '1020', 'Bank', 'Asset');
+    const entry = makeEntry('e1', '2026-01-15', [
+      makeLine('a-cash', 1000, 0),
+      makeLine('eq-1', 0, 1000),
+    ]);
+    render(
+      <TrialBalance
+        accounts={[cash, equity]}
+        entries={[entry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    const badges = document.querySelectorAll('[data-testid="anomaly-badge"]');
+    expect(badges.length).toBe(0);
+  });
+
+  it('TB.5: Revenue leaf with only one of four labels (e.g. taxLabel set, others missing) DOES show badge', () => {
+    const partial: Account = {
+      _v: 3, id: 'r-partial', code: '5500', name: 'Misc Revenue', type: 'Revenue',
+      gstCode: 'GST', parentCode: '4000',
+      taxLabel: '6S',
+      // companyTaxLabel + trustTaxLabel + partnershipTaxLabel missing
+    };
+    const cash = makeAccount('a-cash', '1020', 'Bank', 'Asset');
+    const entry = makeEntry('e1', '2026-01-15', [
+      makeLine('a-cash', 0, 200),
+      makeLine('r-partial', 200, 0),
+    ]);
+    render(
+      <TrialBalance
+        accounts={[cash, partial]}
+        entries={[entry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    const badges = document.querySelectorAll('[data-testid="anomaly-badge"]');
+    expect(badges.length).toBeGreaterThan(0);
   });
 
   it('TB.3: TrialBalance table container has overflow-x-auto class', () => {
