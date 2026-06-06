@@ -501,6 +501,52 @@ describe('ImportTB', () => {
       expect(lineForMintedAccount!.debit).toBe(1000);
     });
 
+    it('zero-balance rows are kept in the review (default _include=false, user can opt in)', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      const onImport = vi.fn();
+      // 4 rows: 2 non-zero (Sales / Bank), 2 zero-balance (Inventory / Petty Cash).
+      // Avoids names that match the subtotal-keyword regex (Total / Sum / Net /
+      // GST Collected / etc) — those rows would land in the rejected panel,
+      // not the review table.
+      const mixedCsv = new File(
+        [
+          'Code,Name,Debit,Credit\n' +
+          '4100,Sales,0,1000\n' +
+          '1100,Bank,1000,0\n' +
+          '1200,Inventory,0,0\n' +
+          '1040,Petty Cash,0,0\n',
+        ],
+        'tb-mixed.csv',
+        { type: 'text/csv' },
+      );
+      render(<ImportTB accounts={FIXTURE_ACCOUNTS} onImport={onImport} />);
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [mixedCsv] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+      fireEvent.change(screen.getByLabelText('map-code'),   { target: { value: 'Code' } });
+      fireEvent.change(screen.getByLabelText('map-name'),   { target: { value: 'Name' } });
+      fireEvent.change(screen.getByLabelText('map-debit'),  { target: { value: 'Debit' } });
+      fireEvent.change(screen.getByLabelText('map-credit'), { target: { value: 'Credit' } });
+      fireEvent.click(screen.getByTestId('confirm-mapping'));
+      await waitFor(() => expect(screen.queryByTestId('import-review-pane')).not.toBeNull());
+
+      // All FOUR rows render in the review (previously zero-balance rows
+      // were silently dropped — this is the Bug 2 regression guard).
+      expect(screen.getAllByTestId(/^review-row-/).length).toBe(4);
+
+      // Zero-balance rows are unchecked by default; non-zero are checked.
+      const includes = screen.getAllByLabelText(/include-/) as HTMLInputElement[];
+      const checked = includes.filter((cb) => cb.checked).length;
+      expect(checked).toBe(2);
+    });
+
     it('data preview: each mapping dropdown shows actual values once a column is selected', async () => {
       vi.doMock('../../lib/ai', () => ({
         isAiEnabled: () => false,

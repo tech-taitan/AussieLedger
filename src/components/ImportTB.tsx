@@ -448,8 +448,11 @@ export const ImportTB: React.FC<ImportTBProps> = ({
 
       const debitNum = debitResult.decimal.toNumber();
       const creditNum = creditResult.decimal.toNumber();
-      // Drop rows with zero amounts (likely blank / section-heading rows)
-      if (debitNum === 0 && creditNum === 0) return;
+      // Zero-balance rows are kept and shown in the review, but default
+      // _include to false so they don't post empty journal lines unless
+      // the user explicitly opts in. Section-heading-style pseudo-rows
+      // are still caught downstream by the subtotal detector.
+      const isZero = debitNum === 0 && creditNum === 0;
 
       accepted.push({
         externalCode: code,
@@ -459,7 +462,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({
         mappedAccountId: undefined,
         confidence: 0,
         reasoning: 'Pending fuzzy match',
-        _include: true,
+        _include: !isZero,
       });
     });
 

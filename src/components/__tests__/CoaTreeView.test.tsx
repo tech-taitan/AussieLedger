@@ -33,6 +33,42 @@ describe('CoaTreeView — Plan 06-3 AnomalyBadge wiring (UX-02)', () => {
     const badges = document.querySelectorAll('[data-testid="anomaly-badge"]');
     expect(badges.length).toBe(0);
   });
+
+  it('CT.3: Equity / Asset / Liability rows with no taxLabel do NOT show missing-tax-label badge', () => {
+    const accounts: Account[] = [
+      { id: 'eq', code: '3010', name: "Owner's Capital", type: 'Equity',
+        gstCode: 'N-T', parentCode: '3000' },
+      { id: 'as', code: '1020', name: 'Business Bank Account', type: 'Asset',
+        gstCode: 'N-T', parentCode: '1000' },
+      { id: 'li', code: '2100', name: 'GST Collected', type: 'Liability',
+        gstCode: 'N-T', parentCode: '2000' },
+    ];
+    render(<CoaTreeView accounts={accounts} />);
+    const badges = document.querySelectorAll('[data-testid="anomaly-badge"]');
+    expect(badges.length).toBe(0);
+  });
+
+  it('CT.4: Revenue leaf with all four tax labels shows NO missing-tax-label badge', () => {
+    const account: Account = {
+      id: 'r1', code: '4020', name: 'Sales of Services', type: 'Revenue',
+      gstCode: 'GST', parentCode: '4000',
+      taxLabel: '6S', companyTaxLabel: '6A', trustTaxLabel: '5B', partnershipTaxLabel: 'P1',
+    };
+    render(<CoaTreeView accounts={[account]} />);
+    const badges = document.querySelectorAll('[data-testid="anomaly-badge"]');
+    expect(badges.length).toBe(0);
+  });
+
+  it('CT.5: Revenue leaf missing one of four tax labels DOES show missing-tax-label badge', () => {
+    const account: Account = {
+      id: 'r2', code: '5500', name: 'New Account', type: 'Revenue',
+      gstCode: 'GST', parentCode: '4000',
+      taxLabel: '6S', // only Individual label set; missing CO/TR/PS
+    };
+    render(<CoaTreeView accounts={[account]} />);
+    const badges = document.querySelectorAll('[data-testid="anomaly-badge"]');
+    expect(badges.length).toBeGreaterThan(0);
+  });
 });
 
 describe('CoaTreeView Phase 9 UX-06 — anomaly filter + scroll-to-anomaly', () => {

@@ -71,6 +71,24 @@ function flatten(roots: TreeNode[]): TreeNode[] {
   return out;
 }
 
+/**
+ * Tax-label completeness check. Only Revenue/Expense leaves appear on a
+ * tax return; Asset / Liability / Equity rows and header rows never need
+ * labels. An account is "missing labels" only when all 4 entity-specific
+ * fields aren't fully populated.
+ */
+function isMissingTaxLabel(a: Account): boolean {
+  const isHeader = a.parentCode === null || a.parentCode === undefined;
+  if (isHeader) return false;
+  if (a.type !== 'Revenue' && a.type !== 'Expense') return false;
+  return (
+    !a.taxLabel ||
+    !a.companyTaxLabel ||
+    !a.trustTaxLabel ||
+    !a.partnershipTaxLabel
+  );
+}
+
 export const CoaTreeView: React.FC<CoaTreeViewProps> = ({
   accounts,
   onSelect,
@@ -84,7 +102,7 @@ export const CoaTreeView: React.FC<CoaTreeViewProps> = ({
     const visible = accounts.filter((a) => showArchived || !a.isArchived);
     const all = flatten(buildTree(visible));
     if (!filterMissingMappings) return all;
-    return all.filter((n) => !n.account.gstCode || !n.account.taxLabel);
+    return all.filter((n) => !n.account.gstCode || isMissingTaxLabel(n.account));
   }, [accounts, showArchived, filterMissingMappings]);
 
   const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map());
@@ -145,7 +163,7 @@ export const CoaTreeView: React.FC<CoaTreeViewProps> = ({
             <span className="font-mono text-xs w-12">{a.code}</span>
             <span className={cn(hasChildren && 'font-semibold')}>{a.name}</span>
             <span className="text-xs opacity-60">({a.type})</span>
-            {(!a.gstCode || !a.taxLabel) && (
+            {(!a.gstCode || isMissingTaxLabel(a)) && (
               <span className="ml-1">
                 <AnomalyBadge
                   severity="warn"

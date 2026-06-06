@@ -46,15 +46,26 @@ export function useAnomalyCounts(
       return Math.abs(debit - credit) > 0.005;
     }).length;
 
-    // Accounts: referenced in posted entries but missing tax label
+    // Accounts: referenced in posted entries but missing a tax label.
+    // Asset / Liability / Equity rows + header rows aren't on a tax return
+    // so they're excluded. A Revenue or Expense leaf counts as anomalous
+    // when ANY of the 4 entity-specific labels is missing (matches the
+    // strict seed-coverage rule in seed.test.ts).
     const referencedAccountIds = new Set(
       postedEntries.flatMap((e) => e.lines.map((l) => l.accountId)),
     );
-    const accountCount = accounts.filter(
-      (a) =>
-        referencedAccountIds.has(a.id) &&
-        (!a.taxLabel || a.taxLabel === ''),
-    ).length;
+    const accountCount = accounts.filter((a) => {
+      if (!referencedAccountIds.has(a.id)) return false;
+      const isHeader = a.parentCode === null || a.parentCode === undefined;
+      if (isHeader) return false;
+      if (a.type !== 'Revenue' && a.type !== 'Expense') return false;
+      return (
+        !a.taxLabel ||
+        !a.companyTaxLabel ||
+        !a.trustTaxLabel ||
+        !a.partnershipTaxLabel
+      );
+    }).length;
 
     return { journals: journalCount, accounts: accountCount };
   }, [accounts, entries, activeEntityId]);
