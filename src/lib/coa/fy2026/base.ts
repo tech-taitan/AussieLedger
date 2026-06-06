@@ -128,7 +128,7 @@ export const FY2026_BASE_SPINE: DefaultAccountSeed[] = [
   { code: '6010', name: 'Wages & Salaries',                type: 'Expense',   parentCode: '6000', gstCode: 'N-T',
     taxLabel: '6L', companyTaxLabel: '6X', trustTaxLabel: '5M', partnershipTaxLabel: 'P2' },
   { code: '6020', name: "Directors' Fees",                 type: 'Expense',   parentCode: '6000', gstCode: 'N-T',
-    companyTaxLabel: '6X', trustTaxLabel: '5M', partnershipTaxLabel: 'P2' },
+    taxLabel: '6L', companyTaxLabel: '6X', trustTaxLabel: '5M', partnershipTaxLabel: 'P2' },
   { code: '6030', name: 'Superannuation',                  type: 'Expense',   parentCode: '6000', gstCode: 'N-T',
     taxLabel: '6L', companyTaxLabel: '6C', trustTaxLabel: '5L', partnershipTaxLabel: 'P2' },
   { code: '6040', name: 'Workers Compensation Insurance',  type: 'Expense',   parentCode: '6000', gstCode: 'FRE',

@@ -48,7 +48,7 @@ describe('Default CoA structural integrity (per entity type)', () => {
     }
   });
 
-  it('tax label coverage', () => {
+  it('tax label coverage — at least one label per Revenue/Expense leaf', () => {
     for (const t of ENTITY_TYPES) {
       const coa = getDefaultCoaFor(t, 'FY2026');
       for (const a of coa) {
@@ -62,6 +62,30 @@ describe('Default CoA structural integrity (per entity type)', () => {
           expect(hasAny, `${t} account ${a.code} ${a.name} has at least one tax label`).toBe(true);
         }
       }
+    }
+  });
+
+  it('full tax label coverage — every Revenue/Expense leaf has ALL FOUR labels', () => {
+    const gaps: string[] = [];
+    for (const t of ENTITY_TYPES) {
+      const coa = getDefaultCoaFor(t, 'FY2026');
+      for (const a of coa) {
+        if (isHeader(a)) continue;
+        if (a.type !== 'Revenue' && a.type !== 'Expense') continue;
+        const missing: string[] = [];
+        if (!a.taxLabel) missing.push('taxLabel');
+        if (!a.companyTaxLabel) missing.push('companyTaxLabel');
+        if (!a.trustTaxLabel) missing.push('trustTaxLabel');
+        if (!a.partnershipTaxLabel) missing.push('partnershipTaxLabel');
+        if (missing.length > 0) {
+          gaps.push(`${t} ${a.code} ${a.name} missing: ${missing.join(', ')}`);
+        }
+      }
+    }
+    if (gaps.length > 0) {
+      throw new Error(
+        `Found ${gaps.length} missing tax-label slots on Revenue/Expense leaves:\n` + gaps.join('\n'),
+      );
     }
   });
 
