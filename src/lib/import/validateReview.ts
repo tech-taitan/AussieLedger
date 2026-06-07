@@ -15,7 +15,7 @@
  *   - info:    informational — things that WILL happen as a result
  *              of the import (e.g. N new accounts to be created)
  */
-import type { ImportedAccount } from '../../types';
+import type { Account, ImportedAccount } from '../../types';
 
 export type ImportIssueSeverity = 'error' | 'warning' | 'info';
 
@@ -28,7 +28,8 @@ export interface ImportIssue {
     | 'new-accounts'
     | 'zero-value'
     | 'duplicate-code'
-    | 'no-rows-included';
+    | 'no-rows-included'
+    | 'code-mismatch';
   message: string;
   /** Optional row indices the issue applies to. */
   rowIndices?: number[];
@@ -36,13 +37,29 @@ export interface ImportIssue {
 
 interface ReviewLike extends ImportedAccount {
   _include?: boolean;
+  /** Set by fuzzyMatch when an exact-code match has a divergent name. The
+   *  review pane shows the diff and the validator emits a 'code-mismatch'
+   *  warning so the user can't silently rename existing accounts. */
+  _nameDivergence?: {
+    importedName: string;
+    existingName: string;
+    similarity: number;
+  };
 }
 
 /**
  * Compute the full set of pre-import issues for the current review state.
  * Rows the user has unchecked are excluded from balance + count checks.
+ *
+ * `accounts` is optional — when provided, the validator additionally checks
+ * for code mismatches (imported codes that don't exist in the CoA, OR
+ * exact-code matches with divergent names). Without it, the 'code-mismatch'
+ * issue is skipped, preserving the legacy single-argument signature.
  */
-export function computeImportIssues(rows: ReviewLike[]): ImportIssue[] {
+export function computeImportIssues(
+  rows: ReviewLike[],
+  accounts?: Account[],
+): ImportIssue[] {
   const issues: ImportIssue[] = [];
   const included = rows
     .map((r, idx) => ({ row: r, idx }))
@@ -158,6 +175,64 @@ export function computeImportIssues(rows: ReviewLike[]): ImportIssue[] {
         `Each duplicate will post its own journal line under the same code.`,
       rowIndices: duplicateIndices,
     });
+  }
+
+  // Code-mismatch — surface the two cases that silently route imported
+  // balances to the "wrong" account in the eyes of the user:
+  //   (a) The imported code doesn't exist in the CoA at all — the matcher
+  //       fell through to fuzzy name match (or no match), so what the user
+  //       sees in their TB file is NOT a 1:1 with what gets posted.
+  //   (b) The imported code DOES match an existing CoA code but the names
+  //       differ significantly — the row will post under the existing
+  //       account's name (e.g. imported "Cash at Bank 1020" → existing
+  //       "Business Bank Account 1020"). The matcher already demotes the
+  //       confidence; this issue makes the silent rename explicit in the
+  //       pre-import panel.
+  if (accounts && accounts.length > 0) {
+    const codeSet = new Set(
+      accounts
+        .map((a) => (a.code ?? '').trim())
+        .filter((c) => c.length > 0),
+    );
+    const missingCodeRows: number[] = [];
+    const renameRows: number[] = [];
+    const renameDescriptions: string[] = [];
+    for (const { row, idx } of included) {
+      const importedCode = (row.externalCode ?? '').trim();
+      if (importedCode && !codeSet.has(importedCode)) {
+        missingCodeRows.push(idx);
+      }
+      if (row._nameDivergence) {
+        renameRows.push(idx);
+        renameDescriptions.push(
+          `'${row._nameDivergence.importedName.trim()}' → '${row._nameDivergence.existingName.trim()}' (code ${importedCode})`,
+        );
+      }
+    }
+    if (missingCodeRows.length > 0 || renameRows.length > 0) {
+      const parts: string[] = [];
+      if (missingCodeRows.length > 0) {
+        parts.push(
+          `${missingCodeRows.length} imported ${missingCodeRows.length === 1 ? 'code does' : 'codes do'} not match any account in your Chart of Accounts — those rows depend on the fuzzy-name fallback or stay unmapped.`,
+        );
+      }
+      if (renameRows.length > 0) {
+        const list = renameDescriptions.slice(0, 3).join('; ');
+        const more =
+          renameDescriptions.length > 3
+            ? ` and ${renameDescriptions.length - 3} more`
+            : '';
+        parts.push(
+          `${renameRows.length} ${renameRows.length === 1 ? 'row will silently post under a different existing account name' : 'rows will silently post under different existing account names'}: ${list}${more}. Click "Create new account" on each row to preserve your imported name.`,
+        );
+      }
+      issues.push({
+        severity: 'warning',
+        kind: 'code-mismatch',
+        message: parts.join(' '),
+        rowIndices: Array.from(new Set([...missingCodeRows, ...renameRows])),
+      });
+    }
   }
 
   return issues;

@@ -4,10 +4,15 @@
  */
 import { describe, it, expect } from 'vitest';
 import { computeImportIssues, hasBlockingErrors } from '../validateReview';
-import type { ImportedAccount } from '../../../types';
+import type { Account, ImportedAccount } from '../../../types';
 
 interface ReviewLike extends ImportedAccount {
   _include?: boolean;
+  _nameDivergence?: {
+    importedName: string;
+    existingName: string;
+    similarity: number;
+  };
 }
 
 function mk(overrides: Partial<ReviewLike>): ReviewLike {
@@ -159,5 +164,73 @@ describe('computeImportIssues', () => {
     expect(issues[0].kind).toBe('no-rows-included');
     expect(issues[0].severity).toBe('error');
     expect(hasBlockingErrors(issues)).toBe(true);
+  });
+
+  describe('Task A: code-mismatch warnings (requires accounts argument)', () => {
+    const COA: Account[] = [
+      { id: 'acc-bank', code: '1020', name: 'Business Bank Account', type: 'Asset', gstCode: 'N-T' },
+      { id: 'acc-sales', code: '4010', name: 'Sales of Goods', type: 'Revenue', gstCode: 'GST' },
+    ];
+
+    it('flags imported codes that do not exist in the CoA at all', () => {
+      const rows: ReviewLike[] = [
+        mk({ externalCode: '1020', externalName: 'Bank', debit: 1000, credit: 0, mappedAccountId: 'acc-bank' }),
+        mk({ externalCode: '9999', externalName: 'Mystery', debit: 0, credit: 1000, mappedAccountId: undefined }),
+      ];
+      const issues = computeImportIssues(rows, COA);
+      const mismatch = issues.find((i) => i.kind === 'code-mismatch');
+      expect(mismatch).toBeDefined();
+      expect(mismatch!.severity).toBe('warning');
+      expect(mismatch!.message).toMatch(/does not match|do not match/);
+      expect(mismatch!.rowIndices).toEqual([1]);
+    });
+
+    it('flags rows whose match has _nameDivergence (silent rename guard)', () => {
+      const rows: ReviewLike[] = [
+        mk({
+          externalCode: '1020',
+          externalName: 'Cash at Bank',
+          debit: 50000,
+          credit: 0,
+          mappedAccountId: 'acc-bank',
+          _nameDivergence: {
+            importedName: 'Cash at Bank',
+            existingName: 'Business Bank Account',
+            similarity: 0.4,
+          },
+        }),
+        mk({ externalCode: '4010', externalName: 'Sales of Goods', debit: 0, credit: 50000, mappedAccountId: 'acc-sales' }),
+      ];
+      const issues = computeImportIssues(rows, COA);
+      const mismatch = issues.find((i) => i.kind === 'code-mismatch');
+      expect(mismatch).toBeDefined();
+      expect(mismatch!.severity).toBe('warning');
+      expect(mismatch!.message).toMatch(/Cash at Bank/);
+      expect(mismatch!.message).toMatch(/Business Bank Account/);
+    });
+
+    it('omits the code-mismatch issue when accounts argument is not provided (legacy signature)', () => {
+      const rows: ReviewLike[] = [
+        mk({ externalCode: '9999', externalName: 'Mystery', debit: 1000, credit: 0, mappedAccountId: 'acc-bank' }),
+      ];
+      const issues = computeImportIssues(rows);
+      expect(issues.find((i) => i.kind === 'code-mismatch')).toBeUndefined();
+    });
+
+    it('omits the code-mismatch issue when accounts is empty', () => {
+      const rows: ReviewLike[] = [
+        mk({ externalCode: '9999', externalName: 'Mystery', debit: 1000, credit: 0, mappedAccountId: undefined }),
+      ];
+      const issues = computeImportIssues(rows, []);
+      expect(issues.find((i) => i.kind === 'code-mismatch')).toBeUndefined();
+    });
+
+    it('code-mismatch is a warning, not blocking — user can still post if they confirm', () => {
+      const rows: ReviewLike[] = [
+        mk({ externalCode: '9999', externalName: 'Mystery', debit: 1000, credit: 1000, mappedAccountId: 'acc-bank' }),
+      ];
+      const issues = computeImportIssues(rows, COA);
+      expect(hasBlockingErrors(issues)).toBe(false);
+    });
   });
 });

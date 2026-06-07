@@ -7,6 +7,7 @@
  */
 import React from 'react';
 import type { Entity } from '../../types';
+import { ProfessionalAdviceBanner } from '../ProfessionalAdviceBanner';
 
 interface Step7FinaliseProps {
   entity: Entity;
@@ -26,6 +27,8 @@ export function Step7Finalise({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Ready to Finalise</h3>
+
+      <ProfessionalAdviceBanner />
 
       <div className="bg-gray-50 border border-gray-200 p-4 text-sm">
         <p className="font-medium text-gray-800 mb-1">

@@ -22,6 +22,7 @@ import type { ReturnLabel } from '../lib/tax/returns/fy2026/types';
 import { Toast } from './Toast';
 import { computeIndividualReturn } from '../lib/tax/returns/fy2026/individual';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
+import { ProfessionalAdviceBanner } from './ProfessionalAdviceBanner';
 import { AnomalyBadge } from './AnomalyBadge';
 import { AssumptionsBlock } from './AssumptionsBlock';
 import { INDIVIDUAL_LABELS_FULL } from '../lib/tax/labels/fy2026';
@@ -178,6 +179,11 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({
     <section className="print-form-i p-4">
       {/* Print-only banner — hidden on screen */}
       <PrintBanner form="I" entityName={entity.name} fy={effectiveFy} locked={isLocked} />
+
+      {/* Screen-only professional-advice disclaimer */}
+      <div className="no-print">
+        <ProfessionalAdviceBanner />
+      </div>
 
       {/* Screen header — hidden on print */}
       <header className="no-print flex justify-between items-center mb-4">

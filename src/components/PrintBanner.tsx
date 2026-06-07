@@ -9,7 +9,7 @@ import React from 'react';
  * Locked verbatim — do not paraphrase.
  */
 export const FULL_PRINT_DISCLAIMER =
-  'AUSSIELEDGER WORKING PAPER. Not tax advice. Produced by self-hosted open-source software. Verify all figures against ATO instructions and your trust deed / company constitution before lodging. The lodging entity retains all responsibility.';
+  'AUSSIELEDGER WORKING PAPER. Not tax advice. Produced by self-hosted open-source software. Verify all figures against ATO instructions and your trust deed / company constitution before lodging. Consult a registered tax agent or qualified accountant before lodging or making business decisions based on this output. The lodging entity retains all responsibility.';
 
 /**
  * Short footer disclaimer — printed on every page via .print-footer CSS class.

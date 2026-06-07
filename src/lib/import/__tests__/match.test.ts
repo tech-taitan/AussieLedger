@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { fuzzyMatch, HIGH_CONFIDENCE_THRESHOLD, TOP_N_CANDIDATES } from '../match';
+import {
+  fuzzyMatch,
+  HIGH_CONFIDENCE_THRESHOLD,
+  TOP_N_CANDIDATES,
+  NAME_DIVERGENCE_THRESHOLD,
+  DEMOTED_NAME_DIVERGENCE_CONFIDENCE,
+} from '../match';
 import type { Account } from '../../../types';
 
 const makeAccount = (id: string, code: string, name: string): Account => ({
@@ -28,16 +34,68 @@ describe('fuzzyMatch', () => {
   });
 
   describe('exact code match', () => {
-    it('returns confidence 1.0 and mappedAccountId when code matches exactly', () => {
-      const result = fuzzyMatch({ externalCode: '4100', externalName: 'Something Else' }, ACCOUNTS);
+    it('returns confidence 1.0 and mappedAccountId when code matches exactly (and name aligns)', () => {
+      // Post-Task-A: an exact-code match with a CLOSE name still wins at 1.0.
+      // (A wildly different name would demote — covered in the divergence
+      // tests below.)
+      const result = fuzzyMatch({ externalCode: '4100', externalName: 'Sales' }, ACCOUNTS);
       expect(result.confidence).toBe(1.0);
       expect(result.mappedAccountId).toBe('acc-1');
     });
 
-    it('exact code match ignores name distance', () => {
-      const result = fuzzyMatch({ externalCode: '6500', externalName: 'Completely Different Name' }, ACCOUNTS);
+    it('Task A: exact code match with DIVERGENT name demotes to nameDivergence (was 1.0 silently)', () => {
+      // Pre-Task-A behaviour: confidence 1.0, silent auto-map under the
+      // existing account's name. Hid renames like "Cash at Bank" silently
+      // posting under "Business Bank Account" because both used code 1020.
+      const result = fuzzyMatch(
+        { externalCode: '6500', externalName: 'Completely Different Name' },
+        ACCOUNTS,
+      );
       expect(result.mappedAccountId).toBe('acc-5');
+      expect(result.confidence).toBe(DEMOTED_NAME_DIVERGENCE_CONFIDENCE);
+      expect(result.confidence).toBeLessThan(HIGH_CONFIDENCE_THRESHOLD);
+      expect(result.nameDivergence).toBeDefined();
+      expect(result.nameDivergence!.importedName).toBe('Completely Different Name');
+      expect(result.nameDivergence!.existingName).toBe('Superannuation');
+      expect(result.nameDivergence!.similarity).toBeLessThan(NAME_DIVERGENCE_THRESHOLD);
+    });
+
+    it('Task A: exact code match with CLOSE name keeps confidence 1.0 (no divergence)', () => {
+      // Sales vs Sale (typo) — well above 0.60 threshold → no divergence.
+      const result = fuzzyMatch({ externalCode: '4100', externalName: 'Sale' }, ACCOUNTS);
+      expect(result.mappedAccountId).toBe('acc-1');
       expect(result.confidence).toBe(1.0);
+      expect(result.nameDivergence).toBeUndefined();
+    });
+
+    it('Task A: exact code match with IDENTICAL name keeps confidence 1.0', () => {
+      const result = fuzzyMatch({ externalCode: '4100', externalName: 'Sales' }, ACCOUNTS);
+      expect(result.mappedAccountId).toBe('acc-1');
+      expect(result.confidence).toBe(1.0);
+      expect(result.nameDivergence).toBeUndefined();
+    });
+
+    it('Task A: exact code match with EMPTY imported name keeps confidence 1.0', () => {
+      // Label-only imports (no name) shouldn't trigger divergence — nothing
+      // to diverge from. Defensive: don't break legitimate code-only matches.
+      const result = fuzzyMatch({ externalCode: '4100', externalName: '' }, ACCOUNTS);
+      expect(result.mappedAccountId).toBe('acc-1');
+      expect(result.confidence).toBe(1.0);
+      expect(result.nameDivergence).toBeUndefined();
+    });
+
+    it('Task A: classic regression — "Cash at Bank" + code 1020 vs "Business Bank Account" 1020 → divergence', () => {
+      const COA: Account[] = [
+        { id: 'a1', code: '1020', name: 'Business Bank Account', type: 'Asset', gstCode: 'N-T' },
+      ];
+      const result = fuzzyMatch(
+        { externalCode: '1020', externalName: 'Cash at Bank' },
+        COA,
+      );
+      expect(result.mappedAccountId).toBe('a1');
+      expect(result.nameDivergence).toBeDefined();
+      expect(result.nameDivergence!.importedName).toBe('Cash at Bank');
+      expect(result.nameDivergence!.existingName).toBe('Business Bank Account');
     });
 
     it('code match returns single candidate', () => {
@@ -114,11 +172,14 @@ describe('fuzzyMatch', () => {
       expect(result.mappedAccountId).toBe('acc-4');
     });
 
-    it('exact code match takes precedence over name similarity', () => {
-      // Even if name has 0 similarity, code match wins
+    it('exact code match still binds the accountId even when name diverges (but at demoted confidence)', () => {
+      // Pre-Task-A this asserted confidence 1.0 silently. Post-Task-A the
+      // code match still wins (so the user can confirm by inaction) but
+      // confidence is demoted so the row routes to Review with the diff.
       const result = fuzzyMatch({ externalCode: '4200', externalName: 'ZZZZZ' }, ACCOUNTS);
       expect(result.mappedAccountId).toBe('acc-2');
-      expect(result.confidence).toBe(1.0);
+      expect(result.confidence).toBe(DEMOTED_NAME_DIVERGENCE_CONFIDENCE);
+      expect(result.nameDivergence).toBeDefined();
     });
   });
 });

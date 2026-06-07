@@ -24,6 +24,13 @@ describe('PrintBanner', () => {
     expect(screen.queryByText(/\[LOCKED FY\]/)).toBeNull();
   });
 
+  it('FULL_PRINT_DISCLAIMER includes a "registered tax agent or qualified accountant" prompt', () => {
+    // Locked copy assertion — the printed working paper must direct users
+    // to professional advice. Removing this should break a test, not slip
+    // through silently.
+    expect(FULL_PRINT_DISCLAIMER).toMatch(/registered tax agent or qualified accountant/);
+  });
+
   it('uses correct NAT reference per form code', () => {
     const { rerender } = render(<PrintBanner form="T" entityName="The Trust" fy="FY2026" />);
     expect(screen.getByText(/NAT 0660/)).toBeInTheDocument();

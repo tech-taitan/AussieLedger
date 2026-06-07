@@ -68,6 +68,19 @@ export interface ReviewRow extends ImportedAccount {
    * guesses if absent.
    */
   _newAccountSpec?: NewAccountSpec;
+  /**
+   * Set by fuzzyMatch when the imported code exactly matches an existing
+   * CoA account but the NAMES diverge (similarity < NAME_DIVERGENCE_THRESHOLD).
+   * The review pane renders the diff inline so the user can either confirm
+   * the existing-account mapping or click "Create new account" to preserve
+   * the imported name. validateReview emits a 'code-mismatch' warning
+   * whenever any included row carries this flag.
+   */
+  _nameDivergence?: {
+    importedName: string;
+    existingName: string;
+    similarity: number;
+  };
 }
 
 export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
@@ -87,8 +100,14 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
   // Which row's NewAccountModal is currently open. -1 = none.
   const [modalRowIndex, setModalRowIndex] = useState<number>(-1);
 
-  // Pre-import health check — recomputed on every row mutation.
-  const issues = useMemo(() => computeImportIssues(rows as ReviewRow[]), [rows]);
+  // Pre-import health check — recomputed on every row mutation. Accounts
+  // are passed in so the validator can flag code-mismatch warnings
+  // (imported codes missing from the CoA, or exact-code matches with
+  // divergent names that would silently rename the user's account).
+  const issues = useMemo(
+    () => computeImportIssues(rows as ReviewRow[], accounts),
+    [rows, accounts],
+  );
   const blocking = hasBlockingErrors(issues);
 
   // Totals reflect what will ACTUALLY POST to the journal — not just what
@@ -254,6 +273,28 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
                     {matched && (
                       <div className="text-xs mt-1">
                         → {matched.code} {matched.name}
+                      </div>
+                    )}
+                    {(r as ReviewRow)._nameDivergence && matched && (
+                      <div
+                        className="mt-2 text-xs bg-rose-50 border border-rose-200 text-rose-900 rounded p-2"
+                        data-testid={`name-divergence-${idx}`}
+                      >
+                        <div className="font-semibold mb-1">
+                          Code matches but the names don't.
+                        </div>
+                        <div className="leading-snug">
+                          Your TB row{' '}
+                          <span className="font-mono">
+                            {r.externalCode} {r.externalName}
+                          </span>{' '}
+                          will post under the existing account{' '}
+                          <span className="font-mono">
+                            {matched.code} {matched.name}
+                          </span>
+                          . If that's not the same account, click "Create new account"
+                          below to keep your imported name.
+                        </div>
                       </div>
                     )}
                     {isPendingNew && (

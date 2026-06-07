@@ -20,6 +20,7 @@ import type { Period, FyLabel } from '../lib/period';
 import { currentFy, today } from '../lib/period';
 import { computeTrustReturn } from '../lib/tax/returns/fy2026/trust';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
+import { ProfessionalAdviceBanner } from './ProfessionalAdviceBanner';
 import { AnomalyBadge } from './AnomalyBadge';
 import { Decimal } from '../lib/money';
 import { TRUST_LABELS_FULL } from '../lib/tax/labels/fy2026';
@@ -104,6 +105,10 @@ export function TrustTaxReturn({
   return (
     <section className="print-form-t p-4">
       <PrintBanner form="T" entityName={entity.name} fy={fy} locked={result.meta.locked} />
+
+      <div className="no-print">
+        <ProfessionalAdviceBanner />
+      </div>
 
       {/* Screen-mode header + print button */}
       <header className="no-print flex justify-between items-center mb-6">

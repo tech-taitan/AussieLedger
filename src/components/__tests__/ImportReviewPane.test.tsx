@@ -9,6 +9,11 @@ import type { Account, ImportedAccount } from '../../types';
 import type { RejectedRow } from '../RejectedRowsPanel';
 
 const ACCOUNTS: Account[] = [
+  // Bank (1100) added so the existing fixture rows that use externalCode
+  // '1100' don't trip the new Task-A 'code-mismatch' warning. The CoA-side
+  // name is "Bank" so fixtures that map a Bank import to acc-1 still
+  // exercise the issues panel without polluting it with code-mismatch noise.
+  { id: 'acc-bank', code: '1100', name: 'Bank', type: 'Asset', gstCode: 'N-T' },
   { id: 'acc-1', code: '4100', name: 'Sales', type: 'Revenue', gstCode: 'GST' },
   {
     id: 'acc-2',

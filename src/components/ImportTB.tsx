@@ -557,7 +557,9 @@ export const ImportTB: React.FC<ImportTBProps> = ({
         });
         return;
       }
-      // Deterministic fuzzy match — preserves Phase 4 behavior (IMP-04)
+      // Deterministic fuzzy match — preserves Phase 4 behavior (IMP-04).
+      // nameDivergence is forwarded onto the review row so the pane can
+      // render the rename diff and the validator can flag 'code-mismatch'.
       const result = fuzzyMatch(row, accounts);
       finalAccepted.push({
         ...row,
@@ -566,7 +568,10 @@ export const ImportTB: React.FC<ImportTBProps> = ({
         reasoning:
           result.confidence >= HIGH_CONFIDENCE_THRESHOLD
             ? 'Auto-matched (deterministic)'
-            : 'Manual review recommended',
+            : result.nameDivergence
+              ? 'Code matches but name differs — confirm before posting'
+              : 'Manual review recommended',
+        _nameDivergence: result.nameDivergence,
       });
     });
 
@@ -830,7 +835,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({
       return;
     }
 
-    const issues = computeImportIssues(importedRows);
+    const issues = computeImportIssues(importedRows, accounts);
     if (hasBlockingErrors(issues)) {
       const messages = issues
         .filter((issue) => issue.severity === 'error')
@@ -1493,7 +1498,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({
                     // Same blocking-errors gate as the main accept path —
                     // a fingerprint hit must not let an unbalanced /
                     // unmapped-laden journal slip through Replace.
-                    const issues = computeImportIssues(importedRows);
+                    const issues = computeImportIssues(importedRows, accounts);
                     if (hasBlockingErrors(issues)) {
                       const messages = issues
                         .filter((i) => i.severity === 'error')
@@ -1570,7 +1575,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({
                     // Task 12: race-safe double-click guard.
                     if (isPostingRef.current) return;
                     // Same blocking-errors gate as the main accept path.
-                    const issues = computeImportIssues(importedRows);
+                    const issues = computeImportIssues(importedRows, accounts);
                     if (hasBlockingErrors(issues)) {
                       const messages = issues
                         .filter((i) => i.severity === 'error')

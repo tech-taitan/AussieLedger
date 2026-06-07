@@ -39,6 +39,22 @@ export interface MatchResult {
   mappedAccountId?: string;
   confidence: number;
   candidates: Array<{ accountId: string; confidence: number; name: string }>;
+  /**
+   * True when an exact-code match was found but the imported name diverges
+   * significantly from the existing CoA account's name (similarity below
+   * NAME_DIVERGENCE_THRESHOLD on normalised strings). The match is still
+   * the best candidate by code, but confidence is demoted so the row routes
+   * to "Review" — the user must explicitly confirm the rename or click
+   * "Create new account" to preserve the imported name. Without this, the
+   * silent rename hid balances under the existing account's name (e.g.
+   * imported "Cash at Bank 1020" silently mapping to "Business Bank Account
+   * 1020"). Set ONLY when divergence is detected; absent otherwise.
+   */
+  nameDivergence?: {
+    importedName: string;
+    existingName: string;
+    similarity: number;
+  };
 }
 
 /**
@@ -48,6 +64,18 @@ export interface MatchResult {
  */
 export const HIGH_CONFIDENCE_THRESHOLD = 0.85;
 
+/**
+ * Below this similarity, an exact-code match is treated as a divergent rename.
+ * Confidence is demoted below HIGH_CONFIDENCE_THRESHOLD so the row enters
+ * the "Review" state instead of silently auto-mapping. 0.60 catches the
+ * "Cash at Bank" vs "Business Bank Account" case (sim ≈ 0.55) while still
+ * allowing minor variations like trailing punctuation (sim ≥ 0.85).
+ */
+export const NAME_DIVERGENCE_THRESHOLD = 0.60;
+
+/** Demoted confidence assigned when nameDivergence fires (must be < threshold). */
+export const DEMOTED_NAME_DIVERGENCE_CONFIDENCE = 0.65;
+
 /** Maximum number of candidates to return when confidence is below threshold. */
 export const TOP_N_CANDIDATES = 3;
 
@@ -55,7 +83,11 @@ export const TOP_N_CANDIDATES = 3;
  * Match an imported account row against the internal chart of accounts.
  *
  * Algorithm:
- * 1. Exact code match → confidence 1.0 (hard tie-break).
+ * 1. Exact code match → normally confidence 1.0 (hard tie-break).
+ *    Exception: if the imported NAME diverges from the matched account's
+ *    name (similarity < NAME_DIVERGENCE_THRESHOLD), confidence is demoted
+ *    to DEMOTED_NAME_DIVERGENCE_CONFIDENCE and nameDivergence is set so
+ *    the review pane can surface the rename for user confirmation.
  * 2. Levenshtein distance on normalised names → confidence = 1 - distance / maxLen.
  * 3. If best confidence ≥ HIGH_CONFIDENCE_THRESHOLD → mappedAccountId set.
  * 4. Otherwise → mappedAccountId undefined; candidates = top TOP_N_CANDIDATES.
@@ -68,10 +100,37 @@ export function fuzzyMatch(
     return { confidence: 0, candidates: [] };
   }
 
-  // Step 1: Exact code match (confidence 1.0)
+  // Step 1: Exact code match — gated by name-similarity check.
   if (imported.externalCode) {
     const exactCode = accounts.find(a => a.code === imported.externalCode.trim());
     if (exactCode) {
+      // Compute name similarity to detect divergent renames. If the
+      // imported row has no name (label-only), skip the divergence check
+      // and accept the code match at full confidence — there's nothing to
+      // diverge from.
+      const normImported = normalise(imported.externalName ?? '');
+      const normExisting = normalise(exactCode.name);
+      const hasName = normImported.length > 0 && normExisting.length > 0;
+      const distance = hasName ? levenshtein(normImported, normExisting) : 0;
+      const maxLen = Math.max(normImported.length, normExisting.length);
+      const similarity = hasName && maxLen > 0 ? 1 - distance / maxLen : 1;
+
+      if (hasName && similarity < NAME_DIVERGENCE_THRESHOLD) {
+        // Divergent rename — demote so the user must confirm.
+        return {
+          mappedAccountId: exactCode.id,
+          confidence: DEMOTED_NAME_DIVERGENCE_CONFIDENCE,
+          candidates: [
+            { accountId: exactCode.id, confidence: DEMOTED_NAME_DIVERGENCE_CONFIDENCE, name: exactCode.name },
+          ],
+          nameDivergence: {
+            importedName: imported.externalName ?? '',
+            existingName: exactCode.name,
+            similarity,
+          },
+        };
+      }
+
       return {
         mappedAccountId: exactCode.id,
         confidence: 1.0,

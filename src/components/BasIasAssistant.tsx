@@ -30,6 +30,7 @@ import { computeBas } from '../lib/tax/returns/fy2026/bas';
 import { computeIas } from '../lib/tax/returns/fy2026/ias';
 import type { BasReturn } from '../lib/tax/returns/fy2026/bas';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
+import { ProfessionalAdviceBanner } from './ProfessionalAdviceBanner';
 import { AnomalyBadge } from './AnomalyBadge';
 import type { Decimal } from '../lib/money';
 import { BAS_LABELS_FULL, IAS_LABELS_FULL } from '../lib/tax/labels/fy2026';
@@ -182,6 +183,10 @@ export function BasIasAssistant({
         fy={fy}
         locked={result.meta.locked}
       />
+
+      <div className="no-print">
+        <ProfessionalAdviceBanner />
+      </div>
 
       {/* Screen header with period selector + print button */}
       <header className="no-print flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">

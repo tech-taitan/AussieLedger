@@ -18,6 +18,7 @@ import type { FyLabel, Period } from '../lib/period';
 import { currentFy, today } from '../lib/period';
 import { computeCompanyReturn } from '../lib/tax/returns/fy2026/company';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
+import { ProfessionalAdviceBanner } from './ProfessionalAdviceBanner';
 import { AnomalyBadge } from './AnomalyBadge';
 import { COMPANY_LABELS_FULL } from '../lib/tax/labels/fy2026';
 import type { CompanyLabel } from '../lib/tax/labels/fy2026';
@@ -135,6 +136,11 @@ export const CompanyTaxReturn: React.FC<CompanyTaxReturnProps> = ({
     <section className="print-form-c p-4">
       {/* Print-only banner */}
       <PrintBanner form="C" entityName={entity.name} fy={effectiveFy} locked={isLocked} />
+
+      {/* Screen-only professional-advice disclaimer */}
+      <div className="no-print">
+        <ProfessionalAdviceBanner />
+      </div>
 
       {/* Screen header */}
       <header className="no-print flex justify-between items-center mb-4">
