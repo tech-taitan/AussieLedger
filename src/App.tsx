@@ -54,7 +54,7 @@ export default function App() {
   // owns a synchronous migration useEffect.
   const { auditLogs, addLog } = useAuditLog();
   const { settings, setSettings, clearSettings } = useSettings();
-  const { accounts, updateAccount, saveAll, reload: reloadAccounts } = useAccounts(addLog);
+  const { accounts, updateAccount, saveAll, reload: reloadAccounts, appendAndPersist: appendAccountsAndPersist } = useAccounts(addLog);
   const {
     entities,
     selectedEntityIds,
@@ -81,11 +81,13 @@ export default function App() {
     [rawCreateEntity, reloadAccounts],
   );
 
-  // ImportTB "Create new account" callback — append-only CoA write.
+  // ImportTB "Create new account" callback — append-only CoA write that
+  // AWAITS the adapter persist so the subsequent journal write can
+  // safely reference the minted accountIds (Critical #2 race fix).
   const appendAccounts = useCallback(
-    (newAccounts: Parameters<typeof saveAll>[0]) =>
-      saveAll([...accounts, ...newAccounts]),
-    [accounts, saveAll],
+    (newAccounts: Parameters<typeof appendAccountsAndPersist>[0]) =>
+      appendAccountsAndPersist(newAccounts),
+    [appendAccountsAndPersist],
   );
   const journalsHook = useJournals(addLog, activeEntityId);
 

@@ -54,6 +54,15 @@ export interface JournalsHook {
    * active entity. The Account / Entity lists are not touched.
    */
   clearAllEntries: () => void;
+  /**
+   * Import entries AND await the adapter write before resolving. Pair with
+   * `useAccounts.appendAndPersist` so the journal lands in IndexedDB only
+   * AFTER the accounts it references are durable. Without this serialization
+   * a refresh between the journal save and the account save left
+   * `accountId`s dangling and the TrialBalance rollup silently dropped them
+   * (the Critical #2 race).
+   */
+  importEntriesAndPersist: (newEntries: JournalEntry[]) => Promise<void>;
 }
 
 export function useJournals(
@@ -355,6 +364,30 @@ export function useJournals(
     );
   }, [activeEntityId, addLog]);
 
+  const importEntriesAndPersist = useCallback(
+    async (newEntries: JournalEntry[]) => {
+      if (!activeEntityId) {
+        throw new Error('Cannot import journal entries — no active entity selected.');
+      }
+      // Read adapter state so we merge on top of the durable list, not a
+      // stale React closure.
+      const adapter = await getAdapter();
+      const existing = await adapter.getEntries();
+      const merged: Record<string, JournalEntry[]> = {
+        ...existing,
+        [activeEntityId]: [...newEntries, ...(existing[activeEntityId] ?? [])],
+      };
+      await adapter.saveEntries(merged);
+      setAllEntries(merged);
+      addLog(
+        'IMPORT_DATA',
+        `Imported ${newEntries.length} journal entries via Trial Balance import`,
+        activeEntityId,
+      );
+    },
+    [activeEntityId, addLog],
+  );
+
   return {
     allEntries,
     entries,
@@ -374,5 +407,6 @@ export function useJournals(
     searchJournals,
     supersedeImport,
     clearAllEntries,
+    importEntriesAndPersist,
   };
 }

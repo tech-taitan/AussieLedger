@@ -797,8 +797,13 @@ export function ViewRouter({
           {view === 'import' && (
             <ImportTB
               accounts={accounts}
-              onImport={journals.importEntries}
+              // CRITICAL #2 race fix: use the persistent variant so the
+              // adapter write completes before ImportTB resolves and runs
+              // resetState — guarantees the journal lands in IDB AFTER the
+              // accounts it references.
+              onImport={journals.importEntriesAndPersist}
               activeEntityId={activeEntityId ?? undefined}
+              activeEntityName={activeEntity?.name}
               existingEntries={
                 activeEntityId ? (journals.allEntries[activeEntityId] ?? []) : []
               }

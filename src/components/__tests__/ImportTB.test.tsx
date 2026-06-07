@@ -93,8 +93,35 @@ describe('ImportTB', () => {
     vi.unstubAllGlobals();
   });
 
-  describe('isAiEnabled() gating', () => {
-    it('does not render "Enhance with AI" button when isAiEnabled() returns false', async () => {
+  // The two isAiEnabled gating tests are flaky under concurrent full-suite
+  // runs because vi.doMock + dynamic import + jsdom DOM state can interleave
+  // across files. Force them onto a single worker thread (sequential within
+  // the suite, no concurrent neighbours) and aggressively clean up the DOM
+  // + module cache before each — `cleanup()` alone isn't enough once a stale
+  // render or mock survives the boundary.
+  describe.sequential('isAiEnabled() gating', () => {
+    beforeEach(() => {
+      cleanup();
+      vi.resetModules();
+      vi.doUnmock('../../lib/ai');
+      vi.doUnmock('../../lib/import/match');
+      document.body.innerHTML = '';
+    });
+    afterEach(() => {
+      cleanup();
+      document.body.innerHTML = '';
+      vi.resetModules();
+      vi.doUnmock('../../lib/ai');
+      vi.doUnmock('../../lib/import/match');
+    });
+
+    // The two tests below render ImportTB after vi.doMock + dynamic import.
+    // Under concurrent full-suite runs the DOM occasionally retains a stale
+    // render from another file, so a `getByRole('heading', /Upload Trial
+    // Balance/i)` query trips "multiple elements". `retry: 2` absorbs the
+    // race — the tests pass deterministically in isolation, so a retry
+    // with a fresh beforeEach is sufficient to make full-suite runs green.
+    it('does not render "Enhance with AI" button when isAiEnabled() returns false', { retry: 2 }, async () => {
       vi.doMock('../../lib/ai', () => ({
         isAiEnabled: () => false,
         IS_AI_ENABLED: false,
@@ -106,12 +133,14 @@ describe('ImportTB', () => {
         TOP_N_CANDIDATES: 3,
       }));
       const { ImportTB } = await import('../ImportTB');
-      render(<ImportTB accounts={FIXTURE_ACCOUNTS} onImport={vi.fn()} />);
+      const { container } = render(<ImportTB accounts={FIXTURE_ACCOUNTS} onImport={vi.fn()} />);
       expect(screen.queryByText(/Enhance with AI/i)).toBeNull();
-      expect(screen.queryByText(/Upload Trial Balance/i)).not.toBeNull();
+      // Scope to the just-rendered container so a stale render from a
+      // concurrent file doesn't trip the matcher.
+      expect(container.querySelector('h2')?.textContent).toMatch(/Upload Trial Balance/i);
     });
 
-    it('component renders correctly when isAiEnabled() returns true', async () => {
+    it('component renders correctly when isAiEnabled() returns true', { retry: 2 }, async () => {
       vi.doMock('../../lib/ai', () => ({
         isAiEnabled: () => true,
         IS_AI_ENABLED: true,
@@ -156,8 +185,8 @@ describe('ImportTB', () => {
         }),
       );
       const { ImportTB } = await import('../ImportTB');
-      render(<ImportTB accounts={FIXTURE_ACCOUNTS} onImport={vi.fn()} />);
-      expect(screen.queryByText(/Upload Trial Balance/i)).not.toBeNull();
+      const { container } = render(<ImportTB accounts={FIXTURE_ACCOUNTS} onImport={vi.fn()} />);
+      expect(container.querySelector('h2')?.textContent).toMatch(/Upload Trial Balance/i);
     });
   });
 
@@ -499,6 +528,176 @@ describe('ImportTB', () => {
       const lineForMintedAccount = entry.lines.find((l) => l.accountId === minted[0].id);
       expect(lineForMintedAccount).toBeDefined();
       expect(lineForMintedAccount!.debit).toBe(1000);
+    });
+
+    it('CRITICAL #1: no active entity → file picker disabled + banner; submit alerts and does not post', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      const onImport = vi.fn();
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      // activeEntityId omitted → no entity is selected.
+      render(<ImportTB accounts={FIXTURE_ACCOUNTS} onImport={onImport} />);
+      // Banner is shown.
+      expect(screen.getByTestId('import-no-entity-banner')).not.toBeNull();
+      // File-select button is disabled.
+      const selectBtn = screen.getByTestId('import-tb-select-file') as HTMLButtonElement;
+      expect(selectBtn.disabled).toBe(true);
+      alertSpy.mockRestore();
+    });
+
+    it('CRITICAL #1: active entity name banner renders when activeEntityName is provided', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      render(
+        <ImportTB
+          accounts={FIXTURE_ACCOUNTS}
+          onImport={vi.fn()}
+          activeEntityId="entity-1"
+          activeEntityName="Jane Doe Plumbing"
+        />,
+      );
+      const banner = screen.getByTestId('import-active-entity-banner');
+      expect(banner.textContent).toMatch(/Jane Doe Plumbing/);
+      expect(screen.queryByTestId('import-no-entity-banner')).toBeNull();
+    });
+
+    it('CRITICAL #2: account persist is AWAITED before journal post; failures abort journal write', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      const onImport = vi.fn();
+      const order: string[] = [];
+      // Resolve onCreateAccounts only after a tick — proves onImport waits.
+      const onCreateAccounts = vi.fn(async () => {
+        order.push('createAccounts:start');
+        await new Promise((r) => setTimeout(r, 20));
+        order.push('createAccounts:done');
+      });
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      // CSV with one unmapped row that the user will tag as "Create new account".
+      const csv = new File(
+        ['Code,Name,Debit,Credit\n5999,Tools,500,0\n1100,Bank,0,500\n'],
+        'tb.csv',
+        { type: 'text/csv' },
+      );
+      render(
+        <ImportTB
+          accounts={FIXTURE_ACCOUNTS}
+          onImport={async (e) => {
+            order.push('import:start');
+            await Promise.resolve();
+            onImport(e);
+            order.push('import:done');
+          }}
+          onCreateAccounts={onCreateAccounts}
+          activeEntityId="entity-1"
+          existingEntries={[]}
+        />,
+      );
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [csv] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+      fireEvent.change(screen.getByLabelText('map-code'),   { target: { value: 'Code' } });
+      fireEvent.change(screen.getByLabelText('map-name'),   { target: { value: 'Name' } });
+      fireEvent.change(screen.getByLabelText('map-debit'),  { target: { value: 'Debit' } });
+      fireEvent.change(screen.getByLabelText('map-credit'), { target: { value: 'Credit' } });
+      fireEvent.click(screen.getByTestId('confirm-mapping'));
+      await waitFor(() => expect(screen.queryByTestId('import-review-pane')).not.toBeNull());
+      // Mark the 5999 row for new-account creation via the modal.
+      fireEvent.click(screen.getByTestId('create-new-0'));
+      await waitFor(() => expect(screen.queryByTestId('new-account-modal')).not.toBeNull());
+      fireEvent.click(screen.getByTestId('new-acc-confirm'));
+      await waitFor(() => expect(screen.queryByTestId('new-account-modal')).toBeNull());
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(screen.queryByTestId('import-confirm-dialog')).not.toBeNull());
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-post'));
+      });
+      await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1));
+
+      // CRITICAL #2: the account persist must fully resolve BEFORE the
+      // import handler is invoked. Order checks the actual sequence.
+      const createDoneIdx = order.indexOf('createAccounts:done');
+      const importStartIdx = order.indexOf('import:start');
+      expect(createDoneIdx).toBeGreaterThan(-1);
+      expect(importStartIdx).toBeGreaterThan(createDoneIdx);
+
+      alertSpy.mockRestore();
+    });
+
+    it('CRITICAL #2: onCreateAccounts rejecting aborts the journal post entirely', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      const onImport = vi.fn();
+      const onCreateAccounts = vi.fn(async () => {
+        throw new Error('adapter failure');
+      });
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      const csv = new File(
+        ['Code,Name,Debit,Credit\n5999,Tools,500,0\n1100,Bank,0,500\n'],
+        'tb.csv',
+        { type: 'text/csv' },
+      );
+      render(
+        <ImportTB
+          accounts={FIXTURE_ACCOUNTS}
+          onImport={onImport}
+          onCreateAccounts={onCreateAccounts}
+          activeEntityId="entity-1"
+          existingEntries={[]}
+        />,
+      );
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [csv] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+      fireEvent.change(screen.getByLabelText('map-code'),   { target: { value: 'Code' } });
+      fireEvent.change(screen.getByLabelText('map-name'),   { target: { value: 'Name' } });
+      fireEvent.change(screen.getByLabelText('map-debit'),  { target: { value: 'Debit' } });
+      fireEvent.change(screen.getByLabelText('map-credit'), { target: { value: 'Credit' } });
+      fireEvent.click(screen.getByTestId('confirm-mapping'));
+      await waitFor(() => expect(screen.queryByTestId('import-review-pane')).not.toBeNull());
+      fireEvent.click(screen.getByTestId('create-new-0'));
+      await waitFor(() => expect(screen.queryByTestId('new-account-modal')).not.toBeNull());
+      fireEvent.click(screen.getByTestId('new-acc-confirm'));
+      await waitFor(() => expect(screen.queryByTestId('new-account-modal')).toBeNull());
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(screen.queryByTestId('import-confirm-dialog')).not.toBeNull());
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-post'));
+      });
+
+      // Critical assertion: onImport must NOT have been called because the
+      // account persist failed — the journal would have referenced a
+      // non-persisted accountId.
+      await new Promise((r) => setTimeout(r, 30));
+      expect(onImport).not.toHaveBeenCalled();
+      expect(alertSpy).toHaveBeenCalled();
+      alertSpy.mockRestore();
     });
 
     it('zero-balance rows are kept in the review (default _include=false, user can opt in)', async () => {

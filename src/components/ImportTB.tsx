@@ -41,9 +41,18 @@ import { today } from '../lib/period';
 
 interface ImportTBProps {
   accounts: Account[];
-  onImport: (entries: JournalEntry[]) => void;
+  /**
+   * Persist journal entries. May return Promise<void> to indicate the
+   * adapter write has completed — ImportTB awaits this when present so it
+   * can guarantee account-then-journal ordering and surface adapter
+   * errors as user-facing alerts instead of silently failing.
+   */
+  onImport: (entries: JournalEntry[]) => void | Promise<void>;
   /** Phase 4 — active entity for fingerprint scoping (IMP-05). */
   activeEntityId?: string;
+  /** Display name of the active entity — surfaced in the upload chrome so
+   *  the user can verify they're importing into the right entity. */
+  activeEntityName?: string;
   /** Phase 4 — active entity's existing journals for fingerprint dedup. */
   existingEntries?: JournalEntry[];
   /**
@@ -65,7 +74,13 @@ interface ImportTBProps {
    * lines). App.tsx forwards these to useAccounts so the new rows show up
    * in the CoA and the journal can resolve its accountId references.
    */
-  onCreateAccounts?: (newAccounts: Account[]) => void;
+  /**
+   * Append the minted accounts to the CoA. May return Promise<void> to
+   * signal the adapter persist has completed. ImportTB awaits this BEFORE
+   * calling onImport so the journal's accountId references are durable
+   * even if the user refreshes between the two writes.
+   */
+  onCreateAccounts?: (newAccounts: Account[]) => void | Promise<void>;
 }
 
 /**
@@ -149,6 +164,7 @@ export const ImportTB: React.FC<ImportTBProps> = ({
   accounts,
   onImport,
   activeEntityId,
+  activeEntityName,
   existingEntries,
   onReplace,
   onCreateAccounts,
@@ -193,6 +209,16 @@ export const ImportTB: React.FC<ImportTBProps> = ({
   const [importedRows, setImportedRows] = useState<ReviewRow[]>([]);
   const [reviewing, setReviewing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // ── Post-import success summary ──────────────────────────────────────────
+  // Surfaced after onImport so the user sees exactly what was posted vs
+  // skipped — avoids the "I uploaded 80 rows, only 50 made it" surprise.
+  const [postSummary, setPostSummary] = useState<{
+    posted: number;
+    skippedUnmapped: number;
+    skippedZero: number;
+    newAccounts: number;
+  } | null>(null);
 
   // ── Fingerprint collision dialog ──────────────────────────────────────────
   const [fingerprintCollision, setFingerprintCollision] = useState<{
@@ -670,16 +696,15 @@ export const ImportTB: React.FC<ImportTBProps> = ({
   };
 
   // ── Post path with fingerprint dedup (IMP-05) + single opening journal (IMP-06)
-  const buildOpeningEntry = (
+  // IMP-07: resolve "Create new account" sentinels. Returns the minted
+  // Account[] (to await persistence) and the resolved rows (whose
+  // mappedAccountId now points at a real id, not a NEW: sentinel).
+  // CRITICAL #2 race fix: callers MUST await onCreateAccounts(minted)
+  // before posting the journal that references these ids.
+  const resolveNewAccounts = (
     rows: ReviewRow[],
-    fingerprint: string | undefined,
-    options?: { replacesEntryId?: string; referenceSuffix?: string },
-  ): JournalEntry => {
-    // IMP-07: resolve "Create new account" sentinels by minting a real
-    // Account for each NEW:-tagged row. When the row carries a
-    // `_newAccountSpec` (set by the NewAccountModal), every field comes
-    // from the user. Otherwise we fall back to guessAccountType + N-T GST.
-    const newAccountsCreated: Account[] = [];
+  ): { minted: Account[]; resolvedRows: ReviewRow[] } => {
+    const minted: Account[] = [];
     const resolvedRows: ReviewRow[] = rows.map((r) => {
       if (r.mappedAccountId && r.mappedAccountId.startsWith('NEW:')) {
         const spec = r._newAccountSpec;
@@ -695,15 +720,19 @@ export const ImportTB: React.FC<ImportTBProps> = ({
           parentCode: spec?.parentCode,
           isDefault: false,
         };
-        newAccountsCreated.push(newAccount);
+        minted.push(newAccount);
         return { ...r, mappedAccountId: newAccount.id };
       }
       return r;
     });
-    if (newAccountsCreated.length > 0 && onCreateAccounts) {
-      onCreateAccounts(newAccountsCreated);
-    }
+    return { minted, resolvedRows };
+  };
 
+  const buildOpeningEntry = (
+    resolvedRows: ReviewRow[],
+    fingerprint: string | undefined,
+    options?: { replacesEntryId?: string; referenceSuffix?: string },
+  ): JournalEntry => {
     const lines: JournalLine[] = resolvedRows
       .filter((r) => r.mappedAccountId && !r.mappedAccountId.startsWith('NEW:'))
       .map((r) => ({
@@ -736,15 +765,24 @@ export const ImportTB: React.FC<ImportTBProps> = ({
   };
 
   const handleAcceptImport = async () => {
+    // CRITICAL #1: block silent data loss when no entity is selected.
+    if (!activeEntityId) {
+      alert('Select an entity before posting the import. The journal must belong to a specific entity.');
+      return;
+    }
     const included = importedRows.filter((r) => r._include !== false);
     if (included.length === 0) {
       alert('No rows selected to include — nothing to post.');
       return;
     }
 
+    // Mint accounts FIRST so the journal lines built from `resolvedRows`
+    // never reference a NEW:-sentinel that hasn't been persisted yet.
+    const { minted, resolvedRows } = resolveNewAccounts(included);
+
     // Fingerprint dedup only fires when we know the active entity AND have
     // existingEntries to compare against. Best-effort fallback otherwise.
-    if (activeEntityId && parsedRows && parsedRows.length > 0) {
+    if (parsedRows && parsedRows.length > 0) {
       try {
         const signedBalance: SignedBalanceMode | undefined =
           layout === 'signed-balance'
@@ -764,18 +802,69 @@ export const ImportTB: React.FC<ImportTBProps> = ({
           setFingerprintCollision({ fingerprint, existing: collision });
           return;
         }
-        postEntry(buildOpeningEntry(included, fingerprint));
+        await postEntry(buildOpeningEntry(resolvedRows, fingerprint), minted);
         return;
       } catch (err) {
         console.error('Fingerprint compute failed', err);
         // Fall through to post without fingerprint
       }
     }
-    postEntry(buildOpeningEntry(included, undefined));
+    await postEntry(buildOpeningEntry(resolvedRows, undefined), minted);
   };
 
-  const postEntry = (entry: JournalEntry) => {
-    onImport([entry]);
+  /**
+   * Persist accounts AND the journal in a deterministic order:
+   *   1. await onCreateAccounts(minted)   — adapter has the new accounts
+   *   2. await onImport([entry])           — adapter has the journal
+   *   3. Build the post-import summary
+   *   4. Reset the in-progress UI state
+   *
+   * Step 1 must complete before step 2 — otherwise a refresh between the
+   * writes leaves journal lines pointing at a non-existent accountId and
+   * the TrialBalance rollup silently drops the line.
+   *
+   * If step 1 throws (adapter error), the journal is NOT posted; if step 2
+   * throws, the user is told the accounts are saved but the journal isn't,
+   * so they can re-attempt.
+   */
+  const postEntry = async (entry: JournalEntry, minted: Account[]): Promise<void> => {
+    // Snapshot the row breakdown BEFORE resetState wipes importedRows.
+    const skippedUnmapped = importedRows.filter(
+      (r) => r._include !== false && !r.mappedAccountId,
+    ).length;
+    const skippedZero = importedRows.filter(
+      (r) => r._include === false && (Number(r.debit) || 0) === 0 && (Number(r.credit) || 0) === 0,
+    ).length;
+
+    if (minted.length > 0 && onCreateAccounts) {
+      try {
+        await onCreateAccounts(minted);
+      } catch (err) {
+        console.error('Failed to persist new accounts before journal post', err);
+        alert(
+          `Failed to save ${minted.length} new account(s). The journal was NOT posted — please retry.`,
+        );
+        return;
+      }
+    }
+
+    try {
+      await onImport([entry]);
+    } catch (err) {
+      console.error('Failed to persist journal entries', err);
+      alert(
+        `Failed to save the journal entries. ${minted.length > 0 ? `The ${minted.length} new account(s) ARE saved; ` : ''}` +
+          `please try the import again.`,
+      );
+      return;
+    }
+
+    setPostSummary({
+      posted: entry.lines.length,
+      skippedUnmapped,
+      skippedZero,
+      newAccounts: minted.length,
+    });
     resetState();
   };
 
@@ -815,6 +904,74 @@ export const ImportTB: React.FC<ImportTBProps> = ({
 
   return (
     <div className="space-y-6">
+      {!activeEntityId && (
+        <div
+          data-testid="import-no-entity-banner"
+          className="bg-rose-50 border border-rose-200 rounded p-4 flex items-start gap-3"
+        >
+          <AlertCircle size={20} className="text-rose-700 shrink-0 mt-0.5" />
+          <div className="text-sm text-rose-900">
+            <div className="font-semibold mb-1">No entity selected</div>
+            <p className="text-xs leading-relaxed">
+              Pick an entity from the master dashboard before importing a Trial
+              Balance. The journal must belong to a specific entity — without
+              one, the import would silently produce nothing.
+            </p>
+          </div>
+        </div>
+      )}
+      {activeEntityName && (
+        <div
+          data-testid="import-active-entity-banner"
+          className="bg-blue-50 border border-blue-100 rounded p-3 flex items-center gap-2 text-xs"
+        >
+          <FileText size={14} className="text-blue-600 shrink-0" />
+          <span className="text-blue-900">
+            Importing into <strong>{activeEntityName}</strong>. If this isn't
+            the right entity, switch from the master dashboard before
+            uploading.
+          </span>
+        </div>
+      )}
+      {showUploadScreen && postSummary && (
+        <div
+          data-testid="post-import-summary"
+          className="bg-green-50 border border-green-200 rounded p-4 flex items-start gap-3"
+        >
+          <CheckCircle2 size={20} className="text-green-700 shrink-0 mt-0.5" />
+          <div className="flex-1 text-sm text-green-900">
+            <div className="font-semibold mb-1">Import complete</div>
+            <ul className="text-xs space-y-0.5">
+              <li>
+                <span className="font-mono font-bold">{postSummary.posted}</span> journal line
+                {postSummary.posted === 1 ? '' : 's'} posted to the Trial Balance.
+              </li>
+              {postSummary.skippedUnmapped > 0 && (
+                <li className="text-amber-800">
+                  <span className="font-mono font-bold">{postSummary.skippedUnmapped}</span> unmapped
+                  row{postSummary.skippedUnmapped === 1 ? '' : 's'} skipped — re-import and map them
+                  to an account if you need their balances in the TB.
+                </li>
+              )}
+              {postSummary.skippedZero > 0 && (
+                <li className="text-gray-600">
+                  <span className="font-mono font-bold">{postSummary.skippedZero}</span> zero-balance
+                  row{postSummary.skippedZero === 1 ? '' : 's'} skipped by default (you can opt them
+                  in row-by-row on re-import).
+                </li>
+              )}
+            </ul>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPostSummary(null)}
+            className="text-xs text-green-800 underline hover:text-green-900"
+            data-testid="dismiss-post-summary"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       {showUploadScreen && (
         <div className="bg-white p-6 sm:p-12 border-2 border-dashed border-[var(--line-strong)] flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4">
@@ -838,7 +995,10 @@ export const ImportTB: React.FC<ImportTBProps> = ({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full sm:w-auto bg-[var(--ink)] text-white px-8 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            disabled={!activeEntityId}
+            data-testid="import-tb-select-file"
+            className="w-full sm:w-auto bg-[var(--ink)] text-white px-8 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            title={!activeEntityId ? 'Select an entity first' : undefined}
           >
             Select CSV or XLSX File
           </button>
@@ -1170,12 +1330,23 @@ export const ImportTB: React.FC<ImportTBProps> = ({
                 <button
                   type="button"
                   data-testid="fp-replace"
-                  onClick={() => {
+                  onClick={async () => {
                     const included = importedRows.filter(
                       (r) => r._include !== false,
                     );
+                    const { minted, resolvedRows } = resolveNewAccounts(included);
+                    // Persist accounts before posting the replacement journal.
+                    if (minted.length > 0 && onCreateAccounts) {
+                      try {
+                        await onCreateAccounts(minted);
+                      } catch (err) {
+                        console.error('Failed to persist new accounts before replace', err);
+                        alert(`Failed to save ${minted.length} new account(s). Replace aborted.`);
+                        return;
+                      }
+                    }
                     const replacement = buildOpeningEntry(
-                      included,
+                      resolvedRows,
                       fingerprintCollision.fingerprint,
                       {
                         replacesEntryId: fingerprintCollision.existing.id,
@@ -1191,7 +1362,13 @@ export const ImportTB: React.FC<ImportTBProps> = ({
                       // Fallback: parent did not wire onReplace. TB will
                       // double-count the original AND replacement until the
                       // wiring is fixed in App.tsx via supersedeImport.
-                      onImport([replacement]);
+                      try {
+                        await onImport([replacement]);
+                      } catch (err) {
+                        console.error('Failed to persist replacement journal', err);
+                        alert('Failed to save the replacement journal — accounts ARE saved.');
+                        return;
+                      }
                     }
                     resetState();
                   }}
@@ -1202,13 +1379,14 @@ export const ImportTB: React.FC<ImportTBProps> = ({
                 <button
                   type="button"
                   data-testid="fp-additional"
-                  onClick={() => {
+                  onClick={async () => {
                     const included = importedRows.filter(
                       (r) => r._include !== false,
                     );
+                    const { minted, resolvedRows } = resolveNewAccounts(included);
                     // Append :additional-{ts} so dedup doesn't keep firing
                     const newFp = `${fingerprintCollision.fingerprint}:additional-${Date.now()}`;
-                    postEntry(buildOpeningEntry(included, newFp));
+                    await postEntry(buildOpeningEntry(resolvedRows, newFp), minted);
                   }}
                   className="bg-gray-200 px-3 py-1 rounded text-sm"
                 >

@@ -49,6 +49,15 @@ export interface AccountsHook {
    * reflects the latest persisted list.
    */
   reload: () => Promise<void>;
+  /**
+   * Append accounts AND await the adapter write before resolving. ImportTB
+   * calls this on its "Create new account" path so a subsequent journal write
+   * can safely reference the minted account ids — without this serialization,
+   * a browser refresh between the journal save and the account save left
+   * journals with dangling accountId references that the TrialBalance rollup
+   * silently drops (the Critical #2 race).
+   */
+  appendAndPersist: (newAccounts: Account[]) => Promise<void>;
 }
 
 export function useAccounts(addLog: AddLog): AccountsHook {
@@ -161,6 +170,26 @@ export function useAccounts(addLog: AddLog): AccountsHook {
     }
   }, []);
 
+  const appendAndPersist = useCallback(
+    async (newAccounts: Account[]) => {
+      // Read adapter state directly so we don't append on top of a stale
+      // closure copy of `accounts` from an earlier render.
+      const adapter = await getAdapter();
+      const existing = await adapter.getAccounts();
+      const merged = [...existing, ...newAccounts];
+      await adapter.saveAccounts(merged);
+      // Mirror the persisted list into React state so downstream renders
+      // (AccountManager, anomaly counts, …) see the new rows immediately.
+      setAccounts(merged);
+      addLog(
+        'IMPORT_DATA',
+        `Created ${newAccounts.length} account${newAccounts.length === 1 ? '' : 's'} via TB import`,
+        '',
+      );
+    },
+    [addLog],
+  );
+
   return {
     accounts,
     updateAccount,
@@ -169,5 +198,6 @@ export function useAccounts(addLog: AddLog): AccountsHook {
     setIsDefault,
     isAccountInUse,
     reload,
+    appendAndPersist,
   };
 }
