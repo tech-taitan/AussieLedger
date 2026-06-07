@@ -66,6 +66,13 @@ interface NewAccountModalProps {
   initialCode: string;
   initialName: string;
   existingAccounts: Account[];
+  /**
+   * Codes already reserved by OTHER pending NEW: rows in the same
+   * import. Without this, two rows could both mint the same code in
+   * a single accept-import flow because the duplicate check only
+   * looked at existingAccounts.
+   */
+  reservedCodes?: string[];
   onConfirm: (spec: NewAccountSpec) => void;
   onCancel: () => void;
 }
@@ -89,6 +96,7 @@ export const NewAccountModal: React.FC<NewAccountModalProps> = ({
   initialCode,
   initialName,
   existingAccounts,
+  reservedCodes = [],
   onConfirm,
   onCancel,
 }) => {
@@ -117,9 +125,27 @@ export const NewAccountModal: React.FC<NewAccountModalProps> = ({
 
   const showTaxLabels = type === 'Revenue' || type === 'Expense';
 
+  // Task 11: Escape to cancel. Standard a11y for role="dialog".
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
   const duplicate = useMemo(
     () => existingAccounts.find((a) => a.code === code.trim()),
     [existingAccounts, code],
+  );
+  // Task 11: also block when another pending NEW: row already reserved
+  // this code in the same import.
+  const reservedDuplicate = useMemo(
+    () => reservedCodes.includes(code.trim()) && code.trim().length > 0,
+    [reservedCodes, code],
   );
   // Possible parent rows: same type, parentCode === null (header rows).
   const parentOptions = useMemo(
@@ -127,7 +153,11 @@ export const NewAccountModal: React.FC<NewAccountModalProps> = ({
     [existingAccounts, type],
   );
 
-  const canConfirm = code.trim().length > 0 && name.trim().length > 0 && !duplicate;
+  const canConfirm =
+    code.trim().length > 0 &&
+    name.trim().length > 0 &&
+    !duplicate &&
+    !reservedDuplicate;
 
   const handleConfirm = () => {
     if (!canConfirm) return;
@@ -152,9 +182,17 @@ export const NewAccountModal: React.FC<NewAccountModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label="Create new account"
+      // Task 11: clicking the backdrop dismisses the modal. The inner
+      // card swallows the click so users can interact normally.
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
     >
-      <div className="bg-white border border-[var(--line-strong)] shadow-xl rounded-md w-full max-w-md p-6 space-y-4">
+      <div
+        className="bg-white border border-[var(--line-strong)] shadow-xl rounded-md w-full max-w-md p-6 space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-lg font-bold text-[var(--ink)]">Create new account</h3>
 
         <div className="space-y-3">
@@ -172,6 +210,14 @@ export const NewAccountModal: React.FC<NewAccountModalProps> = ({
             {duplicate && (
               <span className="block mt-1 text-xs text-rose-600">
                 Code {code} is already in use ({duplicate.name}).
+              </span>
+            )}
+            {!duplicate && reservedDuplicate && (
+              <span
+                className="block mt-1 text-xs text-rose-600"
+                data-testid="reserved-code-warning"
+              >
+                Code {code} is already reserved by another pending new account in this import.
               </span>
             )}
           </label>

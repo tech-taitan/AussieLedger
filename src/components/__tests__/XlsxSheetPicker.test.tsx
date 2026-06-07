@@ -28,29 +28,46 @@ describe('XlsxSheetPicker (IMP-01)', () => {
     const onCancel = vi.fn();
     render(
       <XlsxSheetPicker
-        // Both names match /trial|TB|balance/i → can't auto-select.
-        sheetNames={['Trial Balance', 'TB Detail']}
+        // Both names match the tightened TB-only matcher → can't auto-select.
+        sheetNames={['Trial Balance', 'Trial Balance Detail']}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
     );
     expect(screen.queryByTestId('xlsx-sheet-picker-modal')).not.toBeNull();
     expect(screen.queryByTestId('sheet-option-Trial Balance')).not.toBeNull();
-    expect(screen.queryByTestId('sheet-option-TB Detail')).not.toBeNull();
+    expect(screen.queryByTestId('sheet-option-Trial Balance Detail')).not.toBeNull();
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('regex matches trial / TB / balance case-insensitive', () => {
+  it('Task 3: regex matches "TRIAL BALANCE" case-insensitive (TB-only, not Balance Sheet)', () => {
     const onSelect = vi.fn();
     render(
       <XlsxSheetPicker
-        sheetNames={['BALANCE_SHEET', 'other']}
+        // The tightened matcher only fires on real TB sheets — "BALANCE_SHEET"
+        // and "TB Adjustments" are no longer auto-selected, eliminating the
+        // silent route to the wrong workbook sheet flagged by the audit.
+        sheetNames={['TRIAL BALANCE', 'other']}
         onSelect={onSelect}
         onCancel={() => {}}
       />,
     );
     expect(onSelect).toHaveBeenCalledTimes(1);
-    expect(onSelect).toHaveBeenCalledWith('BALANCE_SHEET');
+    expect(onSelect).toHaveBeenCalledWith('TRIAL BALANCE');
+  });
+
+  it('Task 3: tightened matcher does NOT auto-select "Balance Sheet" or "TB Detail"', () => {
+    const onSelect = vi.fn();
+    render(
+      <XlsxSheetPicker
+        sheetNames={['Balance Sheet', 'TB Detail', 'Other']}
+        onSelect={onSelect}
+        onCancel={() => {}}
+      />,
+    );
+    // None match → modal renders so the user can pick explicitly.
+    expect(screen.queryByTestId('xlsx-sheet-picker-modal')).not.toBeNull();
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   it('user pick fires onSelect with sheet name', () => {

@@ -14,6 +14,7 @@ import {
   type SearchFilters,
 } from '../lib/ledger';
 import { today } from '../lib/period';
+import { withLock } from '../lib/locks';
 
 export interface JournalsHook {
   // Phase 2 contract — keep verbatim
@@ -369,21 +370,26 @@ export function useJournals(
       if (!activeEntityId) {
         throw new Error('Cannot import journal entries — no active entity selected.');
       }
-      // Read adapter state so we merge on top of the durable list, not a
-      // stale React closure.
-      const adapter = await getAdapter();
-      const existing = await adapter.getEntries();
-      const merged: Record<string, JournalEntry[]> = {
-        ...existing,
-        [activeEntityId]: [...newEntries, ...(existing[activeEntityId] ?? [])],
-      };
-      await adapter.saveEntries(merged);
-      setAllEntries(merged);
-      addLog(
-        'IMPORT_DATA',
-        `Imported ${newEntries.length} journal entries via Trial Balance import`,
-        activeEntityId,
-      );
+      // Task 13: serialize the read-modify-write under the shared
+      // 'journal-write' lock so a concurrent supersedeImport /
+      // importEntries / clearAllEntries can't clobber the merged record.
+      await withLock('journal-write', async () => {
+        // Read adapter state so we merge on top of the durable list, not a
+        // stale React closure.
+        const adapter = await getAdapter();
+        const existing = await adapter.getEntries();
+        const merged: Record<string, JournalEntry[]> = {
+          ...existing,
+          [activeEntityId]: [...newEntries, ...(existing[activeEntityId] ?? [])],
+        };
+        await adapter.saveEntries(merged);
+        setAllEntries(merged);
+        addLog(
+          'IMPORT_DATA',
+          `Imported ${newEntries.length} journal entries via Trial Balance import`,
+          activeEntityId,
+        );
+      });
     },
     [activeEntityId, addLog],
   );

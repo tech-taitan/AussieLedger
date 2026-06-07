@@ -341,6 +341,79 @@ describe('TrialBalance — Plan 06-3 AnomalyBadge + overflow-x-auto (UX-02 + UX-
   });
 });
 
+// ── Orphan-line surfacing + nil-balance toggle ────────────────────────────────
+
+describe('TrialBalance — orphan lines + nil-balance toggle', () => {
+  it('TB.6: journal lines referencing an accountId NOT in `accounts` surface as an orphan row + warning banner', () => {
+    const cash = makeAccount('a-cash', '1020', 'Bank', 'Asset', '1000');
+    const equity = makeAccount('a-equity', '3010', "Owner's Capital", 'Equity', '3000');
+    // Journal line references `a-ghost` which is not in accounts.
+    const entry = makeEntry('e1', '2026-01-15', [
+      makeLine('a-cash',  1000, 0),
+      makeLine('a-equity', 0, 500),
+      makeLine('a-ghost',  0, 500), // orphan
+    ]);
+    render(
+      <TrialBalance
+        accounts={[cash, equity]}
+        entries={[entry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    expect(screen.getByTestId('tb-orphan-banner').textContent).toMatch(/1 unknown account/i);
+    expect(screen.getByTestId('tb-orphan-a-ghost')).not.toBeNull();
+    // Totals INCLUDE the orphan amount so the TB doesn't falsely balance.
+    // DR 1000 (Cash) + 0 (orphan) = 1000.
+    // CR 500 (Equity) + 500 (orphan) = 1000. Balanced because the orphan
+    // happened to balance — but the row is still surfaced so the user can fix it.
+    expect(screen.getByTestId('tb-total-debits').textContent).toContain('1,000');
+    expect(screen.getByTestId('tb-total-credits').textContent).toContain('1,000');
+  });
+
+  it('TB.7: orphan with debit-only causes the TB to render Out of Balance (no silent drop)', () => {
+    const cash = makeAccount('a-cash', '1020', 'Bank', 'Asset', '1000');
+    const entry = makeEntry('e1', '2026-01-15', [
+      makeLine('a-cash',  500, 0),
+      makeLine('a-ghost', 500, 0), // orphan, debit-only — leaves the TB unbalanced
+    ]);
+    render(
+      <TrialBalance
+        accounts={[cash]}
+        entries={[entry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    // The journal itself was balanced (the entry had balancing credits in
+    // theory) but only the debit-only lines are in the array, so totals
+    // diverge. The point is the orphan amount is INCLUDED in totals.
+    expect(screen.getByTestId('tb-total-debits').textContent).toContain('1,000');
+    expect(screen.getByTestId('tb-orphan-banner')).not.toBeNull();
+  });
+
+  it('TB.8: nil-balance toggle reveals accounts with zero net debit/credit', () => {
+    const cash = makeAccount('a-cash', '1020', 'Bank', 'Asset', '1000');
+    const sales = makeAccount('a-sales', '4020', 'Sales', 'Revenue', '4000');
+    const nilAccount = makeAccount('a-nil', '6100', 'Misc', 'Expense', '6000');
+    const entry = makeEntry('e1', '2026-01-15', [
+      makeLine('a-cash',  100, 0),
+      makeLine('a-sales', 0, 100),
+    ]);
+    render(
+      <TrialBalance
+        accounts={[cash, sales, nilAccount]}
+        entries={[entry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    // Default: nil-balance leaf is hidden.
+    expect(screen.queryByTestId('tb-row-6100')).toBeNull();
+    expect(screen.getByTestId('tb-row-1020')).not.toBeNull();
+    // Toggle on → nil-balance leaf appears.
+    fireEvent.click(screen.getByTestId('show-zero-balances-toggle'));
+    expect(screen.getByTestId('tb-row-6100')).not.toBeNull();
+  });
+});
+
 // ── Phase 9 FND-10: Export CSV button ────────────────────────────────────────
 
 describe('TrialBalance — Phase 9 FND-10 Export CSV', () => {

@@ -136,6 +136,23 @@ function isSumPattern(
  * Detect subtotal rows in a flat ImportRow list.
  * Each returned SubtotalFlag identifies a row by its original rowIndex.
  */
+/**
+ * A row "looks like a real account" if it carries a structured code that
+ * matches a recognisable account-code pattern (e.g. `4100`, `1-1100`,
+ * `INV-001`). Real subtotals in a TB export typically have NO code, or
+ * a label-only column (e.g. "Total Revenue" with the code cell blank).
+ * Used to gate keyword-only matches so legitimate accounts named
+ * "GST Collected" / "Net Sales" / "Net Wages" don't get rejected.
+ */
+function looksLikeRealAccount(row: ImportRow): boolean {
+  if (!row.code) return false;
+  const trimmed = row.code.trim();
+  if (trimmed === '') return false;
+  // Matches "4100", "1-1100", "INV-001", "GL.4100", etc — anything with
+  // alphanumerics + optional separators.
+  return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(trimmed);
+}
+
 export function detectSubtotals(rows: ImportRow[]): SubtotalFlag[] {
   const flags: SubtotalFlag[] = [];
   const sections = splitIntoSections(rows);
@@ -146,17 +163,29 @@ export function detectSubtotals(rows: ImportRow[]): SubtotalFlag[] {
       const kwMatch = SUBTOTAL_KEYWORD_RE.exec(row.name);
       const preceding = section.slice(0, i);
       const sumIxs = isSumPattern(row, preceding);
+      const realAccount = looksLikeRealAccount(row);
 
       if (kwMatch && sumIxs) {
+        // Strongest signal — flag regardless of code shape. This case
+        // also covers e.g. "GST Collected $X" appearing as a literal
+        // subtotal row at the bottom of a section.
         flags.push({
           rowIndex: row.rowIndex,
           reason: 'keyword+sum-pattern',
           keyword: kwMatch[0],
           sumOf: sumIxs,
         });
-      } else if (kwMatch) {
+      } else if (kwMatch && !realAccount) {
+        // Keyword-only used to false-positive on real accounts named
+        // "GST Collected" / "Net Sales" / "Net Wages" — they have a
+        // proper account code and shouldn't be hidden. Only flag
+        // keyword-only matches when the row has no recognisable code.
         flags.push({ rowIndex: row.rowIndex, reason: 'keyword', keyword: kwMatch[0] });
-      } else if (sumIxs) {
+      } else if (sumIxs && !realAccount) {
+        // Sum-pattern-only used to false-positive on a regular account
+        // whose balance happened to equal the running sum of preceding
+        // accounts in the same section. Same gate: only flag if the
+        // row doesn't look like a real account.
         flags.push({ rowIndex: row.rowIndex, reason: 'sum-pattern', sumOf: sumIxs });
       }
     }

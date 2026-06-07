@@ -26,7 +26,14 @@ const PARENS_RE = /^\(\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\)$/;
 const AU_NUMERIC_RE = /^[\d,]*\.?\d*$/;
 
 export function parseCurrency(raw: string, _locale: 'AU' = 'AU'): ParseResult {
-  const trimmed = (raw ?? '').trim();
+  // Step 0: strip ALL whitespace (incl. NBSP U+00A0 common in Excel
+  // currency exports, narrow no-break U+202F, figure space U+2007,
+  // ideographic U+3000 — anything that matches \s in modern JS). Safe
+  // under the AU-only locale because no valid AU number format has
+  // meaningful internal whitespace. The legacy `.trim()` only stripped
+  // ASCII whitespace so NBSP-padded "1 234.56" rows were rejected
+  // silently at the AU_NUMERIC_RE check (step 6).
+  const trimmed = (raw ?? '').replace(/\s/g, '');
 
   // Step 1: Empty / whitespace → Decimal('0'), high confidence.
   if (trimmed === '') return { decimal: new Decimal('0'), confidence: 'high' };
@@ -53,9 +60,21 @@ export function parseCurrency(raw: string, _locale: 'AU' = 'AU'): ParseResult {
     .replace(/\s*\$$/, '')
     .trim();
 
-  // Step 4: Detect leading minus (possibly after currency strip, e.g. "$ -1,234.56").
-  const negative = stripped.startsWith('-');
-  const absStr = (negative ? stripped.slice(1) : stripped).trim();
+  // Step 4: Detect minus, either leading ("$ -1,234.56") OR trailing
+  // ("1234.56-" — common in SAP and older MYOB exports). The legacy
+  // implementation only handled leading minus, so trailing-minus rows
+  // were rejected silently with `currency unparseable`.
+  const trailingMinus = stripped.endsWith('-') && !stripped.startsWith('-');
+  const leadingMinus = stripped.startsWith('-');
+  const negative = leadingMinus || trailingMinus;
+  let absStr: string;
+  if (leadingMinus) {
+    absStr = stripped.slice(1).trim();
+  } else if (trailingMinus) {
+    absStr = stripped.slice(0, -1).trim();
+  } else {
+    absStr = stripped.trim();
+  }
 
   // Step 5: Detect EU format before AU validation.
   // EU: "1.234,56" — period as thousands separator, comma as decimal.

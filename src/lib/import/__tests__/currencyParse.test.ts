@@ -103,4 +103,27 @@ describe('parseCurrency (IMP-08)', () => {
     expect(result.decimal?.toString()).toBe('-1234.56');
     expect(result.confidence).toBe('high');
   });
+
+  it('Task 9: strips NBSP (U+00A0) from currency cells (Excel exports)', () => {
+    const result = parseCurrency('1 234.56');
+    expect(result.decimal?.toString()).toBe('1234.56');
+    expect(result.confidence).toBe('high');
+  });
+
+  it('Task 9: strips narrow no-break space (U+202F) and figure space (U+2007)', () => {
+    expect(parseCurrency('1 234.56').decimal?.toString()).toBe('1234.56');
+    expect(parseCurrency('1 234.56').decimal?.toString()).toBe('1234.56');
+  });
+
+  it('Task 9: trailing minus "1234.56-" parses as negative (SAP / older MYOB convention)', () => {
+    const result = parseCurrency('1234.56-');
+    expect(result.decimal?.toString()).toBe('-1234.56');
+    expect(result.confidence).toBe('high');
+  });
+
+  it('Task 9: trailing minus with currency marker "$1,234.56-"', () => {
+    const result = parseCurrency('$1,234.56-');
+    expect(result.decimal?.toString()).toBe('-1234.56');
+    expect(result.confidence).toBe('high');
+  });
 });

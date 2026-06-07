@@ -15,6 +15,7 @@
 import React, { useMemo, useState } from 'react';
 import type { Account, JournalEntry, TrialBalanceRow, AuditAction } from '../types';
 import { isInPeriod, currentFy, today, type Period } from '../lib/period';
+import { AlertCircle } from 'lucide-react';
 import { AnomalyBadge } from './AnomalyBadge';
 import { exportTrialBalanceCsv, fmtPeriodSlug } from '../lib/export/csv';
 import { Toast } from './Toast';
@@ -34,6 +35,14 @@ interface TrialBalanceProps {
    * guarded by a window.confirm. The CoA and entity are not touched.
    */
   onClearAll?: () => void;
+}
+
+interface OrphanLineGroup {
+  accountId: string;
+  debit: number;
+  credit: number;
+  lineCount: number;
+  sampleDescription?: string;
 }
 
 function triggerCsvDownload(csv: string, filename: string): void {
@@ -93,6 +102,11 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
   );
   const period = periodProp ?? internalPeriod;
   const [toast, setToast] = useState<string | null>(null);
+  // When checked, accounts that net to zero (including no activity)
+  // still render. Default off because most TBs have many nil-balance
+  // rows that would noise the view; user can opt in for a complete CoA-
+  // shaped TB.
+  const [showZeroBalances, setShowZeroBalances] = useState(false);
 
   const setPeriod = (p: Period) => {
     if (onPeriodChange) onPeriodChange(p);
@@ -101,9 +115,10 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
 
   const handleExportCsv = () => {
     const { filename, csv, isEmpty } = exportTrialBalanceCsv(
-      tbData,
+      tbData.rows,
       period,
       entityName ?? 'unknown-entity',
+      tbData.orphanList, // Task 4: orphan amounts now flow through to the CSV
     );
     triggerCsvDownload(csv, filename);
     addLog?.(
@@ -136,11 +151,33 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
       return isInPeriod(d, period);
     });
 
+    // Track orphan lines — journal lines whose accountId doesn't resolve
+    // to any account in the current CoA. Previously these were silently
+    // skipped, hiding data the user posted (e.g. accounts deleted after
+    // import, or pre-fix race-condition leftovers). Now we aggregate them
+    // and surface as an explicit row + banner so totals can't lie.
+    const orphans: Record<string, OrphanLineGroup> = {};
+
     liveEntries.forEach((entry) => {
       entry.lines.forEach((line) => {
         if (balances[line.accountId]) {
           balances[line.accountId].debit += Number(line.debit) || 0;
           balances[line.accountId].credit += Number(line.credit) || 0;
+        } else {
+          const g = orphans[line.accountId] ?? {
+            accountId: line.accountId,
+            debit: 0,
+            credit: 0,
+            lineCount: 0,
+            sampleDescription: line.description,
+          };
+          g.debit += Number(line.debit) || 0;
+          g.credit += Number(line.credit) || 0;
+          g.lineCount += 1;
+          if (!g.sampleDescription && line.description) {
+            g.sampleDescription = line.description;
+          }
+          orphans[line.accountId] = g;
         }
       });
     });
@@ -182,9 +219,19 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
       };
     });
 
-    // Keep rows with activity OR parent headers (parents still render at zero)
-    return enriched.filter((r) => r.debit !== 0 || r.credit !== 0 || r.isParent);
-  }, [accounts, entries, period]);
+    const orphanList = Object.values(orphans);
+
+    // Filter the displayed rows: show parents always; leaves with activity
+    // always; nil-balance leaves only when the user opts in via the toggle.
+    const visibleRows = showZeroBalances
+      ? enriched
+      : enriched.filter((r) => r.debit !== 0 || r.credit !== 0 || r.isParent);
+
+    return { rows: visibleRows, orphanList };
+  }, [accounts, entries, period, showZeroBalances]);
+
+  const orphanTotalDebit = tbData.orphanList.reduce((s, o) => s + o.debit, 0);
+  const orphanTotalCredit = tbData.orphanList.reduce((s, o) => s + o.credit, 0);
 
   // Compute IDs of accounts referenced in posted entries (for anomaly badge)
   const referencedAccountIds = useMemo(() => {
@@ -198,13 +245,17 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
     return ids;
   }, [entries]);
 
-  // Totals exclude parent rows to avoid double-counting
-  const totalDebits = tbData
-    .filter((r) => !r.isParent)
-    .reduce((s, r) => s + r.debit, 0);
-  const totalCredits = tbData
-    .filter((r) => !r.isParent)
-    .reduce((s, r) => s + r.credit, 0);
+  // Totals exclude parent rows to avoid double-counting, and INCLUDE orphan
+  // line totals so the user sees a balanced TB only when every posted line
+  // is accounted for — not when half the data is silently hidden.
+  const totalDebits =
+    tbData.rows
+      .filter((r) => !r.isParent)
+      .reduce((s, r) => s + r.debit, 0) + orphanTotalDebit;
+  const totalCredits =
+    tbData.rows
+      .filter((r) => !r.isParent)
+      .reduce((s, r) => s + r.credit, 0) + orphanTotalCredit;
   const isBalanced = Math.abs(totalDebits - totalCredits) < 0.005;
 
   return (
@@ -239,6 +290,17 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
               Delete all data
             </button>
           )}
+          <label className="flex items-center gap-1 text-xs no-print">
+            <input
+              type="checkbox"
+              checked={showZeroBalances}
+              onChange={(e) => setShowZeroBalances(e.target.checked)}
+              data-testid="show-zero-balances-toggle"
+            />
+            <span className="text-[10px] font-bold uppercase text-gray-500">
+              Show nil balances
+            </span>
+          </label>
           <label className="flex items-center gap-1">
             <span className="text-[10px] font-bold uppercase text-gray-500">
               Period
@@ -283,9 +345,64 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
               </select>
             </label>
           )}
+          {/* Task 6: Custom range was previously selectable but had no UI
+              controls — picking it silently locked the TB to hardcoded
+              FY2026 dates. Now the user can move both endpoints. */}
+          {period.type === 'custom' && (
+            <>
+              <label className="flex items-center gap-1">
+                <span className="text-[10px] font-bold uppercase text-gray-500">From</span>
+                <input
+                  type="date"
+                  value={period.from.toISOString().slice(0, 10)}
+                  onChange={(e) =>
+                    setPeriod({ ...period, from: new Date(e.target.value) })
+                  }
+                  aria-label="period-custom-from"
+                  data-testid="period-custom-from"
+                  className="border border-[var(--line)] rounded px-1 py-1 text-xs"
+                />
+              </label>
+              <label className="flex items-center gap-1">
+                <span className="text-[10px] font-bold uppercase text-gray-500">To</span>
+                <input
+                  type="date"
+                  value={period.to.toISOString().slice(0, 10)}
+                  onChange={(e) =>
+                    setPeriod({ ...period, to: new Date(e.target.value) })
+                  }
+                  aria-label="period-custom-to"
+                  data-testid="period-custom-to"
+                  className="border border-[var(--line)] rounded px-1 py-1 text-xs"
+                />
+              </label>
+            </>
+          )}
         </div>
       </div>
 
+      {tbData.orphanList.length > 0 && (
+        <div
+          data-testid="tb-orphan-banner"
+          className="bg-rose-50 border border-rose-200 rounded p-3 mb-3 flex items-start gap-2 text-xs text-rose-900"
+        >
+          <AlertCircle size={16} className="shrink-0 mt-0.5 text-rose-700" />
+          <div>
+            <div className="font-semibold mb-1">
+              {tbData.orphanList.length} unknown{' '}
+              {tbData.orphanList.length === 1 ? 'account' : 'accounts'} —
+              {' '}journal lines reference accountIds that aren't in the current
+              Chart of Accounts.
+            </div>
+            <p className="text-[11px] leading-relaxed">
+              Totals below include these so the TB doesn't lie. The most
+              common cause is an account that was deleted after journal
+              entries posted to it. Re-create the account with the same id
+              or reverse the affected journals to clean up.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="overflow-x-auto -mx-4 sm:mx-0">
         <div className="inline-block min-w-full align-middle">
           <table className="min-w-full text-sm">
@@ -306,7 +423,7 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
               </tr>
             </thead>
             <tbody>
-              {tbData.map((row) => (
+              {tbData.rows.map((row) => (
                 <tr
                   key={row.account.id}
                   className={
@@ -353,6 +470,33 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
                   </td>
                   <td className="py-3 px-4 text-right data-value font-medium hidden sm:table-cell whitespace-nowrap">
                     {row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </td>
+                </tr>
+              ))}
+              {tbData.orphanList.map((o) => (
+                <tr
+                  key={`orphan-${o.accountId}`}
+                  className="bg-rose-50 border-b border-rose-100"
+                  data-testid={`tb-orphan-${o.accountId}`}
+                >
+                  <td className="py-3 px-4 text-xs font-mono text-rose-700">?</td>
+                  <td className="py-3 px-4 text-xs whitespace-nowrap text-rose-900">
+                    <span className="font-medium">Unknown account</span>
+                    <span className="ml-2 text-[10px] opacity-70 font-mono">
+                      ({o.accountId}; {o.lineCount} {o.lineCount === 1 ? 'line' : 'lines'})
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-xs opacity-60 hidden md:table-cell whitespace-nowrap text-rose-700">
+                    orphan
+                  </td>
+                  <td className="py-3 px-4 text-right data-value whitespace-nowrap text-rose-900">
+                    {o.debit > 0 ? o.debit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                  </td>
+                  <td className="py-3 px-4 text-right data-value whitespace-nowrap text-rose-900">
+                    {o.credit > 0 ? o.credit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                  </td>
+                  <td className="py-3 px-4 text-right data-value font-medium hidden sm:table-cell whitespace-nowrap text-rose-900">
+                    {(o.debit - o.credit).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
               ))}

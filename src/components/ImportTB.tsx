@@ -92,6 +92,31 @@ interface ImportTBProps {
  * credit-heavy like a Liability. Worst case the user fixes the type in the
  * Configure Accounts editor; the row still imports without data loss.
  */
+/**
+ * Build a deterministic suffix for the "Import as additional" fingerprint.
+ * Replaces the legacy `Date.now()` which produced a fresh fingerprint on
+ * every click — defeating dedup and allowing N duplicate journals from
+ * the same data. Deriving the suffix from the canonical row form means
+ * clicking "Import as additional" twice on the same rows produces the
+ * SAME fingerprint the second time, and the dedup dialog re-fires
+ * normally.
+ */
+async function buildAdditionalSuffix(
+  rows: { externalCode: string; externalName: string; debit: number; credit: number }[],
+  asAtDate: string,
+): Promise<string> {
+  const canonical = rows
+    .map((r) => `${r.externalCode}|${r.externalName}|${r.debit.toFixed(2)}|${r.credit.toFixed(2)}`)
+    .sort()
+    .join('\n');
+  const bytes = new TextEncoder().encode(`${asAtDate}|additional|${canonical}`);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest))
+    .slice(0, 8) // 16-hex-char suffix is plenty for separation
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 function guessAccountType(code: string, debit: number, credit: number): AccountType {
   const m = code.match(/^(\d)/);
   if (m) {
@@ -210,6 +235,12 @@ export const ImportTB: React.FC<ImportTBProps> = ({
   const [importedRows, setImportedRows] = useState<ReviewRow[]>([]);
   const [reviewing, setReviewing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  // Task 12: dedicated post-in-flight guard for accept/replace/additional
+  // post buttons. The state drives visual disable; the ref is the true
+  // race-safe guard (state updates aren't synchronous so two clicks landing
+  // in the same React batch could both see isPosting === false).
+  const [isPosting, setIsPosting] = useState(false);
+  const isPostingRef = useRef(false);
 
   // ── Post-import success summary ──────────────────────────────────────────
   // Surfaced after onImport so the user sees exactly what was posted vs
@@ -238,6 +269,12 @@ export const ImportTB: React.FC<ImportTBProps> = ({
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Task 5: clear stale signed-balance / layout state from a prior file
+    // so it can't point at a header that doesn't exist in the new upload.
+    // columnMappingByName is reseeded later by seedDefaultMapping.
+    setLayout('separate');
+    setBalanceColumn('');
+    setSignConvention('positive-dr');
     const lower = file.name.toLowerCase();
     try {
       if (lower.endsWith('.csv')) {
@@ -777,6 +814,11 @@ export const ImportTB: React.FC<ImportTBProps> = ({
   };
 
   const handleAcceptImport = async () => {
+    // Task 12: race-safe double-click guard. The ref check beats the
+    // state update because React batches setState — two clicks in the
+    // same event loop turn would otherwise both see isPosting === false.
+    if (isPostingRef.current) return;
+
     // CRITICAL #1: block silent data loss when no entity is selected.
     if (!activeEntityId) {
       alert('Select an entity before posting the import. The journal must belong to a specific entity.');
@@ -798,40 +840,47 @@ export const ImportTB: React.FC<ImportTBProps> = ({
       return;
     }
 
-    // Mint accounts FIRST so the journal lines built from `resolvedRows`
-    // never reference a NEW:-sentinel that hasn't been persisted yet.
-    const { minted, resolvedRows } = resolveNewAccounts(included);
+    isPostingRef.current = true;
+    setIsPosting(true);
+    try {
+      // Mint accounts FIRST so the journal lines built from `resolvedRows`
+      // never reference a NEW:-sentinel that hasn't been persisted yet.
+      const { minted, resolvedRows } = resolveNewAccounts(included);
 
-    // Fingerprint dedup only fires when we know the active entity AND have
-    // existingEntries to compare against. Best-effort fallback otherwise.
-    if (parsedRows && parsedRows.length > 0) {
-      try {
-        const signedBalance: SignedBalanceMode | undefined =
-          layout === 'signed-balance'
-            ? { column: balanceColumn, sign: signConvention }
-            : undefined;
-        const fingerprint = await computeImportFingerprint(
-          parsedRows,
-          columnMappingByName,
-          activeEntityId,
-          asAtDate,
-          signedBalance,
-        );
-        const collision = (existingEntries ?? []).find(
-          (e) => e.importFingerprint === fingerprint,
-        );
-        if (collision) {
-          setFingerprintCollision({ fingerprint, existing: collision });
+      // Fingerprint dedup only fires when we know the active entity AND have
+      // existingEntries to compare against. Best-effort fallback otherwise.
+      if (parsedRows && parsedRows.length > 0) {
+        try {
+          const signedBalance: SignedBalanceMode | undefined =
+            layout === 'signed-balance'
+              ? { column: balanceColumn, sign: signConvention }
+              : undefined;
+          const fingerprint = await computeImportFingerprint(
+            parsedRows,
+            columnMappingByName,
+            activeEntityId,
+            asAtDate,
+            signedBalance,
+          );
+          const collision = (existingEntries ?? []).find(
+            (e) => e.importFingerprint === fingerprint,
+          );
+          if (collision) {
+            setFingerprintCollision({ fingerprint, existing: collision });
+            return;
+          }
+          await postEntry(buildOpeningEntry(resolvedRows, fingerprint), minted, included, resolvedRows);
           return;
+        } catch (err) {
+          console.error('Fingerprint compute failed', err);
+          // Fall through to post without fingerprint
         }
-        await postEntry(buildOpeningEntry(resolvedRows, fingerprint), minted);
-        return;
-      } catch (err) {
-        console.error('Fingerprint compute failed', err);
-        // Fall through to post without fingerprint
       }
+      await postEntry(buildOpeningEntry(resolvedRows, undefined), minted, included, resolvedRows);
+    } finally {
+      isPostingRef.current = false;
+      setIsPosting(false);
     }
-    await postEntry(buildOpeningEntry(resolvedRows, undefined), minted);
   };
 
   /**
@@ -849,7 +898,45 @@ export const ImportTB: React.FC<ImportTBProps> = ({
    * throws, the user is told the accounts are saved but the journal isn't,
    * so they can re-attempt.
    */
-  const postEntry = async (entry: JournalEntry, minted: Account[]): Promise<void> => {
+  /**
+   * Task 8: after a successful mint, write the real accountIds back onto
+   * `importedRows` so a retry (e.g. after a journal-write failure) sees
+   * the resolved ids and does NOT remint with fresh UUIDs. Without this,
+   * every retry adds a duplicate Account to the CoA.
+   */
+  const writeBackMintedIds = (
+    includedRows: ReviewRow[],
+    resolvedRows: ReviewRow[],
+  ) => {
+    const sentinelToId = new Map<string, string>();
+    for (let i = 0; i < includedRows.length; i++) {
+      const orig = includedRows[i].mappedAccountId;
+      const res = resolvedRows[i].mappedAccountId;
+      if (orig && orig.startsWith('NEW:') && res && !res.startsWith('NEW:')) {
+        sentinelToId.set(orig, res);
+      }
+    }
+    if (sentinelToId.size === 0) return;
+    setImportedRows((prev) =>
+      prev.map((r) => {
+        if (r.mappedAccountId && sentinelToId.has(r.mappedAccountId)) {
+          return {
+            ...r,
+            mappedAccountId: sentinelToId.get(r.mappedAccountId)!,
+            _newAccountSpec: undefined,
+          };
+        }
+        return r;
+      }),
+    );
+  };
+
+  const postEntry = async (
+    entry: JournalEntry,
+    minted: Account[],
+    includedRows: ReviewRow[] = [],
+    resolvedRows: ReviewRow[] = [],
+  ): Promise<void> => {
     // Snapshot the row breakdown BEFORE resetState wipes importedRows.
     const skippedUnmapped = importedRows.filter(
       (r) => r._include !== false && !r.mappedAccountId,
@@ -861,6 +948,9 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     if (minted.length > 0 && onCreateAccounts) {
       try {
         await onCreateAccounts(minted);
+        // Write the resolved ids back to the review rows so a retry does
+        // not duplicate the mint.
+        writeBackMintedIds(includedRows, resolvedRows);
       } catch (err) {
         console.error('Failed to persist new accounts before journal post', err);
         alert(
@@ -1254,21 +1344,64 @@ export const ImportTB: React.FC<ImportTBProps> = ({
             >
               Cancel
             </button>
-            <button
-              type="button"
-              onClick={processColumnMapping}
-              disabled={
+            {(() => {
+              // Task 2: detect duplicate column mappings before allowing
+              // the user to proceed. Mapping the same header to two roles
+              // (e.g. "Amount" → both Debit AND Credit) makes every line
+              // identical on both sides → TB falsely balances at zero
+              // activity. Hard-block at the dropdown step so the bad data
+              // never reaches the review pane.
+              const picked: Record<string, string[]> = {};
+              const add = (role: string, header: string | undefined) => {
+                if (!header) return;
+                (picked[header] ??= []).push(role);
+              };
+              add('code', columnMappingByName.code);
+              add('name', columnMappingByName.name);
+              if (layout === 'separate') {
+                add('debit', columnMappingByName.debit);
+                add('credit', columnMappingByName.credit);
+              } else {
+                add('balance', balanceColumn);
+              }
+              const duplicates = Object.entries(picked).filter(
+                ([, roles]) => roles.length > 1,
+              );
+              const missingRequired =
                 !columnMappingByName.code ||
                 !columnMappingByName.name ||
                 (layout === 'separate'
                   ? !columnMappingByName.debit || !columnMappingByName.credit
-                  : !balanceColumn)
-              }
-              className="bg-blue-600 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
-              data-testid="confirm-mapping"
-            >
-              Continue to review
-            </button>
+                  : !balanceColumn);
+              return (
+                <>
+                  {duplicates.length > 0 && (
+                    <div
+                      data-testid="mapping-duplicate-warning"
+                      className="text-xs bg-rose-50 border border-rose-200 text-rose-900 rounded p-2 mb-2"
+                    >
+                      Two roles map to the same column —{' '}
+                      {duplicates.map(([header, roles]) => (
+                        <span key={header} className="font-mono">
+                          {header} ({roles.join(' + ')})
+                        </span>
+                      ))}
+                      . Each role must point at a different column or the
+                      import will silently corrupt every row.
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={processColumnMapping}
+                    disabled={missingRequired || duplicates.length > 0}
+                    className="bg-blue-600 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
+                    data-testid="confirm-mapping"
+                  >
+                    Continue to review
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1352,67 +1485,127 @@ export const ImportTB: React.FC<ImportTBProps> = ({
                 <button
                   type="button"
                   data-testid="fp-replace"
+                  disabled={isPosting}
+                  aria-disabled={isPosting}
                   onClick={async () => {
-                    const included = importedRows.filter(
-                      (r) => r._include !== false,
-                    );
-                    const { minted, resolvedRows } = resolveNewAccounts(included);
-                    // Persist accounts before posting the replacement journal.
-                    if (minted.length > 0 && onCreateAccounts) {
-                      try {
-                        await onCreateAccounts(minted);
-                      } catch (err) {
-                        console.error('Failed to persist new accounts before replace', err);
-                        alert(`Failed to save ${minted.length} new account(s). Replace aborted.`);
-                        return;
-                      }
-                    }
-                    const replacement = buildOpeningEntry(
-                      resolvedRows,
-                      fingerprintCollision.fingerprint,
-                      {
-                        replacesEntryId: fingerprintCollision.existing.id,
-                        referenceSuffix: 'REPLACE',
-                      },
-                    );
-                    if (typeof onReplace === 'function') {
-                      onReplace(
-                        fingerprintCollision.existing.id,
-                        replacement,
+                    // Task 12: race-safe double-click guard.
+                    if (isPostingRef.current) return;
+                    // Same blocking-errors gate as the main accept path —
+                    // a fingerprint hit must not let an unbalanced /
+                    // unmapped-laden journal slip through Replace.
+                    const issues = computeImportIssues(importedRows);
+                    if (hasBlockingErrors(issues)) {
+                      const messages = issues
+                        .filter((i) => i.severity === 'error')
+                        .map((i) => i.message)
+                        .join('\n\n');
+                      alert(
+                        `Resolve the import errors before replacing the existing journal:\n\n${messages}`,
                       );
-                    } else {
-                      // Fallback: parent did not wire onReplace. TB will
-                      // double-count the original AND replacement until the
-                      // wiring is fixed in App.tsx via supersedeImport.
-                      try {
-                        await onImport([replacement]);
-                      } catch (err) {
-                        console.error('Failed to persist replacement journal', err);
-                        alert('Failed to save the replacement journal — accounts ARE saved.');
-                        return;
-                      }
+                      return;
                     }
-                    resetState();
+                    isPostingRef.current = true;
+                    setIsPosting(true);
+                    try {
+                      const included = importedRows.filter(
+                        (r) => r._include !== false,
+                      );
+                      const { minted, resolvedRows } = resolveNewAccounts(included);
+                      // Persist accounts before posting the replacement journal.
+                      if (minted.length > 0 && onCreateAccounts) {
+                        try {
+                          await onCreateAccounts(minted);
+                          writeBackMintedIds(included, resolvedRows);
+                        } catch (err) {
+                          console.error('Failed to persist new accounts before replace', err);
+                          alert(`Failed to save ${minted.length} new account(s). Replace aborted.`);
+                          return;
+                        }
+                      }
+                      const replacement = buildOpeningEntry(
+                        resolvedRows,
+                        fingerprintCollision.fingerprint,
+                        {
+                          replacesEntryId: fingerprintCollision.existing.id,
+                          referenceSuffix: 'REPLACE',
+                        },
+                      );
+                      if (typeof onReplace === 'function') {
+                        onReplace(
+                          fingerprintCollision.existing.id,
+                          replacement,
+                        );
+                      } else {
+                        // Fallback: parent did not wire onReplace. TB will
+                        // double-count the original AND replacement until the
+                        // wiring is fixed in App.tsx via supersedeImport.
+                        try {
+                          await onImport([replacement]);
+                        } catch (err) {
+                          console.error('Failed to persist replacement journal', err);
+                          alert('Failed to save the replacement journal — accounts ARE saved.');
+                          return;
+                        }
+                      }
+                      resetState();
+                    } finally {
+                      isPostingRef.current = false;
+                      setIsPosting(false);
+                    }
                   }}
-                  className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                  className={
+                    isPosting
+                      ? 'bg-blue-300 text-white px-3 py-1 rounded text-sm cursor-not-allowed'
+                      : 'bg-blue-600 text-white px-3 py-1 rounded text-sm'
+                  }
                 >
-                  Replace existing journal
+                  {isPosting ? 'Posting…' : 'Replace existing journal'}
                 </button>
                 <button
                   type="button"
                   data-testid="fp-additional"
+                  disabled={isPosting}
+                  aria-disabled={isPosting}
                   onClick={async () => {
-                    const included = importedRows.filter(
-                      (r) => r._include !== false,
-                    );
-                    const { minted, resolvedRows } = resolveNewAccounts(included);
-                    // Append :additional-{ts} so dedup doesn't keep firing
-                    const newFp = `${fingerprintCollision.fingerprint}:additional-${Date.now()}`;
-                    await postEntry(buildOpeningEntry(resolvedRows, newFp), minted);
+                    // Task 12: race-safe double-click guard.
+                    if (isPostingRef.current) return;
+                    // Same blocking-errors gate as the main accept path.
+                    const issues = computeImportIssues(importedRows);
+                    if (hasBlockingErrors(issues)) {
+                      const messages = issues
+                        .filter((i) => i.severity === 'error')
+                        .map((i) => i.message)
+                        .join('\n\n');
+                      alert(
+                        `Resolve the import errors before posting an additional import:\n\n${messages}`,
+                      );
+                      return;
+                    }
+                    isPostingRef.current = true;
+                    setIsPosting(true);
+                    try {
+                      const included = importedRows.filter(
+                        (r) => r._include !== false,
+                      );
+                      const { minted, resolvedRows } = resolveNewAccounts(included);
+                      // Task 7: derive a DETERMINISTIC additional suffix from
+                      // the canonical rows so re-clicking on the same data
+                      // doesn't keep producing fresh fingerprints (dedup would
+                      // otherwise never catch the repeat).
+                      const newFp = `${fingerprintCollision.fingerprint}:additional-${await buildAdditionalSuffix(resolvedRows, asAtDate)}`;
+                      await postEntry(buildOpeningEntry(resolvedRows, newFp), minted, included, resolvedRows);
+                    } finally {
+                      isPostingRef.current = false;
+                      setIsPosting(false);
+                    }
                   }}
-                  className="bg-gray-200 px-3 py-1 rounded text-sm"
+                  className={
+                    isPosting
+                      ? 'bg-gray-100 text-gray-400 px-3 py-1 rounded text-sm cursor-not-allowed'
+                      : 'bg-gray-200 px-3 py-1 rounded text-sm'
+                  }
                 >
-                  Import as additional
+                  {isPosting ? 'Posting…' : 'Import as additional'}
                 </button>
               </div>
             </div>

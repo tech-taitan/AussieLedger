@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Account, AuditLog, JournalEntry } from '../types';
 import { getAdapter } from '../storage';
 import { getDefaultCoaFor } from '../lib/coa';
+import { withLock } from '../lib/locks';
 
 export type AddLog = (
   action: AuditLog['action'],
@@ -172,20 +173,27 @@ export function useAccounts(addLog: AddLog): AccountsHook {
 
   const appendAndPersist = useCallback(
     async (newAccounts: Account[]) => {
-      // Read adapter state directly so we don't append on top of a stale
-      // closure copy of `accounts` from an earlier render.
-      const adapter = await getAdapter();
-      const existing = await adapter.getAccounts();
-      const merged = [...existing, ...newAccounts];
-      await adapter.saveAccounts(merged);
-      // Mirror the persisted list into React state so downstream renders
-      // (AccountManager, anomaly counts, …) see the new rows immediately.
-      setAccounts(merged);
-      addLog(
-        'IMPORT_DATA',
-        `Created ${newAccounts.length} account${newAccounts.length === 1 ? '' : 's'} via TB import`,
-        '',
-      );
+      // Task 13: serialize the read-modify-write under the shared
+      // 'coa-write' lock so a concurrent appendAndPersist / saveAll
+      // effect / reload can't clobber the merged list. Without this, two
+      // overlapping import flows last-write-wins and the loser's new
+      // accounts vanish on next reload.
+      await withLock('coa-write', async () => {
+        // Read adapter state directly so we don't append on top of a stale
+        // closure copy of `accounts` from an earlier render.
+        const adapter = await getAdapter();
+        const existing = await adapter.getAccounts();
+        const merged = [...existing, ...newAccounts];
+        await adapter.saveAccounts(merged);
+        // Mirror the persisted list into React state so downstream renders
+        // (AccountManager, anomaly counts, …) see the new rows immediately.
+        setAccounts(merged);
+        addLog(
+          'IMPORT_DATA',
+          `Created ${newAccounts.length} account${newAccounts.length === 1 ? '' : 's'} via TB import`,
+          '',
+        );
+      });
     },
     [addLog],
   );

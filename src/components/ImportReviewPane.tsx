@@ -397,6 +397,14 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
           initialCode={rows[modalRowIndex].externalCode || ''}
           initialName={rows[modalRowIndex].externalName || ''}
           existingAccounts={accounts}
+          // Task 11: pass codes already reserved by OTHER pending NEW:
+          // rows in this import so the modal can block a second mint
+          // of the same code in the same accept-import flow.
+          reservedCodes={rows.flatMap((r, i) =>
+            i !== modalRowIndex && (r as ReviewRow)._newAccountSpec
+              ? [(r as ReviewRow)._newAccountSpec!.code]
+              : [],
+          )}
           onConfirm={(spec) => handleConfirmNewAccount(modalRowIndex, spec)}
           onCancel={() => setModalRowIndex(-1)}
         />

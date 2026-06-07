@@ -78,17 +78,31 @@ const TB_FIELDS = [
   'code', 'name', 'type', 'debit', 'credit', 'balance', 'period_start', 'period_end',
 ] as const;
 
+/** Orphan rows surfaced in the TrialBalance UI when a journal line's
+ *  accountId doesn't resolve to any account. The TB display includes
+ *  these in its totals so the user sees an honest balance flag; the CSV
+ *  must include them too or the exported file silently differs from
+ *  what was on screen. */
+export interface OrphanLineForExport {
+  accountId: string;
+  debit: number;
+  credit: number;
+  lineCount: number;
+  sampleDescription?: string;
+}
+
 export function exportTrialBalanceCsv(
   tbRows: TrialBalanceRow[],
   period: Period,
   entityName: string,
+  orphanList: OrphanLineForExport[] = [],
 ): CsvExportResult {
   const filename = `${slugify(entityName)}-tb-${fmtPeriodSlug(period)}.csv`;
   const { periodStart, periodEnd } = periodBoundaryStrings(period);
   // Exclude parent (subtotal) rows — CSV is account-level only; consumers can sum.
   const dataRows = tbRows.filter((r) => !r.isParent);
-  const isEmpty = dataRows.length === 0;
-  const data = dataRows.map((r) => ({
+  const isEmpty = dataRows.length === 0 && orphanList.length === 0;
+  const data: Record<string, string>[] = dataRows.map((r) => ({
     code:         applyLeadingZeroPrefix(r.account.code),
     name:         r.account.name,
     type:         r.account.type,
@@ -98,6 +112,20 @@ export function exportTrialBalanceCsv(
     period_start: periodStart,
     period_end:   periodEnd,
   }));
+  // Append orphan lines so the CSV matches the on-screen TB. The "code"
+  // column carries the literal orphan id so spreadsheets can group by it.
+  for (const o of orphanList) {
+    data.push({
+      code:         o.accountId,
+      name:         `ORPHAN: ${o.sampleDescription ?? 'unknown account'} (${o.lineCount} ${o.lineCount === 1 ? 'line' : 'lines'})`,
+      type:         'Orphan',
+      debit:        o.debit.toString(),
+      credit:       o.credit.toString(),
+      balance:      (o.debit - o.credit).toString(),
+      period_start: periodStart,
+      period_end:   periodEnd,
+    });
+  }
   return { filename, csv: serialise(TB_FIELDS, data), isEmpty };
 }
 

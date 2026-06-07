@@ -12,7 +12,11 @@ interface XlsxSheetPickerProps {
   autoSelectMatcher?: RegExp;
 }
 
-const DEFAULT_MATCHER = /trial|TB|balance/i;
+// Tightened from the legacy `/trial|TB|balance/i` because it auto-fired
+// on "Balance Sheet" / "TB Adjustments" / "Revenue Detail (Trial)" and
+// silently picked the wrong sheet. Now only the unambiguous trial-balance
+// names auto-select; everything else falls through to the picker UI.
+const DEFAULT_MATCHER = /^(\s*trial[\s_-]*balance\b.*|TB)$/i;
 
 /**
  * Modal that picks a sheet from a multi-sheet XLSX workbook.

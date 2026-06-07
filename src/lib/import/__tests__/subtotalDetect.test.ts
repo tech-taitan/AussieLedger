@@ -212,4 +212,54 @@ describe('detectSubtotals (IMP-09)', () => {
     expect(SUBTOTAL_KEYWORD_RE.test('sub-total')).toBe(true);
     expect(SUBTOTAL_KEYWORD_RE.test('GST Collected')).toBe(true);
   });
+
+  it('Task 10: real account "GST Collected" with a structured code is NOT flagged', () => {
+    // The keyword regex still matches the name, but the new
+    // looksLikeRealAccount guard rejects keyword-only matches on rows
+    // that have a proper account code. Prevents the false-positive
+    // routing-to-rejected that hid real GST Collected balances.
+    const rows: ImportRow[] = [
+      row(0, '4100', 'Sales', '0', '50000'),
+      row(1, '2100', 'GST Collected', '0', '5000'),
+    ];
+    const flags = detectSubtotals(rows);
+    const flag = flags.find((f) => f.rowIndex === 1);
+    expect(flag).toBeUndefined();
+  });
+
+  it('Task 10: real account "Net Sales" with code 4200 is NOT flagged', () => {
+    const rows: ImportRow[] = [
+      row(0, '4100', 'Sales', '0', '50000'),
+      row(1, '4200', 'Net Sales', '0', '3000'),
+    ];
+    const flags = detectSubtotals(rows);
+    expect(flags.find((f) => f.rowIndex === 1)).toBeUndefined();
+  });
+
+  it('Task 10: legit "Total Revenue" subtotal row with NO code IS still flagged', () => {
+    // Verifies the carve-out doesn't break real subtotals. Code is
+    // blank → looksLikeRealAccount returns false → keyword-only flag
+    // still fires.
+    const rows: ImportRow[] = [
+      row(0, '4100', 'Sales A', '0', '20000'),
+      row(1, '4101', 'Sales B', '0', '30000'),
+      row(2, '', 'Total Revenue', '0', '50000'),
+    ];
+    const flags = detectSubtotals(rows);
+    expect(flags.find((f) => f.rowIndex === 2)).toBeDefined();
+  });
+
+  it('Task 10: sum-pattern alone no longer false-flags a real account whose balance coincides with running sum', () => {
+    // Three accounts in the same code prefix: Cash 500, Petty 500,
+    // Float 1000. The legacy heuristic flagged Float as a subtotal of
+    // Cash + Petty (matches by sum). With the tightened gate, Float
+    // has a real code and is NOT flagged.
+    const rows: ImportRow[] = [
+      row(0, '1100', 'Cash', '500', '0'),
+      row(1, '1101', 'Petty', '500', '0'),
+      row(2, '1102', 'Float', '1000', '0'),
+    ];
+    const flags = detectSubtotals(rows);
+    expect(flags.find((f) => f.rowIndex === 2)).toBeUndefined();
+  });
 });

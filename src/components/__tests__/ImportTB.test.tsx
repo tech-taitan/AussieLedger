@@ -1120,10 +1120,13 @@ describe('ImportTB', () => {
       const fileInput = screen.getByTestId(
         'import-tb-file-input',
       ) as HTMLInputElement;
-      // Two sheets, BOTH matching the regex (so the picker cannot auto-resolve)
+      // Two sheets, BOTH matching the tightened auto-pick regex so the
+      // picker can't auto-resolve. Prior fixture used "TB Detail" which
+      // matched the legacy loose regex; the tightened regex only accepts
+      // "TB" exactly OR "Trial Balance" prefix.
       await act(async () => {
         fireEvent.change(fileInput, {
-          target: { files: [makeXlsxFile(['Trial Balance', 'TB Detail'])] },
+          target: { files: [makeXlsxFile(['Trial Balance', 'Trial Balance Detail'])] },
         });
       });
       await waitFor(() =>
