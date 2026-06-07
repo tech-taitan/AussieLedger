@@ -105,7 +105,7 @@ export const ImportConfirmDialog: React.FC<ImportConfirmDialogProps> = ({
           <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 p-2 rounded">
             The pre-import check flagged {issues.filter((i) => i.severity === 'error').length} error
             {issues.filter((i) => i.severity === 'error').length === 1 ? '' : 's'}.
-            You can still post, but the resulting books will need correcting.
+            Resolve these before posting so every selected TB row is transferred.
           </p>
         )}
 
@@ -120,15 +120,17 @@ export const ImportConfirmDialog: React.FC<ImportConfirmDialogProps> = ({
           </button>
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={hasErrors ? undefined : onConfirm}
+            disabled={hasErrors}
+            aria-disabled={hasErrors}
             data-testid="confirm-post"
             className={
               hasErrors
-                ? 'px-4 py-2 bg-rose-600 text-white text-sm font-semibold rounded hover:bg-rose-700'
+                ? 'px-4 py-2 bg-gray-300 text-gray-600 text-sm font-semibold rounded cursor-not-allowed'
                 : 'px-4 py-2 bg-green-700 text-white text-sm font-semibold rounded hover:bg-green-800'
             }
           >
-            Post journal
+            {hasErrors ? 'Resolve errors first' : 'Post journal'}
           </button>
         </div>
       </div>

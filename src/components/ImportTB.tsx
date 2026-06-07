@@ -30,6 +30,7 @@ import { detectHeaderRow, type HeaderDetectResult } from '../lib/import/headerDe
 import { parseCurrency } from '../lib/import/currencyParse';
 import { detectSubtotals, type ImportRow as SubtotalImportRow } from '../lib/import/subtotalDetect';
 import { detectSplitColumns, mergeColumns, deriveRegexSignature } from '../lib/import/columnMerge';
+import { computeImportIssues, hasBlockingErrors } from '../lib/import/validateReview';
 import Decimal from 'decimal.js';
 import { XlsxSheetPicker } from './XlsxSheetPicker';
 import { ImportReviewPane, type ReviewRow } from './ImportReviewPane';
@@ -784,6 +785,16 @@ export const ImportTB: React.FC<ImportTBProps> = ({
     const included = importedRows.filter((r) => r._include !== false);
     if (included.length === 0) {
       alert('No rows selected to include — nothing to post.');
+      return;
+    }
+
+    const issues = computeImportIssues(importedRows);
+    if (hasBlockingErrors(issues)) {
+      const messages = issues
+        .filter((issue) => issue.severity === 'error')
+        .map((issue) => issue.message)
+        .join('\n\n');
+      alert(`Resolve the import errors before posting:\n\n${messages}`);
       return;
     }
 

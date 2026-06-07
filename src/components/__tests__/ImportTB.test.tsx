@@ -742,6 +742,9 @@ describe('ImportTB', () => {
       // Clear → becomes 0 (explicit zero, not NaN).
       fireEvent.change(bankDebit, { target: { value: '' } });
       expect(bankDebit.value).toBe('0');
+      // Keep the fixture balanced under the stricter pre-post validation.
+      fireEvent.change(screen.getByLabelText('credit-0'), { target: { value: '' } });
+      expect((screen.getByLabelText('credit-0') as HTMLInputElement).value).toBe('0');
 
       // Accept the import — onImport receives finite numbers, not NaN.
       await act(async () => {

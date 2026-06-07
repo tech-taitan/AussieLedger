@@ -360,7 +360,7 @@ describe('ImportReviewPane (IMP-03)', () => {
     expect(screen.getAllByTestId('import-issue-error').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('confirm dialog shows WILL-POST totals + dropped unmapped count', () => {
+  it('confirm dialog shows WILL-POST totals + dropped unmapped count and blocks error posts', () => {
     const onAccept = vi.fn();
     const rows: ImportedAccount[] = [
       { externalCode: '1100', externalName: 'Bank', debit: 1500, credit: 0, mappedAccountId: 'acc-1', confidence: 0.95 },
@@ -386,6 +386,11 @@ describe('ImportReviewPane (IMP-03)', () => {
     expect(screen.getByTestId('confirm-total-debit').textContent).toContain('1,500');
     expect(screen.getByTestId('confirm-total-credit').textContent).toContain('1,500');
     expect(screen.getByTestId('confirm-balance-status').textContent).toMatch(/Balanced/i);
+
+    const postButton = screen.getByTestId('confirm-post') as HTMLButtonElement;
+    expect(postButton.disabled).toBe(true);
+    fireEvent.click(postButton);
+    expect(onAccept).not.toHaveBeenCalled();
   });
 
   it('Accept import opens the confirm dialog and only posts after Post journal', () => {
