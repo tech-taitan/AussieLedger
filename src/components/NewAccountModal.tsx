@@ -13,6 +13,12 @@
  */
 import React, { useMemo, useState } from 'react';
 import type { Account, AccountType } from '../types';
+import {
+  INDIVIDUAL_LABELS,
+  COMPANY_LABELS,
+  TRUST_LABELS,
+  PARTNERSHIP_LABELS,
+} from '../lib/tax/labels/fy2026';
 
 export interface NewAccountSpec {
   code: string;
@@ -20,6 +26,40 @@ export interface NewAccountSpec {
   type: AccountType;
   gstCode: 'GST' | 'FRE' | 'INP' | 'N-T' | 'CAP';
   parentCode?: string;
+  /** Tax labels per entity-return type — populated only when the account
+   *  is Revenue or Expense (Asset / Liability / Equity rows never appear
+   *  on a tax return). Defaults seeded from a per-type heuristic; user
+   *  can override or clear via the modal. */
+  taxLabel?: string;
+  companyTaxLabel?: string;
+  trustTaxLabel?: string;
+  partnershipTaxLabel?: string;
+}
+
+/**
+ * Default tax-label suggestions by account type. Mirrors the
+ * default-CoA pattern used across the 197-row FY2026 seed, so new
+ * imported accounts land with the same label conventions and the
+ * YearEndWizard's "unmapped" check doesn't immediately flag them.
+ */
+function defaultLabelsFor(type: AccountType): Pick<NewAccountSpec, 'taxLabel' | 'companyTaxLabel' | 'trustTaxLabel' | 'partnershipTaxLabel'> {
+  if (type === 'Revenue') {
+    return {
+      taxLabel: '6S',
+      companyTaxLabel: '6A',
+      trustTaxLabel: '5B',
+      partnershipTaxLabel: 'P1',
+    };
+  }
+  if (type === 'Expense') {
+    return {
+      taxLabel: '6N',
+      companyTaxLabel: '6X',
+      trustTaxLabel: '5N',
+      partnershipTaxLabel: 'P2',
+    };
+  }
+  return {};
 }
 
 interface NewAccountModalProps {
@@ -52,11 +92,30 @@ export const NewAccountModal: React.FC<NewAccountModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const initialType = guessTypeFromCode(initialCode);
+  const initialLabels = defaultLabelsFor(initialType);
   const [code, setCode] = useState(initialCode.trim());
   const [name, setName] = useState(initialName.trim());
-  const [type, setType] = useState<AccountType>(guessTypeFromCode(initialCode));
+  const [type, setType] = useState<AccountType>(initialType);
   const [gstCode, setGstCode] = useState<NewAccountSpec['gstCode']>('N-T');
   const [parentCode, setParentCode] = useState<string>('');
+  const [taxLabel, setTaxLabel] = useState<string>(initialLabels.taxLabel ?? '');
+  const [companyTaxLabel, setCompanyTaxLabel] = useState<string>(initialLabels.companyTaxLabel ?? '');
+  const [trustTaxLabel, setTrustTaxLabel] = useState<string>(initialLabels.trustTaxLabel ?? '');
+  const [partnershipTaxLabel, setPartnershipTaxLabel] = useState<string>(initialLabels.partnershipTaxLabel ?? '');
+
+  // Changing type rotates the four label dropdowns to the new defaults.
+  // Asset/Liability/Equity clears them (those rows never carry labels).
+  const handleTypeChange = (nextType: AccountType) => {
+    setType(nextType);
+    const defaults = defaultLabelsFor(nextType);
+    setTaxLabel(defaults.taxLabel ?? '');
+    setCompanyTaxLabel(defaults.companyTaxLabel ?? '');
+    setTrustTaxLabel(defaults.trustTaxLabel ?? '');
+    setPartnershipTaxLabel(defaults.partnershipTaxLabel ?? '');
+  };
+
+  const showTaxLabels = type === 'Revenue' || type === 'Expense';
 
   const duplicate = useMemo(
     () => existingAccounts.find((a) => a.code === code.trim()),
@@ -78,6 +137,12 @@ export const NewAccountModal: React.FC<NewAccountModalProps> = ({
       type,
       gstCode,
       parentCode: parentCode || undefined,
+      // Persist only when meaningful — Asset/Liability/Equity strip them
+      // because they never appear on a tax return.
+      taxLabel: showTaxLabels && taxLabel ? taxLabel : undefined,
+      companyTaxLabel: showTaxLabels && companyTaxLabel ? companyTaxLabel : undefined,
+      trustTaxLabel: showTaxLabels && trustTaxLabel ? trustTaxLabel : undefined,
+      partnershipTaxLabel: showTaxLabels && partnershipTaxLabel ? partnershipTaxLabel : undefined,
     });
   };
 
@@ -131,7 +196,7 @@ export const NewAccountModal: React.FC<NewAccountModalProps> = ({
               </span>
               <select
                 value={type}
-                onChange={(e) => setType(e.target.value as AccountType)}
+                onChange={(e) => handleTypeChange(e.target.value as AccountType)}
                 data-testid="new-acc-type"
                 className="mt-1 w-full border border-[var(--line)] rounded px-2 py-1 text-sm bg-white focus:outline-none focus:border-[var(--ink)]"
               >
@@ -177,6 +242,80 @@ export const NewAccountModal: React.FC<NewAccountModalProps> = ({
                 ))}
               </select>
             </label>
+          )}
+
+          {showTaxLabels && (
+            <fieldset
+              data-testid="new-acc-tax-labels"
+              className="border border-[var(--line)] rounded p-3 space-y-2"
+            >
+              <legend className="text-xs font-bold uppercase tracking-wider text-gray-600 px-1">
+                Tax labels
+              </legend>
+              <p className="text-[10px] text-gray-500 mb-1">
+                One label per return type. Defaults seeded for the chosen
+                account type — override if this account maps to a different
+                schedule label (e.g. Interest income to 6K, Rent to 6G).
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase text-gray-500">Individual</span>
+                  <select
+                    value={taxLabel}
+                    onChange={(e) => setTaxLabel(e.target.value)}
+                    data-testid="new-acc-tax-label-ind"
+                    className="border border-[var(--line)] rounded px-1 py-1 text-xs bg-white"
+                  >
+                    <option value="">(none)</option>
+                    {Object.entries(INDIVIDUAL_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{k} — {v.title}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase text-gray-500">Company</span>
+                  <select
+                    value={companyTaxLabel}
+                    onChange={(e) => setCompanyTaxLabel(e.target.value)}
+                    data-testid="new-acc-tax-label-co"
+                    className="border border-[var(--line)] rounded px-1 py-1 text-xs bg-white"
+                  >
+                    <option value="">(none)</option>
+                    {Object.entries(COMPANY_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{k} — {v.title}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase text-gray-500">Trust</span>
+                  <select
+                    value={trustTaxLabel}
+                    onChange={(e) => setTrustTaxLabel(e.target.value)}
+                    data-testid="new-acc-tax-label-tr"
+                    className="border border-[var(--line)] rounded px-1 py-1 text-xs bg-white"
+                  >
+                    <option value="">(none)</option>
+                    {Object.entries(TRUST_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{k} — {v.title}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase text-gray-500">Partnership</span>
+                  <select
+                    value={partnershipTaxLabel}
+                    onChange={(e) => setPartnershipTaxLabel(e.target.value)}
+                    data-testid="new-acc-tax-label-ps"
+                    className="border border-[var(--line)] rounded px-1 py-1 text-xs bg-white"
+                  >
+                    <option value="">(none)</option>
+                    {Object.entries(PARTNERSHIP_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{k} — {v.title}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </fieldset>
           )}
         </div>
 

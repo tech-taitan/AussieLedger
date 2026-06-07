@@ -305,10 +305,21 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
                   <td className="py-2 px-2 text-right">
                     <input
                       type="number"
-                      value={r.debit}
-                      onChange={(e) =>
-                        updateRow(idx, { debit: Number(e.target.value) })
-                      }
+                      step="0.01"
+                      value={Number.isFinite(r.debit) ? r.debit : 0}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        // Empty cell → explicit 0. Non-numeric → reject the
+                        // edit (NaN would silently coerce to 0 in the TB
+                        // rollup, hiding the typo from the user).
+                        if (raw === '') {
+                          updateRow(idx, { debit: 0 });
+                          return;
+                        }
+                        const parsed = Number(raw);
+                        if (!Number.isFinite(parsed)) return;
+                        updateRow(idx, { debit: parsed });
+                      }}
                       className="w-24 border rounded px-1 py-1 text-right text-xs"
                       aria-label={`debit-${idx}`}
                     />
@@ -316,10 +327,18 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
                   <td className="py-2 px-2 text-right">
                     <input
                       type="number"
-                      value={r.credit}
-                      onChange={(e) =>
-                        updateRow(idx, { credit: Number(e.target.value) })
-                      }
+                      step="0.01"
+                      value={Number.isFinite(r.credit) ? r.credit : 0}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          updateRow(idx, { credit: 0 });
+                          return;
+                        }
+                        const parsed = Number(raw);
+                        if (!Number.isFinite(parsed)) return;
+                        updateRow(idx, { credit: parsed });
+                      }}
                       className="w-24 border rounded px-1 py-1 text-right text-xs"
                       aria-label={`credit-${idx}`}
                     />

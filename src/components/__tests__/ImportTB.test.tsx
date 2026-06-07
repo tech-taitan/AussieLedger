@@ -700,6 +700,198 @@ describe('ImportTB', () => {
       alertSpy.mockRestore();
     });
 
+    it('CRITICAL #3: typing letters into the debit input does NOT corrupt the row to NaN', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      const onImport = vi.fn();
+      const csv = new File(
+        ['Code,Name,Debit,Credit\n4100,Sales,0,1000\n1100,Bank,1000,0\n'],
+        'tb.csv',
+        { type: 'text/csv' },
+      );
+      render(
+        <ImportTB
+          accounts={FIXTURE_ACCOUNTS}
+          onImport={onImport}
+          activeEntityId="entity-1"
+          existingEntries={[]}
+        />,
+      );
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [csv] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+      fireEvent.change(screen.getByLabelText('map-code'),   { target: { value: 'Code' } });
+      fireEvent.change(screen.getByLabelText('map-name'),   { target: { value: 'Name' } });
+      fireEvent.change(screen.getByLabelText('map-debit'),  { target: { value: 'Debit' } });
+      fireEvent.change(screen.getByLabelText('map-credit'), { target: { value: 'Credit' } });
+      fireEvent.click(screen.getByTestId('confirm-mapping'));
+      await waitFor(() => expect(screen.queryByTestId('import-review-pane')).not.toBeNull());
+
+      // Try to corrupt the Bank row's debit with a non-numeric value.
+      const bankDebit = screen.getByLabelText('debit-1') as HTMLInputElement;
+      // type="number" rejects 'abc' in jsdom; explicitly fire change with NaN.
+      fireEvent.change(bankDebit, { target: { value: 'abc' } });
+      // The input rejects the invalid value (input retains the previous one).
+      expect(bankDebit.value).not.toBe('NaN');
+      // Clear → becomes 0 (explicit zero, not NaN).
+      fireEvent.change(bankDebit, { target: { value: '' } });
+      expect(bankDebit.value).toBe('0');
+
+      // Accept the import — onImport receives finite numbers, not NaN.
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(screen.queryByTestId('import-confirm-dialog')).not.toBeNull());
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-post'));
+      });
+      await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1));
+      const entry = (onImport.mock.calls[0][0] as JournalEntry[])[0];
+      for (const line of entry.lines) {
+        expect(Number.isFinite(line.debit)).toBe(true);
+        expect(Number.isFinite(line.credit)).toBe(true);
+      }
+    });
+
+    it('HIGH #4: NewAccountModal seeds tax labels for Revenue type and the minted account carries them', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      const onImport = vi.fn();
+      const onCreateAccounts = vi.fn();
+      // 4xxx code → Revenue default; user accepts modal defaults.
+      const csv = new File(
+        ['Code,Name,Debit,Credit\n4999,Misc Sales,0,500\n1100,Bank,500,0\n'],
+        'tb.csv',
+        { type: 'text/csv' },
+      );
+      render(
+        <ImportTB
+          accounts={FIXTURE_ACCOUNTS}
+          onImport={onImport}
+          onCreateAccounts={onCreateAccounts}
+          activeEntityId="entity-1"
+          existingEntries={[]}
+        />,
+      );
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [csv] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+      fireEvent.change(screen.getByLabelText('map-code'),   { target: { value: 'Code' } });
+      fireEvent.change(screen.getByLabelText('map-name'),   { target: { value: 'Name' } });
+      fireEvent.change(screen.getByLabelText('map-debit'),  { target: { value: 'Debit' } });
+      fireEvent.change(screen.getByLabelText('map-credit'), { target: { value: 'Credit' } });
+      fireEvent.click(screen.getByTestId('confirm-mapping'));
+      await waitFor(() => expect(screen.queryByTestId('import-review-pane')).not.toBeNull());
+
+      // Open NewAccountModal for the unmapped 4999 row.
+      fireEvent.click(screen.getByTestId('create-new-0'));
+      await waitFor(() => expect(screen.queryByTestId('new-account-modal')).not.toBeNull());
+      // Tax-label section is visible because type defaults to Revenue (4xxx).
+      expect(screen.getByTestId('new-acc-tax-labels')).not.toBeNull();
+      // The four selects are pre-populated with Revenue defaults.
+      expect((screen.getByTestId('new-acc-tax-label-ind') as HTMLSelectElement).value).toBe('6S');
+      expect((screen.getByTestId('new-acc-tax-label-co') as HTMLSelectElement).value).toBe('6A');
+      expect((screen.getByTestId('new-acc-tax-label-tr') as HTMLSelectElement).value).toBe('5B');
+      expect((screen.getByTestId('new-acc-tax-label-ps') as HTMLSelectElement).value).toBe('P1');
+      // Confirm modal → row gets the spec; complete the import.
+      fireEvent.click(screen.getByTestId('new-acc-confirm'));
+      await waitFor(() => expect(screen.queryByTestId('new-account-modal')).toBeNull());
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(screen.queryByTestId('import-confirm-dialog')).not.toBeNull());
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-post'));
+      });
+      await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1));
+
+      const minted = onCreateAccounts.mock.calls[0][0] as Account[];
+      expect(minted.length).toBe(1);
+      expect(minted[0].code).toBe('4999');
+      expect(minted[0].type).toBe('Revenue');
+      // All four labels carried through from the modal spec.
+      expect(minted[0].taxLabel).toBe('6S');
+      expect(minted[0].companyTaxLabel).toBe('6A');
+      expect(minted[0].trustTaxLabel).toBe('5B');
+      expect(minted[0].partnershipTaxLabel).toBe('P1');
+    });
+
+    it('HIGH #4: switching account type to Equity hides + strips the tax labels', async () => {
+      vi.doMock('../../lib/ai', () => ({
+        isAiEnabled: () => false,
+        IS_AI_ENABLED: false,
+        GEMINI_MODEL: 'gemini-3-flash-preview',
+      }));
+      const { ImportTB } = await import('../ImportTB');
+      const onImport = vi.fn();
+      const onCreateAccounts = vi.fn();
+      const csv = new File(
+        ['Code,Name,Debit,Credit\n5500,New Misc,500,0\n1100,Bank,0,500\n'],
+        'tb.csv',
+        { type: 'text/csv' },
+      );
+      render(
+        <ImportTB
+          accounts={FIXTURE_ACCOUNTS}
+          onImport={onImport}
+          onCreateAccounts={onCreateAccounts}
+          activeEntityId="entity-1"
+          existingEntries={[]}
+        />,
+      );
+      const fileInput = screen.getByTestId('import-tb-file-input') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [csv] } });
+      });
+      await waitFor(() => expect(screen.queryByTestId('column-mapping')).not.toBeNull());
+      fireEvent.change(screen.getByLabelText('map-code'),   { target: { value: 'Code' } });
+      fireEvent.change(screen.getByLabelText('map-name'),   { target: { value: 'Name' } });
+      fireEvent.change(screen.getByLabelText('map-debit'),  { target: { value: 'Debit' } });
+      fireEvent.change(screen.getByLabelText('map-credit'), { target: { value: 'Credit' } });
+      fireEvent.click(screen.getByTestId('confirm-mapping'));
+      await waitFor(() => expect(screen.queryByTestId('import-review-pane')).not.toBeNull());
+
+      fireEvent.click(screen.getByTestId('create-new-0'));
+      await waitFor(() => expect(screen.queryByTestId('new-account-modal')).not.toBeNull());
+      // Initial type is Expense (5xxx); tax labels visible.
+      expect(screen.getByTestId('new-acc-tax-labels')).not.toBeNull();
+      // Flip to Equity → tax labels section disappears.
+      fireEvent.change(screen.getByTestId('new-acc-type'), { target: { value: 'Equity' } });
+      expect(screen.queryByTestId('new-acc-tax-labels')).toBeNull();
+      fireEvent.click(screen.getByTestId('new-acc-confirm'));
+      await waitFor(() => expect(screen.queryByTestId('new-account-modal')).toBeNull());
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('accept-import'));
+      });
+      await waitFor(() => expect(screen.queryByTestId('import-confirm-dialog')).not.toBeNull());
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('confirm-post'));
+      });
+      await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1));
+
+      const minted = onCreateAccounts.mock.calls[0][0] as Account[];
+      expect(minted[0].type).toBe('Equity');
+      // No tax labels persisted (Equity is never on a tax return).
+      expect(minted[0].taxLabel).toBeUndefined();
+      expect(minted[0].companyTaxLabel).toBeUndefined();
+      expect(minted[0].trustTaxLabel).toBeUndefined();
+      expect(minted[0].partnershipTaxLabel).toBeUndefined();
+    });
+
     it('zero-balance rows are kept in the review (default _include=false, user can opt in)', async () => {
       vi.doMock('../../lib/ai', () => ({
         isAiEnabled: () => false,

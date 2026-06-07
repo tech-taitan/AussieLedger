@@ -719,6 +719,13 @@ export const ImportTB: React.FC<ImportTBProps> = ({
           gstCode: spec?.gstCode ?? 'N-T',
           parentCode: spec?.parentCode,
           isDefault: false,
+          // HIGH #4: carry tax labels from the modal spec so the minted
+          // account passes the YearEndWizard's unmapped check and the
+          // tax engine can aggregate it under the right return label.
+          taxLabel: spec?.taxLabel,
+          companyTaxLabel: spec?.companyTaxLabel,
+          trustTaxLabel: spec?.trustTaxLabel,
+          partnershipTaxLabel: spec?.partnershipTaxLabel,
         };
         minted.push(newAccount);
         return { ...r, mappedAccountId: newAccount.id };
@@ -738,8 +745,12 @@ export const ImportTB: React.FC<ImportTBProps> = ({
       .map((r) => ({
         accountId: r.mappedAccountId!,
         description: `Opening: ${r.externalName}`,
-        debit: r.debit,
-        credit: r.credit,
+        // CRITICAL #3 defence in depth: any NaN that slipped past the
+        // review-pane validation becomes an explicit 0 here, so the journal
+        // line is always a finite number. TrialBalance's `Number(x) || 0`
+        // would silently swallow NaN otherwise.
+        debit: Number.isFinite(r.debit) ? r.debit : 0,
+        credit: Number.isFinite(r.credit) ? r.credit : 0,
         taxAmount: 0,
       }));
     const referenceBase = `OPENING-${asAtDate}`;
