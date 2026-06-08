@@ -306,4 +306,107 @@ describe('YearEndWizard (UX-01 scaffold)', () => {
     const logArg = onAddLog.mock.calls[0][0];
     expect(logArg.action).toBe('UNLOCK_FY');
   });
+
+  describe('Task 34: finalisation timestamp display', () => {
+    it('shows a "Finalised on <date>" line in the unfinalise banner when completedAt is set', () => {
+      const entity = makeEntity({
+        name: 'Test Co',
+        returnStatusByFy: { FY2026: 'finalised' },
+        wizardState: {
+          FY2026: {
+            step: 7,
+            dismissedAnomalies: [],
+            // June 8 2026 18:30 UTC.
+            // Midday UTC so en-AU timezone (UTC+10) keeps the same day.
+            completedAt: '2026-06-08T12:00:00.000Z',
+          },
+        },
+      });
+      render(
+        <YearEndWizard
+          entity={entity}
+          accounts={[]}
+          entries={[]}
+          fy="FY2026"
+          onUpdateEntity={vi.fn()}
+        />,
+      );
+      const stamp = screen.getByTestId('wizard-finalised-timestamp');
+      expect(stamp.textContent).toMatch(/Finalised on/);
+      // Day and year present (month name is locale-dependent in CI; use a
+      // structural check rather than a verbatim string).
+      expect(stamp.textContent).toMatch(/8/);
+      expect(stamp.textContent).toMatch(/2026/);
+    });
+
+    it('renders compact date in the [FINALISED] chip', () => {
+      const entity = makeEntity({
+        name: 'Test Co',
+        returnStatusByFy: { FY2026: 'finalised' },
+        wizardState: {
+          FY2026: {
+            step: 7,
+            dismissedAnomalies: [],
+            // Midday UTC so en-AU timezone (UTC+10) keeps the same day.
+            completedAt: '2026-06-08T12:00:00.000Z',
+          },
+        },
+      });
+      render(
+        <YearEndWizard
+          entity={entity}
+          accounts={[]}
+          entries={[]}
+          fy="FY2026"
+          onUpdateEntity={vi.fn()}
+        />,
+      );
+      const chip = screen.getByTestId('wizard-finalised-chip');
+      expect(chip.textContent).toMatch(/FINALISED/);
+      expect(chip.textContent).toMatch(/8/);
+      expect(chip.textContent).toMatch(/2026/);
+    });
+
+    it('omits the timestamp line gracefully when completedAt is missing', () => {
+      const entity = makeEntity({
+        name: 'Test Co',
+        returnStatusByFy: { FY2026: 'finalised' },
+        wizardState: {
+          FY2026: { step: 7, dismissedAnomalies: [] }, // no completedAt
+        },
+      });
+      render(
+        <YearEndWizard
+          entity={entity}
+          accounts={[]}
+          entries={[]}
+          fy="FY2026"
+          onUpdateEntity={vi.fn()}
+        />,
+      );
+      // The banner still renders, but the timestamp paragraph is absent.
+      expect(screen.queryByTestId('wizard-finalised-timestamp')).toBeNull();
+      expect(screen.getByTestId('wizard-unfinalise')).toBeInTheDocument();
+    });
+
+    it('omits the timestamp line gracefully when completedAt is unparseable', () => {
+      const entity = makeEntity({
+        name: 'Test Co',
+        returnStatusByFy: { FY2026: 'finalised' },
+        wizardState: {
+          FY2026: { step: 7, dismissedAnomalies: [], completedAt: 'not-a-date' },
+        },
+      });
+      render(
+        <YearEndWizard
+          entity={entity}
+          accounts={[]}
+          entries={[]}
+          fy="FY2026"
+          onUpdateEntity={vi.fn()}
+        />,
+      );
+      expect(screen.queryByTestId('wizard-finalised-timestamp')).toBeNull();
+    });
+  });
 });

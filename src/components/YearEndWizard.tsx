@@ -35,6 +35,44 @@ interface YearEndWizardProps {
 
 // ── Unfinalise section ─────────────────────────────────────────────────────
 
+/**
+ * Format an ISO timestamp as a long Australian-locale date plus time.
+ * Returns null when the ISO string is missing or unparseable so callers
+ * can fall back to no-display gracefully. Pure: depends only on input.
+ */
+function formatFinalisedAt(iso: string | undefined): string | null {
+  if (!iso) return null;
+  // Date PARSE — allowed by structural-lint (existing exemption pattern in TB rollup).
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const date = d.toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const time = d.toLocaleTimeString('en-AU', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  return `${date}, ${time}`;
+}
+
+/**
+ * Compact form for the [FINALISED] step-indicator chip:
+ * "8 Jun 2026". Same null-safety as formatFinalisedAt.
+ */
+function formatFinalisedAtShort(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 interface UnfinaliseSectionProps {
   entity: Entity;
   fy: string;
@@ -46,11 +84,20 @@ function UnfinaliseSection({
   fy,
   onUnfinalise,
 }: UnfinaliseSectionProps): React.JSX.Element {
+  const completedAt = formatFinalisedAt(entity.wizardState?.[fy]?.completedAt);
   return (
     <div className="bg-amber-50 border border-amber-300 p-4 space-y-3">
       <p className="text-sm font-medium text-amber-900">
         {fy} is finalised for <strong>{entity.name}</strong>.
       </p>
+      {completedAt && (
+        <p
+          className="text-xs text-amber-900 font-medium"
+          data-testid="wizard-finalised-timestamp"
+        >
+          Finalised on {completedAt}.
+        </p>
+      )}
       <p className="text-xs text-amber-700">
         To make corrections to finalised entries, unfinalise the FY first. Journal entries
         in a finalised FY require the Reverse-and-Re-post workflow.
@@ -140,9 +187,21 @@ export function YearEndWizard({
         data-testid="wizard-step-indicator"
         className="text-sm font-bold text-gray-800"
       >
-        Year-End Wizard — Step {step} of 7 — {entity.name} {fy}
+        Year-End Wizard, Step {step} of 7: {entity.name} {fy}
         {status === 'finalised' && (
-          <span className="ml-2 text-green-700 font-semibold">[FINALISED]</span>
+          <span
+            className="ml-2 text-green-700 font-semibold"
+            data-testid="wizard-finalised-chip"
+          >
+            [FINALISED
+            {(() => {
+              const short = formatFinalisedAtShort(
+                entity.wizardState?.[fy]?.completedAt,
+              );
+              return short ? ` ${short}` : '';
+            })()}
+            ]
+          </span>
         )}
       </div>
 
