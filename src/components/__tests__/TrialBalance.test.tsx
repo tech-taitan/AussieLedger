@@ -155,6 +155,81 @@ describe('TrialBalance Phase 4 refactor (BOOK-07, BOOK-09)', () => {
     expect(debitCellValue(parentRow)).toBe('50,000.00');
   });
 
+  it('regression (totals include parent own postings): tb-total-debits sums parent posting + child posting once each', () => {
+    // Mirrors the depreciation flow: 6900 is a parent (due to overlay
+    // children) AND carries a $50k posting. 6010 leaf carries $1k.
+    // Pre-fix totals filtered out parents → totals showed only 1000.
+    // Post-fix totals are computed from raw balances → 51,000.
+    const acctsWithPostedParent: Account[] = [
+      makeAccount('p-6000', '6000', 'Operating Expenses', 'Expense'),
+      makeAccount('c-6010', '6010', 'Rent', 'Expense', '6000'),
+      makeAccount('p-6900', '6900', 'Depreciation Expense', 'Expense', '6000'),
+      makeAccount('c-6911', '6911', 'Income Tax Expense', 'Expense', '6900'),
+      makeAccount('a-1000', '1000', 'Cash', 'Asset'),
+    ];
+    const entry = makeEntry('e1', '2026-01-15', [
+      makeLine('p-6900', 50000, 0),
+      makeLine('c-6010', 1000, 0),
+      makeLine('a-1000', 0, 51000),
+    ]);
+    render(
+      <TrialBalance
+        accounts={acctsWithPostedParent}
+        entries={[entry]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    expect(screen.getByTestId('tb-total-debits').textContent?.trim()).toBe('51,000.00');
+    expect(screen.getByTestId('tb-total-credits').textContent?.trim()).toBe('51,000.00');
+    expect(screen.getByTestId('tb-balance-flag').textContent).toMatch(/Balanced/);
+  });
+
+  it('collapsibility: parent chevron toggles child visibility', () => {
+    const e1 = makeEntry('p1', '2026-01-15', [
+      makeLine('c-6010', 150, 0),
+      makeLine('a-1000', 0, 150),
+    ]);
+    render(
+      <TrialBalance
+        accounts={accounts}
+        entries={[e1]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    // 6010 leaf is visible by default (expanded).
+    expect(screen.queryByTestId('tb-row-6010')).not.toBeNull();
+    // Click the parent chevron — 6010 should hide; parent still renders.
+    fireEvent.click(screen.getByTestId('tb-collapse-6000'));
+    expect(screen.queryByTestId('tb-row-6010')).toBeNull();
+    expect(screen.queryByTestId('tb-parent-6000')).not.toBeNull();
+    // Click again — restored.
+    fireEvent.click(screen.getByTestId('tb-collapse-6000'));
+    expect(screen.queryByTestId('tb-row-6010')).not.toBeNull();
+  });
+
+  it('collapsibility: "Collapse all" hides every child; "Expand all" restores', () => {
+    const e1 = makeEntry('p1', '2026-01-15', [
+      makeLine('c-6010', 100, 0),
+      makeLine('c-6020', 50, 0),
+      makeLine('a-1000', 0, 150),
+    ]);
+    render(
+      <TrialBalance
+        accounts={accounts}
+        entries={[e1]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('tb-toggle-all'));
+    expect(screen.queryByTestId('tb-row-6010')).toBeNull();
+    expect(screen.queryByTestId('tb-row-6020')).toBeNull();
+    expect(screen.queryByTestId('tb-parent-6000')).not.toBeNull();
+    // Toggling again expands.
+    fireEvent.click(screen.getByTestId('tb-toggle-all'));
+    expect(screen.queryByTestId('tb-row-6010')).not.toBeNull();
+    expect(screen.queryByTestId('tb-row-6020')).not.toBeNull();
+  });
+
   it('excludes voided superseded draft', () => {
     const posted = makeEntry('e-posted', '2026-01-15', [
       makeLine('c-6010', 100, 0),

@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useAccounts } from '../useAccounts';
+import { useAccounts, repairStaleParentCodes } from '../useAccounts';
 import type { Account, JournalEntry } from '../../types';
 import { getAdapter } from '../../storage';
 
@@ -82,6 +82,82 @@ describe('useAccounts', () => {
       (c) => c[0] === 'IMPORT_DATA' && (c[1] as string).includes('Test Account'),
     );
     expect(editCall).toBeDefined();
+  });
+
+  describe('repairStaleParentCodes (pure)', () => {
+    it('returns input unchanged + fixed:0 when no stale parents present', () => {
+      const clean: Account[] = [
+        { id: 'a', code: '6911', name: 'Income Tax', type: 'Expense', gstCode: 'N-T', parentCode: '6000' },
+        { id: 'b', code: '6912', name: 'Prior Year', type: 'Expense', gstCode: 'N-T', parentCode: '6000' },
+        { id: 'c', code: '6900', name: 'Depreciation', type: 'Expense', gstCode: 'N-T', parentCode: '6000' },
+      ];
+      const { repaired, fixed } = repairStaleParentCodes(clean);
+      expect(fixed).toBe(0);
+      expect(repaired).toEqual(clean);
+    });
+
+    it('rewrites 6911 parentCode from 6900 → 6000 (Income Tax misclassification fix)', () => {
+      const stale: Account[] = [
+        { id: 'a', code: '6911', name: 'Income Tax', type: 'Expense', gstCode: 'N-T', parentCode: '6900' },
+        { id: 'b', code: '6900', name: 'Depreciation', type: 'Expense', gstCode: 'N-T', parentCode: '6000' },
+      ];
+      const { repaired, fixed } = repairStaleParentCodes(stale);
+      expect(fixed).toBe(1);
+      expect(repaired.find((a) => a.code === '6911')?.parentCode).toBe('6000');
+      // Non-target rows untouched.
+      expect(repaired.find((a) => a.code === '6900')?.parentCode).toBe('6000');
+    });
+
+    it('rewrites both 6911 and 6912 when both are stale (Company overlay bug)', () => {
+      const stale: Account[] = [
+        { id: 'a', code: '6911', name: 'Tax A', type: 'Expense', gstCode: 'N-T', parentCode: '6900' },
+        { id: 'b', code: '6912', name: 'Tax B', type: 'Expense', gstCode: 'N-T', parentCode: '6900' },
+      ];
+      const { repaired, fixed } = repairStaleParentCodes(stale);
+      expect(fixed).toBe(2);
+      expect(repaired.every((a) => a.parentCode === '6000')).toBe(true);
+    });
+
+    it('idempotent — running twice does not change anything the second time', () => {
+      const stale: Account[] = [
+        { id: 'a', code: '6911', name: 'Tax A', type: 'Expense', gstCode: 'N-T', parentCode: '6900' },
+      ];
+      const first = repairStaleParentCodes(stale);
+      const second = repairStaleParentCodes(first.repaired);
+      expect(second.fixed).toBe(0);
+      expect(second.repaired).toEqual(first.repaired);
+    });
+
+    it('leaves a row with matching code but different stale parentCode alone (defensive)', () => {
+      const notTargeted: Account[] = [
+        { id: 'a', code: '6911', name: 'Tax A', type: 'Expense', gstCode: 'N-T', parentCode: '6800' },
+      ];
+      const { repaired, fixed } = repairStaleParentCodes(notTargeted);
+      expect(fixed).toBe(0);
+      expect(repaired[0].parentCode).toBe('6800');
+    });
+  });
+
+  it('useAccounts: self-repairs stale 6911 parentCode on load and persists the fix', async () => {
+    const adapter = await getAdapter();
+    const stale: Account[] = [
+      { _v: 3, id: 'p-6000', code: '6000', name: 'Expenses', type: 'Expense', gstCode: 'N-T', parentCode: null, isDefault: true, isArchived: false },
+      { _v: 3, id: 'p-6900', code: '6900', name: 'Depreciation', type: 'Expense', gstCode: 'N-T', parentCode: '6000', isDefault: true, isArchived: false },
+      { _v: 3, id: 'c-6911', code: '6911', name: 'Income Tax', type: 'Expense', gstCode: 'N-T', parentCode: '6900', isDefault: true, isArchived: false },
+    ];
+    await adapter.saveAccounts(stale);
+    const addLog = vi.fn();
+    const { result } = renderHook(() => useAccounts(addLog));
+    await waitFor(() => {
+      const a6911 = result.current.accounts.find((a) => a.code === '6911');
+      expect(a6911?.parentCode).toBe('6000');
+    });
+    // Persistence — the save effect should have rewritten IDB too.
+    await waitFor(async () => {
+      const persisted = await adapter.getAccounts();
+      const a6911 = persisted.find((a) => a.code === '6911');
+      expect(a6911?.parentCode).toBe('6000');
+    });
   });
 
   it('saveAll replaces all accounts and calls addLog', () => {

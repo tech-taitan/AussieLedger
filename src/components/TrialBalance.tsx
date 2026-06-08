@@ -15,7 +15,7 @@
 import React, { useMemo, useState } from 'react';
 import type { Account, JournalEntry, TrialBalanceRow, AuditAction } from '../types';
 import { isInPeriod, currentFy, today, type Period } from '../lib/period';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ChevronRight, ChevronDown } from 'lucide-react';
 import { AnomalyBadge } from './AnomalyBadge';
 import { exportTrialBalanceCsv, fmtPeriodSlug } from '../lib/export/csv';
 import { Toast } from './Toast';
@@ -107,6 +107,21 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
   // rows that would noise the view; user can opt in for a complete CoA-
   // shaped TB.
   const [showZeroBalances, setShowZeroBalances] = useState(false);
+  // Set of parent account codes whose children are currently hidden.
+  // Default empty (all expanded) so the new collapsibility feature is
+  // additive — first-time visitors see exactly the same layout as before.
+  const [collapsedParents, setCollapsedParents] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  const toggleParentCollapse = (code: string) => {
+    setCollapsedParents((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
+  };
 
   const setPeriod = (p: Period) => {
     if (onPeriodChange) onPeriodChange(p);
@@ -235,13 +250,26 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
 
     const orphanList = Object.values(orphans);
 
+    // Totals are computed from the RAW per-account balances (baseRows),
+    // never from enriched. This is the only way to get correct totals
+    // when a parent has BOTH its own postings AND children:
+    //   - Pre-fix: filtered out parents → missed their own postings.
+    //   - This fix: every raw posting counts once, regardless of role.
+    const rawTotalDebits = baseRows.reduce((s, r) => s + r.debit, 0);
+    const rawTotalCredits = baseRows.reduce((s, r) => s + r.credit, 0);
+
     // Filter the displayed rows: show parents always; leaves with activity
     // always; nil-balance leaves only when the user opts in via the toggle.
     const visibleRows = showZeroBalances
       ? enriched
       : enriched.filter((r) => r.debit !== 0 || r.credit !== 0 || r.isParent);
 
-    return { rows: visibleRows, orphanList };
+    return {
+      rows: visibleRows,
+      orphanList,
+      rawTotalDebits,
+      rawTotalCredits,
+    };
   }, [accounts, entries, period, showZeroBalances]);
 
   const orphanTotalDebit = tbData.orphanList.reduce((s, o) => s + o.debit, 0);
@@ -259,18 +287,47 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
     return ids;
   }, [entries]);
 
-  // Totals exclude parent rows to avoid double-counting, and INCLUDE orphan
-  // line totals so the user sees a balanced TB only when every posted line
-  // is accounted for — not when half the data is silently hidden.
-  const totalDebits =
-    tbData.rows
-      .filter((r) => !r.isParent)
-      .reduce((s, r) => s + r.debit, 0) + orphanTotalDebit;
-  const totalCredits =
-    tbData.rows
-      .filter((r) => !r.isParent)
-      .reduce((s, r) => s + r.credit, 0) + orphanTotalCredit;
+  // Totals are computed from the raw per-account balances inside tbData
+  // (NOT from filtered rows). The filtered approach excluded parent rows
+  // to avoid double-counting children, but with the additive parent
+  // rollup that also dropped the parent's OWN postings — exact symptom:
+  // an account that's both a parent (due to overlay children) and
+  // carries imported balance was missed from the totals row, breaking
+  // the "is balanced" indicator. Orphans (lines without a resolving
+  // account) are still added on top so totals reflect every posted line.
+  const totalDebits = tbData.rawTotalDebits + orphanTotalDebit;
+  const totalCredits = tbData.rawTotalCredits + orphanTotalCredit;
   const isBalanced = Math.abs(totalDebits - totalCredits) < 0.005;
+
+  // Codes of all parent rows currently in the visible TB — used to drive
+  // "Collapse all" / "Expand all" header controls without rebuilding the
+  // hierarchy on every render.
+  const allParentCodes = useMemo(
+    () =>
+      tbData.rows
+        .filter((r) => r.isParent)
+        .map((r) => r.account.code),
+    [tbData.rows],
+  );
+
+  // Visible rows after applying the per-parent collapse state. A leaf is
+  // hidden when its direct parent code is in `collapsedParents`. Parent
+  // rows are always rendered so the user can re-expand them.
+  const renderRows = useMemo(
+    () =>
+      tbData.rows.filter((r) => {
+        if (r.isParent) return true;
+        const pc = r.account.parentCode;
+        return !(pc && collapsedParents.has(pc));
+      }),
+    [tbData.rows, collapsedParents],
+  );
+
+  const collapseAll = () => setCollapsedParents(new Set(allParentCodes));
+  const expandAll = () => setCollapsedParents(new Set());
+  const allCollapsed =
+    allParentCodes.length > 0 &&
+    allParentCodes.every((c) => collapsedParents.has(c));
 
   return (
     <div className="relative bg-white p-4 lg:p-6 shadow-sm border border-[var(--line-strong)]">
@@ -315,6 +372,16 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
               Show nil balances
             </span>
           </label>
+          {allParentCodes.length > 0 && (
+            <button
+              type="button"
+              onClick={allCollapsed ? expandAll : collapseAll}
+              data-testid="tb-toggle-all"
+              className="no-print text-[10px] font-bold uppercase text-gray-500 border border-[var(--line)] rounded px-2 py-1 hover:bg-gray-50"
+            >
+              {allCollapsed ? 'Expand all' : 'Collapse all'}
+            </button>
+          )}
           <label className="flex items-center gap-1">
             <span className="text-[10px] font-bold uppercase text-gray-500">
               Period
@@ -437,7 +504,10 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
               </tr>
             </thead>
             <tbody>
-              {tbData.rows.map((row) => (
+              {renderRows.map((row) => {
+                const isCollapsed =
+                  row.isParent && collapsedParents.has(row.account.code);
+                return (
                 <tr
                   key={row.account.id}
                   className={
@@ -452,7 +522,29 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
                   }
                 >
                   <td className="py-3 px-4 data-value whitespace-nowrap">
-                    {row.account.code}
+                    {row.isParent ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleParentCollapse(row.account.code)}
+                        aria-expanded={!isCollapsed}
+                        aria-label={
+                          isCollapsed
+                            ? `Expand children of ${row.account.code}`
+                            : `Collapse children of ${row.account.code}`
+                        }
+                        data-testid={`tb-collapse-${row.account.code}`}
+                        className="inline-flex items-center gap-1 hover:bg-gray-100 rounded px-1 -mx-1"
+                      >
+                        {isCollapsed ? (
+                          <ChevronRight size={14} className="text-gray-500" />
+                        ) : (
+                          <ChevronDown size={14} className="text-gray-500" />
+                        )}
+                        <span>{row.account.code}</span>
+                      </button>
+                    ) : (
+                      <span className="pl-5">{row.account.code}</span>
+                    )}
                   </td>
                   <td className="py-3 px-4 whitespace-nowrap">
                     <span>{row.account.name}</span>
@@ -486,7 +578,8 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
                     {row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {tbData.orphanList.map((o) => (
                 <tr
                   key={`orphan-${o.accountId}`}

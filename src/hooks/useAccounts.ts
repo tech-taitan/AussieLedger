@@ -33,6 +33,48 @@ function isLegacyCoa(loaded: Account[]): boolean {
   );
 }
 
+/**
+ * Map of known stale parent-code assignments shipped in earlier CoA
+ * overlays that promoted a leaf account to an unintended parent role.
+ * Add to this map every time a CoA seed bug ships to users — the
+ * runtime self-repair below will re-parent affected accounts on load.
+ *
+ * Current entries:
+ *   '6911' / '6912' (Income Tax Expense lines): pre-fix Company overlay
+ *     set parentCode '6900' (Depreciation Expense). That silently
+ *     promoted Depreciation to a parent and hid posted depreciation
+ *     balances in the TB rollup. Reparent to '6000' (Expenses header).
+ */
+const STALE_PARENT_REPAIRS: ReadonlyArray<{
+  code: string;
+  stalePCode: string;
+  correctPCode: string;
+}> = [
+  { code: '6911', stalePCode: '6900', correctPCode: '6000' },
+  { code: '6912', stalePCode: '6900', correctPCode: '6000' },
+];
+
+/**
+ * Returns a repaired copy of `loaded` with known stale parentCodes
+ * rewritten, plus a count of rows changed. Pure — no I/O. Caller is
+ * responsible for persisting when the count is non-zero.
+ */
+export function repairStaleParentCodes(loaded: Account[]): {
+  repaired: Account[];
+  fixed: number;
+} {
+  let fixed = 0;
+  const repaired = loaded.map((a) => {
+    const rule = STALE_PARENT_REPAIRS.find(
+      (r) => r.code === a.code && a.parentCode === r.stalePCode,
+    );
+    if (!rule) return a;
+    fixed += 1;
+    return { ...a, parentCode: rule.correctPCode };
+  });
+  return { repaired, fixed };
+}
+
 export interface AccountsHook {
   accounts: Account[];
   updateAccount: (updated: Account) => void;
@@ -88,7 +130,16 @@ export function useAccounts(addLog: AddLog): AccountsHook {
         // user-curated accounts.
         setAccounts(getDefaultCoaFor('Company', 'FY2026'));
       } else {
-        setAccounts(loaded);
+        // Self-repair stale parent codes from older CoA seed bugs (e.g.
+        // 6911/6912 wrongly parented to 6900 hid depreciation balances in
+        // the TB rollup). Idempotent — no-op when the data is clean. The
+        // subsequent saveAccounts effect persists the corrected list.
+        const { repaired, fixed } = repairStaleParentCodes(loaded);
+        if (fixed > 0) {
+          // eslint-disable-next-line no-console -- low-noise diagnostic
+          console.info(`useAccounts: repaired ${fixed} stale parentCode(s) on load`);
+        }
+        setAccounts(repaired);
       }
       setReady(true);
     })().catch((err) => {
@@ -165,7 +216,11 @@ export function useAccounts(addLog: AddLog): AccountsHook {
     try {
       const adapter = await getAdapter();
       const loaded = await adapter.getAccounts();
-      setAccounts(loaded);
+      // Same self-repair as the initial load — keep them in lockstep so
+      // a reload triggered by another writer doesn't reintroduce stale
+      // parentCodes that the first load already fixed.
+      const { repaired } = repairStaleParentCodes(loaded);
+      setAccounts(repaired);
     } catch (err) {
       console.error('useAccounts reload failed', err);
     }
