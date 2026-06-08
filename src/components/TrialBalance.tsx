@@ -204,18 +204,32 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
       const kids = childrenOf[r.account.code] ?? [];
       const isParent = kids.length > 0;
       if (!isParent) return r;
-      const debit = kids.reduce((s, k) => s + k.debit, 0);
-      const credit = kids.reduce((s, k) => s + k.credit, 0);
-      const balance = ['Asset', 'Expense'].includes(r.account.type)
-        ? debit - credit
-        : credit - debit;
+      // Additive parent rollup — parent total is the parent's OWN postings
+      // PLUS the sum of its children. Pre-fix this discarded `r.debit` /
+      // `r.credit` and replaced them with the children-sum, which silently
+      // hid balances posted directly to a parent account (the depreciation
+      // 6900 symptom, where a Company-overlay child accidentally promoted
+      // the leaf account to a parent). Best-practice accounting never
+      // posts to parents, so this addition is a no-op in clean data —
+      // it only stops silent-drop when CoA classification is wrong.
+      const childDebit = kids.reduce((s, k) => s + k.debit, 0);
+      const childCredit = kids.reduce((s, k) => s + k.credit, 0);
+      const debit = r.debit + childDebit;
+      const credit = r.credit + childCredit;
+      const isDr = ['Asset', 'Expense'].includes(r.account.type);
+      const balance = isDr ? debit - credit : credit - debit;
+      const childBalance = isDr
+        ? childDebit - childCredit
+        : childCredit - childDebit;
       return {
         account: r.account,
         debit,
         credit,
         balance,
         isParent: true,
-        childTotals: { debit, credit, balance },
+        // childTotals reflects ONLY the children's contribution so a
+        // consumer can compute the parent's own postings as parent - kids.
+        childTotals: { debit: childDebit, credit: childCredit, balance: childBalance },
       };
     });
 

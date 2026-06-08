@@ -124,6 +124,37 @@ describe('TrialBalance Phase 4 refactor (BOOK-07, BOOK-09)', () => {
     expect(debitCellValue(parentRow)).toBe('225.00');
   });
 
+  it('regression (depreciation 6900): parent with OWN postings shows own + children, not just children', () => {
+    // Mirrors the real-world bug: a CoA overlay added children to an
+    // account that was historically a leaf (6900 Depreciation Expense
+    // gained 6911/6912 from the Company overlay). The user posted a
+    // depreciation balance to 6900; pre-fix the TB rollup discarded the
+    // own posting and only summed the (zero-balance) children, so the
+    // imported $50,000 vanished. With the additive fix, parent total =
+    // own ($50,000) + children ($0) = $50,000.
+    const accountsWithPostedParent: Account[] = [
+      makeAccount('p-6000', '6000', 'Operating Expenses', 'Expense'),
+      makeAccount('p-6900', '6900', 'Depreciation Expense', 'Expense', '6000'),
+      // Two zero-balance children promote 6900 to "parent" status.
+      makeAccount('c-6911', '6911', 'Income Tax Expense', 'Expense', '6900'),
+      makeAccount('c-6912', '6912', 'Income Tax Prior Year', 'Expense', '6900'),
+      makeAccount('a-1000', '1000', 'Cash at Bank', 'Asset'),
+    ];
+    const opening = makeEntry('opening', '2026-01-15', [
+      makeLine('p-6900', 50000, 0),
+      makeLine('a-1000', 0, 50000),
+    ]);
+    render(
+      <TrialBalance
+        accounts={accountsWithPostedParent}
+        entries={[opening]}
+        period={{ type: 'fy', fy: 'FY2026' }}
+      />,
+    );
+    const parentRow = screen.getByTestId('tb-parent-6900');
+    expect(debitCellValue(parentRow)).toBe('50,000.00');
+  });
+
   it('excludes voided superseded draft', () => {
     const posted = makeEntry('e-posted', '2026-01-15', [
       makeLine('c-6010', 100, 0),

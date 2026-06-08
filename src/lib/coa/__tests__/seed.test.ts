@@ -89,6 +89,24 @@ describe('Default CoA structural integrity (per entity type)', () => {
     }
   });
 
+  it('regression: 6900 Depreciation Expense stays a leaf in every entity overlay', () => {
+    // Pre-fix the Company overlay set parentCode '6900' on 6911 / 6912
+    // (Income Tax Expense rows). That silently promoted Depreciation to
+    // a parent in the TB rollup and discarded any depreciation balance
+    // posted to 6900 — Company users saw 6900 as a $0 parent row. Lock
+    // the leaf status in every entity overlay so we can't regress.
+    for (const t of ENTITY_TYPES) {
+      const coa = getDefaultCoaFor(t, 'FY2026');
+      const childrenOf6900 = coa.filter((a) => a.parentCode === '6900');
+      expect(
+        childrenOf6900,
+        `${t}: 6900 Depreciation Expense must remain a LEAF (no children). ` +
+          `Found ${childrenOf6900.length} unexpected child(ren): ` +
+          childrenOf6900.map((c) => `${c.code} ${c.name}`).join(', '),
+      ).toEqual([]);
+    }
+  });
+
   it('GST codes in AU set', () => {
     for (const t of ENTITY_TYPES) {
       const coa = getDefaultCoaFor(t, 'FY2026');
