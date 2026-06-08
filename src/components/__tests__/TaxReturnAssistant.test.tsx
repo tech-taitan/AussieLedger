@@ -238,7 +238,7 @@ describe('TaxReturnAssistant — Phase 9 FND-12 Export CSV', () => {
       createObjectURL: createObjectURLSpy,
       revokeObjectURL: revokeObjectURLSpy,
     });
-    HTMLAnchorElement.prototype.click = anchorClickSpy;
+    HTMLAnchorElement.prototype.click = anchorClickSpy as unknown as () => void;
   });
 
   afterEach(() => {

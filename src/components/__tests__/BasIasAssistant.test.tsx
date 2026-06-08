@@ -230,7 +230,7 @@ describe('BasIasAssistant — Phase 9 FND-11 Export CSV', () => {
       createObjectURL: createObjectURLSpy,
       revokeObjectURL: revokeObjectURLSpy,
     });
-    HTMLAnchorElement.prototype.click = anchorClickSpy;
+    HTMLAnchorElement.prototype.click = anchorClickSpy as unknown as () => void;
   });
 
   afterEach(() => {
