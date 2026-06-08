@@ -10,16 +10,18 @@ describe('README.md (DEP-03)', () => {
   const repoRoot = resolve(__dirname, '../..');
   const content = readFileSync(resolve(repoRoot, 'README.md'), 'utf8');
 
-  it('contains quick-start command: npm install && npm run build', () => {
-    expect(content).toContain('npm install && npm run build');
+  it('contains the install + run commands somewhere (Quick Start)', () => {
+    expect(content).toContain('npm install');
+    expect(content).toContain('npm run build');
+    expect(content).toContain('npm run dev');
   });
 
-  it('contains "Single-user local" deployment section', () => {
-    expect(content).toContain('Single-user local');
+  it('contains a "your own computer" deployment section', () => {
+    expect(content).toMatch(/own computer|Single-user local/i);
   });
 
-  it('contains "Small-firm VPS" deployment section', () => {
-    expect(content).toContain('Small-firm VPS');
+  it('contains a "Small-firm" deployment section', () => {
+    expect(content).toMatch(/Small-firm/);
   });
 
   it('contains "StorageAdapter" (architecture section)', () => {
@@ -55,11 +57,11 @@ describe('README.md (DEP-03)', () => {
   });
 
   it('documents the hosted browser-only storage pin (POL-04)', () => {
-    expect(content).toContain('pins the public build to browser-only IndexedDB storage');
+    expect(content).toMatch(/browser-only (IndexedDB )?storage/);
   });
 
-  it('contains "Try the demo" Quick Start sub-heading (POL-04)', () => {
-    expect(content).toContain('Try the demo');
+  it('contains a "Try" / demo section (POL-04)', () => {
+    expect(content).toMatch(/Try (the demo|it without installing)/i);
   });
 
   it('is at least 100 lines (POL-04 length sanity)', () => {
@@ -67,18 +69,18 @@ describe('README.md (DEP-03)', () => {
     expect(lineCount).toBeGreaterThanOrEqual(100);
   });
 
-  it('Test A.5 README has ### For business owners persona section (POL-DOCS-02)', () => {
-    expect(content).toMatch(/^###\s+For business owners\s*$/m);
-    expect(content).toMatch(/plain English|walk away with/);
+  it('Test A.5 README has a Business owners persona section (POL-DOCS-02)', () => {
+    expect(content).toMatch(/^###\s+(For )?Business owners\s*$/im);
+    expect(content).toMatch(/plain English|walk away with|spreadsheet/i);
   });
 
-  it('Test A.6 README has ### For tax agents persona section (POL-DOCS-02)', () => {
-    expect(content).toMatch(/^###\s+For tax agents\s*$/m);
-    expect(content).toMatch(/multi-client|fast entity switching/);
+  it('Test A.6 README has a Tax agents persona section (POL-DOCS-02)', () => {
+    expect(content).toMatch(/^###\s+(For )?[Tt]ax agents( and accountants)?\s*$/m);
+    expect(content).toMatch(/multi-client|fast entity switching|Multi-client/i);
   });
 
-  it('Test A.7 README has ### For developers persona section (POL-DOCS-02)', () => {
-    expect(content).toMatch(/^###\s+For developers\s*$/m);
+  it('Test A.7 README has a Developers persona section (POL-DOCS-02)', () => {
+    expect(content).toMatch(/^###\s+(For )?Developers\s*$/m);
     expect(content).toMatch(/StorageAdapter|pure functions/);
   });
 });

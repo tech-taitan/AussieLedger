@@ -15,13 +15,13 @@ export const FULL_PRINT_DISCLAIMER =
  * Short footer disclaimer — printed on every page via .print-footer CSS class.
  */
 export const FOOTER_DISCLAIMER =
-  'AussieLedger working paper — not tax advice — verify before lodgement.';
+  'AussieLedger working paper. Not tax advice. Verify before lodgement.';
 
 const FORM_NAT_MAP: Record<string, string> = {
-  I:   'Form I — Individual Tax Return (NAT 2541)',
-  C:   'Form C — Company Tax Return (NAT 0656)',
-  T:   'Form T — Trust Tax Return (NAT 0660)',
-  P:   'Form P — Partnership Tax Return (NAT 0659)',
+  I:   'Form I: Individual Tax Return (NAT 2541)',
+  C:   'Form C: Company Tax Return (NAT 0656)',
+  T:   'Form T: Trust Tax Return (NAT 0660)',
+  P:   'Form P: Partnership Tax Return (NAT 0659)',
   BAS: 'Business Activity Statement (Simpler BAS)',
   IAS: 'Instalment Activity Statement',
 };

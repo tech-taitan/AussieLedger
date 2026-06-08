@@ -76,8 +76,8 @@ describe('ViewRouter — Phase 5 routing scaffolds', () => {
       />
     );
 
-    // PartnershipTaxReturn renders "Form P — Partnership Tax Return"
-    expect(screen.getAllByText(/Form P — Partnership/i).length).toBeGreaterThan(0);
+    // PartnershipTaxReturn renders "Form P, Partnership Tax Return"
+    expect(screen.getAllByText(/Form P,? Partnership/i).length).toBeGreaterThan(0);
   });
 });
 

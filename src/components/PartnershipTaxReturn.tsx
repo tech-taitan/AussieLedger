@@ -22,7 +22,7 @@ import type { DistributedShare } from '../lib/tax/returns/fy2026/trust';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
 import { ProfessionalAdviceBanner } from './ProfessionalAdviceBanner';
 import { AnomalyBadge } from './AnomalyBadge';
-import { Decimal } from '../lib/money';
+import { Decimal, formatAud } from '../lib/money';
 import { PARTNERSHIP_LABELS_FULL } from '../lib/tax/labels/fy2026';
 import { LabelTooltip } from './LabelTooltip';
 
@@ -61,7 +61,7 @@ function LabelRow({ code, plainEnglish, value, highlight, helpText, labelCode }:
         </span>
       </div>
       <span className={`text-sm font-mono ${highlight ? 'text-emerald-700 font-bold' : ''}`}>
-        ${value.toFixed(2)}
+        ${formatAud(value)}
       </span>
     </div>
   );
@@ -113,7 +113,7 @@ export function PartnershipTaxReturn({
       {/* Screen-mode header + print button */}
       <header className="no-print flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">
-          Form P — Partnership Tax Return — {entity.name} ({fy})
+          Form P, Partnership Tax Return: {entity.name} ({fy})
         </h2>
         <button
           onClick={handlePrint}
@@ -164,7 +164,7 @@ export function PartnershipTaxReturn({
                       {partner?.sharePercent ?? '—'}%
                     </td>
                     <td className="text-right px-3 py-2 border border-gray-200 font-mono">
-                      ${d.totalShare.toFixed(2)}
+                      ${formatAud(d.totalShare)}
                     </td>
                   </tr>
                 );
@@ -181,7 +181,7 @@ export function PartnershipTaxReturn({
                   <strong>Total</strong>
                 </td>
                 <td className="text-right px-3 py-2 border border-gray-200 font-mono">
-                  <strong>${result.meta.distributionTotal.toFixed(2)}</strong>
+                  <strong>${formatAud(result.meta.distributionTotal)}</strong>
                 </td>
               </tr>
             </tbody>

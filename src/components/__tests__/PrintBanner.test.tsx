@@ -9,7 +9,7 @@ import { PrintBanner, FULL_PRINT_DISCLAIMER } from '../PrintBanner';
 describe('PrintBanner', () => {
   it('renders banner title and entity name and disclaimer', () => {
     render(<PrintBanner form="I" entityName="Acme Sole Trader" fy="FY2026" />);
-    expect(screen.getByText(/Form I — Individual Tax Return \(NAT 2541\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Form I: Individual Tax Return \(NAT 2541\)/)).toBeInTheDocument();
     expect(screen.getByText('Acme Sole Trader')).toBeInTheDocument();
     expect(screen.getByText(FULL_PRINT_DISCLAIMER)).toBeInTheDocument();
   });

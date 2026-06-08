@@ -29,7 +29,7 @@ import { INDIVIDUAL_LABELS_FULL } from '../lib/tax/labels/fy2026';
 import type { IndividualLabel } from '../lib/tax/labels/fy2026';
 import { LabelTooltip } from './LabelTooltip';
 import type { Anomaly } from '../lib/tax/returns/fy2026/types';
-import type { Decimal } from '../lib/money';
+import { type Decimal, formatAud } from '../lib/money';
 
 // ── Prop contract ──────────────────────────────────────────────────────────
 
@@ -69,7 +69,7 @@ function LabelRow({ code, plainEnglish, value, anomalies, highlight, helpText, l
         {helpText && labelCode && <LabelTooltip helpText={helpText} labelCode={labelCode} />}
       </span>
       <span className="text-sm text-right font-mono">
-        ${value?.toFixed(2) ?? '0.00'}
+        ${formatAud(value ?? null)}
       </span>
       {anomalies && anomalies.length > 0 && (
         <div className="col-span-3 flex flex-wrap gap-1 mt-1">
@@ -187,7 +187,7 @@ export const TaxReturnAssistant: React.FC<TaxReturnAssistantProps> = ({
 
       {/* Screen header — hidden on print */}
       <header className="no-print flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Form I — {entity.name} ({effectiveFy})</h2>
+        <h2 className="text-2xl font-bold">Form I: {entity.name} ({effectiveFy})</h2>
         <div className="flex gap-2">
           <button
             onClick={handleExportCsv}

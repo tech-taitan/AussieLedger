@@ -126,4 +126,58 @@ describe('parseCurrency (IMP-08)', () => {
     expect(result.decimal?.toString()).toBe('-1234.56');
     expect(result.confidence).toBe('high');
   });
+
+  describe('Task 32: dash-for-zero accountancy convention', () => {
+    it('bare "-" parses as 0', () => {
+      const r = parseCurrency('-');
+      expect(r.decimal?.toString()).toBe('0');
+      expect(r.confidence).toBe('high');
+    });
+
+    it('"$-" (Excel accountancy zero) parses as 0', () => {
+      const r = parseCurrency('$-');
+      expect(r.decimal?.toString()).toBe('0');
+      expect(r.confidence).toBe('high');
+    });
+
+    it('whitespace-padded "$ -" parses as 0', () => {
+      const r = parseCurrency('  $-  ');
+      expect(r.decimal?.toString()).toBe('0');
+      expect(r.confidence).toBe('high');
+    });
+
+    it('trailing-currency "- $" / "-$" parses as 0', () => {
+      expect(parseCurrency('-$').decimal?.toString()).toBe('0');
+      expect(parseCurrency('- $').decimal?.toString()).toBe('0');
+    });
+
+    it('en-dash (U+2013) and em-dash (U+2014) variants parse as 0', () => {
+      expect(parseCurrency('–').decimal?.toString()).toBe('0');
+      expect(parseCurrency('—').decimal?.toString()).toBe('0');
+      expect(parseCurrency('$–').decimal?.toString()).toBe('0');
+    });
+
+    it('AUD/A$ dash variants parse as 0', () => {
+      expect(parseCurrency('AUD-').decimal?.toString()).toBe('0');
+      expect(parseCurrency('A$-').decimal?.toString()).toBe('0');
+    });
+
+    it('literal "0" still parses as 0 (unchanged)', () => {
+      expect(parseCurrency('0').decimal?.toString()).toBe('0');
+      expect(parseCurrency('$0').decimal?.toString()).toBe('0');
+      expect(parseCurrency('$0.00').decimal?.toString()).toBe('0');
+    });
+
+    it('does NOT match a dash inside a numeric string (still treated as negative)', () => {
+      // "-100" should remain a negative number, not zero.
+      expect(parseCurrency('-100').decimal?.toString()).toBe('-100');
+      // "100-" still parses as -100 (trailing minus path), not zero.
+      expect(parseCurrency('100-').decimal?.toString()).toBe('-100');
+    });
+
+    it('does NOT match a multi-character non-currency prefix (e.g. "N/A-" stays unparseable)', () => {
+      expect(parseCurrency('N/A').decimal).toBeNull();
+      expect(parseCurrency('pending-').decimal).toBeNull();
+    });
+  });
 });

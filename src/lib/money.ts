@@ -55,3 +55,27 @@ export function serialize(amount: Decimal): string {
 export function deserialize(stored: string | number): Decimal {
   return new Decimal(stored);
 }
+
+/**
+ * Format a monetary amount for display as `#,###.##` (e.g. `1,234.56`).
+ *
+ * Single source of truth for AUD display formatting. Callers add the
+ * leading `$` (or `-$` for negatives in parens-style) themselves so this
+ * helper composes with both `$1,234.56` and `(1,234.56)` conventions.
+ *
+ * Locale is pinned to `en-AU` so the format does not drift with system
+ * locale settings — keeps server-rendered and client-rendered values
+ * byte-identical, and prevents EU-locale users from seeing `1.234,56`.
+ *
+ * Defensive: NaN and non-finite inputs render as `0.00` instead of
+ * `NaN`. Decimal inputs are accepted via `.toNumber()` for convenience.
+ */
+export function formatAud(value: number | Decimal | null | undefined): string {
+  if (value === null || value === undefined) return '0.00';
+  const n = typeof value === 'number' ? value : value.toNumber();
+  if (!Number.isFinite(n)) return '0.00';
+  return n.toLocaleString('en-AU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}

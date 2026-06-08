@@ -32,7 +32,7 @@ import type { BasReturn } from '../lib/tax/returns/fy2026/bas';
 import { PrintBanner, FOOTER_DISCLAIMER } from './PrintBanner';
 import { ProfessionalAdviceBanner } from './ProfessionalAdviceBanner';
 import { AnomalyBadge } from './AnomalyBadge';
-import type { Decimal } from '../lib/money';
+import { type Decimal, formatAud } from '../lib/money';
 import { BAS_LABELS_FULL, IAS_LABELS_FULL } from '../lib/tax/labels/fy2026';
 import { LabelTooltip } from './LabelTooltip';
 
@@ -91,7 +91,7 @@ function LabelRow({ code, plainEnglish, value, highlight, muted, helpText, label
         </span>
       </div>
       <span className="font-mono text-sm">
-        ${(value ?? 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+        ${formatAud(value ?? 0)}
       </span>
     </div>
   );
@@ -191,7 +191,7 @@ export function BasIasAssistant({
       {/* Screen header with period selector + print button */}
       <header className="no-print flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold">
-          {shape} — {entity.name} ({fy})
+          {shape}: {entity.name} ({fy})
         </h2>
         <div className="flex flex-wrap gap-2 items-center">
           <label className="text-sm font-medium">Period:</label>

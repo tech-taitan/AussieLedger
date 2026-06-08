@@ -10,6 +10,7 @@ import { cn } from '../lib/utils';
 import { today } from '../lib/period';
 import { EditJournalDiff } from './EditJournalDiff';
 import { AnomalyBadge } from './AnomalyBadge';
+import { formatAud } from '../lib/money';
 
 interface JournalFormProps {
   accounts: Account[];
@@ -520,13 +521,13 @@ export const JournalForm: React.FC<JournalFormProps> = ({
               <div>
                 <div className="text-[10px] font-bold uppercase text-gray-400">Total Debits</div>
                 <div className={cn("text-lg font-bold data-value", !isBalanced && "text-red-600")}>
-                  ${totalDebits.toFixed(2)}
+                  ${formatAud(totalDebits)}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-bold uppercase text-gray-400">Total Credits</div>
                 <div className={cn("text-lg font-bold data-value", !isBalanced && "text-red-600")}>
-                  ${totalCredits.toFixed(2)}
+                  ${formatAud(totalCredits)}
                 </div>
               </div>
             </div>
@@ -538,7 +539,7 @@ export const JournalForm: React.FC<JournalFormProps> = ({
             <AnomalyBadge
               severity="warn"
               label="Unbalanced"
-              message={`Out of balance by $${Math.abs(totalDebits - totalCredits).toFixed(2)}. Journals must balance before posting.`}
+              message={`Out of balance by $${formatAud(Math.abs(totalDebits - totalCredits))}. Journals must balance before posting.`}
             />
           </div>
         )}

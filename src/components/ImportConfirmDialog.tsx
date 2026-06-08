@@ -9,6 +9,7 @@
  */
 import React from 'react';
 import type { ImportIssue } from '../lib/import/validateReview';
+import { formatAud } from '../lib/money';
 
 interface ImportConfirmDialogProps {
   includedCount: number;
@@ -22,13 +23,6 @@ interface ImportConfirmDialogProps {
   issues: ImportIssue[];
   onConfirm: () => void;
   onCancel: () => void;
-}
-
-function fmt(n: number): string {
-  return n.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 }
 
 export const ImportConfirmDialog: React.FC<ImportConfirmDialogProps> = ({
@@ -78,11 +72,11 @@ export const ImportConfirmDialog: React.FC<ImportConfirmDialogProps> = ({
           </div>
           <div className="flex justify-between pt-2 border-t border-gray-200">
             <dt className="text-gray-500">Total debits</dt>
-            <dd className="font-mono" data-testid="confirm-total-debit">${fmt(totalDebit)}</dd>
+            <dd className="font-mono" data-testid="confirm-total-debit">${formatAud(totalDebit)}</dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-gray-500">Total credits</dt>
-            <dd className="font-mono" data-testid="confirm-total-credit">${fmt(totalCredit)}</dd>
+            <dd className="font-mono" data-testid="confirm-total-credit">${formatAud(totalCredit)}</dd>
           </div>
           <div className="flex justify-between pt-2 border-t border-gray-200">
             <dt className="text-gray-500">Balance status</dt>
@@ -96,7 +90,7 @@ export const ImportConfirmDialog: React.FC<ImportConfirmDialogProps> = ({
             >
               {isBalanced
                 ? 'Balanced'
-                : `Out of balance by $${fmt(diff)}`}
+                : `Out of balance by $${formatAud(diff)}`}
             </dd>
           </div>
         </dl>

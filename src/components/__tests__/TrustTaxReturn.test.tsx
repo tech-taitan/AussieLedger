@@ -78,7 +78,7 @@ describe('TrustTaxReturn — Phase 5 wiring', () => {
     expect(screen.getByText('5B')).toBeInTheDocument();
     expect(screen.getByText('26')).toBeInTheDocument();
     // Net income value visible (may appear multiple times: 5T/26/56/distTotal)
-    const netIncomeVals = screen.getAllByText('$200000.00');
+    const netIncomeVals = screen.getAllByText('$200,000.00');
     expect(netIncomeVals.length).toBeGreaterThanOrEqual(1);
     // Print button present
     expect(
@@ -99,12 +99,12 @@ describe('TrustTaxReturn — Phase 5 wiring', () => {
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('Bob')).toBeInTheDocument();
     // Distribution amounts (getAll because totalShare + ordinary component both show)
-    const alice = screen.getAllByText('$120000.00');
+    const alice = screen.getAllByText('$120,000.00');
     expect(alice.length).toBeGreaterThanOrEqual(1);
-    const bob = screen.getAllByText('$80000.00');
+    const bob = screen.getAllByText('$80,000.00');
     expect(bob.length).toBeGreaterThanOrEqual(1);
     // Total row — net income + distribution total appear multiple times
-    const totals = screen.getAllByText('$200000.00');
+    const totals = screen.getAllByText('$200,000.00');
     expect(totals.length).toBeGreaterThanOrEqual(2); // net income + distribution total
   });
 

@@ -14,6 +14,7 @@ import { NewAccountModal, type NewAccountSpec } from './NewAccountModal';
 import { ImportIssuesPanel } from './ImportIssuesPanel';
 import { ImportConfirmDialog } from './ImportConfirmDialog';
 import { computeImportIssues, hasBlockingErrors } from '../lib/import/validateReview';
+import { formatAud } from '../lib/money';
 
 /**
  * Row-level review UI between fuzzy match and post.
@@ -394,10 +395,10 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
                 Totals to post ({totals.willPost} row{totals.willPost === 1 ? '' : 's'})
               </td>
               <td className="py-2 px-2 text-right font-mono" data-testid="review-total-debit">
-                {totals.debit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatAud(totals.debit)}
               </td>
               <td className="py-2 px-2 text-right font-mono" data-testid="review-total-credit">
-                {totals.credit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatAud(totals.credit)}
               </td>
             </tr>
             <tr className="text-[10px] text-gray-500">
@@ -407,7 +408,7 @@ export const ImportReviewPane: React.FC<ImportReviewPaneProps> = ({
               <td colSpan={2} className="py-1 px-2 text-right font-mono" data-testid="review-total-diff">
                 {Math.abs(totals.debit - totals.credit) < 0.005
                   ? 'Balanced'
-                  : `Out by ${Math.abs(totals.debit - totals.credit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  : `Out by ${formatAud(Math.abs(totals.debit - totals.credit))}`}
               </td>
             </tr>
             {totals.unmapped > 0 && (

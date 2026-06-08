@@ -44,7 +44,7 @@ export const AdapterFallbackBanner: React.FC = () => {
       <Database size={18} className="shrink-0 mt-0.5" />
       <div className="flex-1">
         <strong className="font-semibold">Running on Local Browser Storage</strong>
-        &nbsp;— your data lives in this browser only. Export from the Data page to keep a backup.
+        . Your data lives in this browser only. Export from the Data page to keep a backup.
       </div>
       <button
         onClick={() => setShow(false)}

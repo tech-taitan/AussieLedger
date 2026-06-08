@@ -38,6 +38,20 @@ export function parseCurrency(raw: string, _locale: 'AU' = 'AU'): ParseResult {
   // Step 1: Empty / whitespace → Decimal('0'), high confidence.
   if (trimmed === '') return { decimal: new Decimal('0'), confidence: 'high' };
 
+  // Step 1a: Accountancy "dash for zero" convention. Excel and most
+  // accounting exports render a zero balance as a bare dash or "$-"
+  // (an em-dash variant is also common). Treat any of these standalone
+  // dash forms (with or without a leading/trailing currency marker)
+  // as Decimal(0) high confidence. Without this, "-" rows were silently
+  // routed to the rejected panel and the user had to manually accept
+  // each one. Covers: "-", "$-", "-$", "A$-", "-A$", "AUD-", "-AUD",
+  // and the EN-DASH (U+2013) / EM-DASH (U+2014) variants that Excel
+  // sometimes substitutes.
+  const DASH = /^(?:\$|A\$|AUD)?[-–—](?:\$|A\$|AUD)?$/i;
+  if (DASH.test(trimmed)) {
+    return { decimal: new Decimal('0'), confidence: 'high' };
+  }
+
   // Step 2: Parens-negative BEFORE stripping currency markers.
   // EU_FORMAT_RE would not false-positive on parens (no digits before paren),
   // but we handle parens first to avoid ambiguity in the rest of the pipeline.

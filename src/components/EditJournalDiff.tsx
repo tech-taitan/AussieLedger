@@ -12,6 +12,7 @@
 import React from 'react';
 import type { JournalEntry, JournalLine, Account } from '../types';
 import { cn } from '../lib/utils';
+import { formatAud } from '../lib/money';
 
 interface EditJournalDiffProps {
   original: JournalEntry;
@@ -28,8 +29,8 @@ function renderLine(line: JournalLine, accounts?: Account[]): string {
   const accLabel = acc ? `${acc.code} ${acc.name}` : line.accountId;
   const side =
     (line.debit ?? 0) > 0
-      ? `D ${(line.debit ?? 0).toFixed(2)}`
-      : `C ${(line.credit ?? 0).toFixed(2)}`;
+      ? `D ${formatAud(line.debit ?? 0)}`
+      : `C ${formatAud(line.credit ?? 0)}`;
   return `${accLabel} ${side} — ${line.description}`;
 }
 

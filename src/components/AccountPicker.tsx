@@ -77,8 +77,8 @@ export const AccountPicker: React.FC<AccountPickerProps> = ({
         className="border rounded px-2 py-1 text-xs min-w-[200px] text-left bg-white hover:border-gray-400"
       >
         {selected
-          ? `${selected.code} — ${selected.name}`
-          : <span className="text-gray-400">(unmapped — click to search)</span>}
+          ? `${selected.code} ${selected.name}`
+          : <span className="text-gray-400">(unmapped, click to search)</span>}
       </button>
       {open && (
         <>
@@ -116,7 +116,7 @@ export const AccountPicker: React.FC<AccountPickerProps> = ({
                   data-testid={`${testIdPrefix}-option-${a.code}`}
                   className="w-full text-left p-2 text-xs hover:bg-gray-50 border-b border-gray-50 last:border-0"
                 >
-                  <span className="font-mono">{a.code}</span> — {a.name}
+                  <span className="font-mono">{a.code}</span> {a.name}
                   <span className="ml-2 text-[10px] text-gray-400 uppercase">{a.type}</span>
                 </button>
               ))}

@@ -72,7 +72,7 @@ describe('PartnershipTaxReturn', () => {
       <PartnershipTaxReturn entity={fixtureEntity} accounts={[]} entries={[]} />,
     );
     // Multiple elements may contain "Form P" (header + PrintBanner)
-    const headings = screen.getAllByText(/Form P — Partnership Tax Return/);
+    const headings = screen.getAllByText(/Form P,? Partnership Tax Return/);
     expect(headings.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -99,13 +99,13 @@ describe('PartnershipTaxReturn', () => {
     expect(screen.getByText('P2')).toBeInTheDocument();
     expect(screen.getByText('P8')).toBeInTheDocument();
     // Net income (P8)
-    const p8Values = screen.getAllByText('$300000.00');
+    const p8Values = screen.getAllByText('$300,000.00');
     expect(p8Values.length).toBeGreaterThanOrEqual(1);
     // Partner rows
     expect(screen.getByText('Smith')).toBeInTheDocument();
     expect(screen.getByText('Jones')).toBeInTheDocument();
     // Partner shares
-    const shares = screen.getAllByText('$150000.00');
+    const shares = screen.getAllByText('$150,000.00');
     expect(shares.length).toBeGreaterThanOrEqual(2); // Smith + Jones
     // Print button present
     expect(

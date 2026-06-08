@@ -19,6 +19,7 @@ import { AlertCircle, ChevronRight, ChevronDown } from 'lucide-react';
 import { AnomalyBadge } from './AnomalyBadge';
 import { exportTrialBalanceCsv, fmtPeriodSlug } from '../lib/export/csv';
 import { Toast } from './Toast';
+import { formatAud } from '../lib/money';
 
 interface TrialBalanceProps {
   accounts: Account[];
@@ -565,17 +566,13 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
                     {row.account.type}
                   </td>
                   <td className="py-3 px-4 text-right data-value whitespace-nowrap">
-                    {row.debit > 0
-                      ? row.debit.toLocaleString(undefined, { minimumFractionDigits: 2 })
-                      : '-'}
+                    {row.debit > 0 ? formatAud(row.debit) : '-'}
                   </td>
                   <td className="py-3 px-4 text-right data-value whitespace-nowrap">
-                    {row.credit > 0
-                      ? row.credit.toLocaleString(undefined, { minimumFractionDigits: 2 })
-                      : '-'}
+                    {row.credit > 0 ? formatAud(row.credit) : '-'}
                   </td>
                   <td className="py-3 px-4 text-right data-value font-medium hidden sm:table-cell whitespace-nowrap">
-                    {row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {formatAud(row.balance)}
                   </td>
                 </tr>
                 );
@@ -597,13 +594,13 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
                     orphan
                   </td>
                   <td className="py-3 px-4 text-right data-value whitespace-nowrap text-rose-900">
-                    {o.debit > 0 ? o.debit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                    {o.debit > 0 ? formatAud(o.debit) : '-'}
                   </td>
                   <td className="py-3 px-4 text-right data-value whitespace-nowrap text-rose-900">
-                    {o.credit > 0 ? o.credit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                    {o.credit > 0 ? formatAud(o.credit) : '-'}
                   </td>
                   <td className="py-3 px-4 text-right data-value font-medium hidden sm:table-cell whitespace-nowrap text-rose-900">
-                    {(o.debit - o.credit).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {formatAud(o.debit - o.credit)}
                   </td>
                 </tr>
               ))}
@@ -618,13 +615,13 @@ export const TrialBalance: React.FC<TrialBalanceProps> = ({
                   className="py-4 px-4 text-right data-value whitespace-nowrap"
                   data-testid="tb-total-debits"
                 >
-                  {totalDebits.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {formatAud(totalDebits)}
                 </td>
                 <td
                   className="py-4 px-4 text-right data-value whitespace-nowrap"
                   data-testid="tb-total-credits"
                 >
-                  {totalCredits.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {formatAud(totalCredits)}
                 </td>
                 <td
                   className="py-4 px-4 text-right data-value hidden sm:table-cell whitespace-nowrap"
