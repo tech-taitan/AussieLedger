@@ -87,11 +87,3 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 });
 
-// ImportTB.tsx imports @google/genai at module top level. The Gemini SDK
-// reads process env on construction; mock to avoid real network attempts in tests.
-vi.mock('@google/genai', () => ({
-  GoogleGenAI: class GoogleGenAIMock {
-    constructor() {}
-  },
-  Type: {},
-}));

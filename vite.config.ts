@@ -17,9 +17,6 @@ export default defineConfig(({ mode }) => {
   const apiTarget = env.API_PROXY_TARGET ?? 'http://localhost:4000';
   return {
     plugins: [react(), tailwindcss(), VitePWA(pwaOptions)],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

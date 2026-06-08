@@ -65,28 +65,31 @@ export function EntityCard({
         )}
       </div>
 
-      <div className="flex justify-between items-start mb-4 pr-6">
-        <div>
-          <h3 className="font-bold text-lg group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
+      <div className="flex justify-between items-start mb-4 pr-6 gap-3">
+        <div className="min-w-0 flex-1">
+          <h3
+            title={entity.name}
+            className="font-bold text-lg group-hover:text-indigo-600 transition-colors uppercase tracking-tight truncate"
+          >
             {entity.name}
           </h3>
-          <div className="flex gap-2 items-center mt-1">
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
+          <div className="flex gap-2 items-center mt-1 min-w-0">
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full shrink-0">
               {entity.type}
             </span>
             {entity.status === 'Deactivated' && (
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-red-50 text-red-600 rounded-full">
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-red-50 text-red-600 rounded-full shrink-0">
                 Deactivated
               </span>
             )}
             {entity.registrationNumber && (
-              <span className="text-[10px] text-gray-400 font-mono">
+              <span className="text-[10px] text-gray-400 font-mono truncate">
                 {entity.registrationNumber}
               </span>
             )}
           </div>
         </div>
-        <div className="p-2 bg-gray-50 rounded-sm">
+        <div className="p-2 bg-gray-50 rounded-sm shrink-0">
           {entity.type === 'Trust' ? (
             <Briefcase size={18} className="text-emerald-600" />
           ) : (

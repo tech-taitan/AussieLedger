@@ -22,8 +22,8 @@
  *
  * VITE_HOSTED_MODE is the ONLY new VITE_-prefixed env var allowed in this project:
  * it is a mode flag, not a secret. Secrets MUST NEVER be VITE_-prefixed (see PITFALLS.md
- * §1 — VITE_ env-leak hard-block). The existing process.env.GEMINI_API_KEY pattern in
- * vite.config.ts is the secret-safe path for server-assisted builds.
+ * §1 — VITE_ env-leak hard-block). GEMINI_API_KEY is read only by the optional
+ * Express server and must never be injected into the browser bundle.
  */
 
 /**

@@ -7,7 +7,7 @@
  * Locks:
  *   1. role="main" + h1 "Privacy" present
  *   2. <ul> with 12 <li> children
- *   3. VERBATIM AI v5-deferral bullet (textContent flatten — strips <code>)
+ *   3. VERBATIM hosted AI privacy bullet (textContent flatten — strips <code>)
  *   4. Repo link to github.com/tech-taitan/AussieLedger
  *   5. "Apache 2.0" disclosed
  *   6. "no cookies" mentioned
@@ -18,10 +18,10 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PrivacyPage } from '../PrivacyPage';
 
-// Verbatim AI bullet from CONTEXT (Phase 12 v5-deferral lock).
+// Verbatim hosted AI privacy bullet.
 // textContent flatten strips the inline <code> tags around GEMINI_API_KEY.
 const VERBATIM_AI_BULLET =
-  'AI features are not available on the public hosted version. Self-host with your own GEMINI_API_KEY to enable AI account-matching today. Hosted AI (with user-supplied keys, direct browser-to-Google, never via AussieLedger) is planned for v5 — the CSP allowlist is already in place.';
+  'AI features are not available on the public hosted version. Self-host with your own GEMINI_API_KEY on a local Express server to enable AI account-matching today. The public hosted build does not send data to Google.';
 
 describe('PrivacyPage (Phase 14 POL-03)', () => {
   it('renders with role="main" and an <h1> "Privacy" heading', () => {
@@ -40,7 +40,7 @@ describe('PrivacyPage (Phase 14 POL-03)', () => {
     expect(items.length).toBe(12);
   });
 
-  it('contains the VERBATIM AI v5-deferral bullet (textContent flatten)', () => {
+  it('contains the VERBATIM hosted AI privacy bullet (textContent flatten)', () => {
     render(<PrivacyPage />);
     const ai = screen.getByTestId('privacy-ai-bullet');
     // textContent strips <code> tags so the embedded GEMINI_API_KEY flattens

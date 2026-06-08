@@ -4,8 +4,8 @@
  *
  * POL-03 — /privacy page with friendly bullet-list trust signals (~12 bullets).
  *
- * The AI bullet is CONTEXT-locked verbatim per the Phase 12 v5-deferral
- * decision (do NOT word-smith). Other bullets are planner-picked wording
+ * The AI bullet records the hosted-build privacy boundary. Other bullets are
+ * planner-picked wording
  * matching the calm-modernist tone: single-claim sentences, verifiable in
  * DevTools, no legalese.
  *
@@ -62,10 +62,9 @@ export function PrivacyPage() {
         </li>
         <li data-testid="privacy-ai-bullet">
           AI features are not available on the public hosted version. Self-host
-          with your own <code>GEMINI_API_KEY</code> to enable AI
-          account-matching today. Hosted AI (with user-supplied keys, direct
-          browser-to-Google, never via AussieLedger) is planned for v5 — the
-          CSP allowlist is already in place.
+          with your own <code>GEMINI_API_KEY</code> on a local Express server
+          to enable AI account-matching today. The public hosted build does not
+          send data to Google.
         </li>
         <li>
           Custom domain and TLS provided by Vercel; static assets served from

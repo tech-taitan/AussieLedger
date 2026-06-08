@@ -27,6 +27,7 @@ import type { StorageAdapter, AdapterKind, HealthResponse } from './adapter';
 import { LocalAdapter, DB_NAME_DEMO, DB_NAME_PROD } from './local';
 import { ServerAdapter } from './server';
 import { getRouteKind } from '../lib/route';
+import { isHostedMode } from '../lib/env';
 import { seedDemoData } from './demo-seed';
 
 const PROBE_TIMEOUT_MS = 500;
@@ -64,9 +65,25 @@ async function probeServer(): Promise<HealthResponse | null> {
   return null;
 }
 
+async function createLocalAdapter(): Promise<LocalAdapter> {
+  const routeKind = getRouteKind();
+  const dbName = routeKind === 'demo' ? DB_NAME_DEMO : DB_NAME_PROD;
+  const adapter = new LocalAdapter(dbName);
+  await adapter.ready();
+  if (routeKind === 'demo') await seedDemoData(adapter);
+  return adapter;
+}
+
 export async function initAdapter(): Promise<StorageAdapter> {
   if (adapterPromise) return adapterPromise;
   adapterPromise = (async () => {
+    // Public hosted builds promise browser-only persistence. Pin them to
+    // IndexedDB before consulting overrides or probing a same-origin server.
+    if (isHostedMode()) {
+      adapterKind = 'local';
+      fellBackToLocal = false;
+      return createLocalAdapter();
+    }
     const forced =
       typeof localStorage !== 'undefined'
         ? localStorage.getItem(STORAGE_MODE_KEY)
@@ -74,12 +91,7 @@ export async function initAdapter(): Promise<StorageAdapter> {
     if (forced === 'local') {
       adapterKind = 'local';
       fellBackToLocal = false;
-      const routeKind = getRouteKind();
-      const dbName = routeKind === 'demo' ? DB_NAME_DEMO : DB_NAME_PROD;
-      const a = new LocalAdapter(dbName);
-      await a.ready();
-      if (routeKind === 'demo') await seedDemoData(a);
-      return a;
+      return createLocalAdapter();
     }
     if (forced === 'server') {
       adapterKind = 'server';
@@ -102,12 +114,7 @@ export async function initAdapter(): Promise<StorageAdapter> {
     // so Plan 03-4's banner can render.
     adapterKind = 'local';
     fellBackToLocal = true;
-    const routeKind = getRouteKind();
-    const dbName = routeKind === 'demo' ? DB_NAME_DEMO : DB_NAME_PROD;
-    const a = new LocalAdapter(dbName);
-    await a.ready();
-    if (routeKind === 'demo') await seedDemoData(a);
-    return a;
+    return createLocalAdapter();
   })();
   return adapterPromise;
 }

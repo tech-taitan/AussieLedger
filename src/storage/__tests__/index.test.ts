@@ -17,6 +17,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('Adapter selection probe', () => {
@@ -67,6 +68,17 @@ describe('Adapter selection probe', () => {
     await initAdapter();
     expect(getAdapterKind()).toBe('local');
     // Override path is NOT a fallback — banner should not render
+    expect(getFellBackToLocal()).toBe(false);
+  });
+
+  it('pins hosted mode to local storage before overrides or server probes', async () => {
+    vi.stubEnv('VITE_HOSTED_MODE', 'true');
+    localStorage.setItem('storageMode', 'server');
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    await initAdapter();
+    expect(getAdapterKind()).toBe('local');
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(getFellBackToLocal()).toBe(false);
   });
 

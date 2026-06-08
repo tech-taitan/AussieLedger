@@ -3,36 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { isAiEnabled, IS_AI_ENABLED, GEMINI_MODEL } from '../ai';
+import { isAiEnabled, GEMINI_MODEL } from '../ai';
 import { _resetAdapter, initAdapter } from '../../storage';
-
-describe('IS_AI_ENABLED (build-time, Phase 2)', () => {
-  beforeEach(() => {
-    vi.resetModules();
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it('is false when GEMINI_API_KEY is undefined', async () => {
-    vi.stubEnv('GEMINI_API_KEY', '');
-    const { IS_AI_ENABLED: flag } = await import('../ai');
-    expect(flag).toBe(false);
-  });
-
-  it('is false when GEMINI_API_KEY is the placeholder value MY_GEMINI_API_KEY', async () => {
-    vi.stubEnv('GEMINI_API_KEY', 'MY_GEMINI_API_KEY');
-    const { IS_AI_ENABLED: flag } = await import('../ai');
-    expect(flag).toBe(false);
-  });
-
-  it('is true when GEMINI_API_KEY is a real key value', async () => {
-    vi.stubEnv('GEMINI_API_KEY', 'real-key-xyz');
-    const { IS_AI_ENABLED: flag } = await import('../ai');
-    expect(flag).toBe(true);
-  });
-});
 
 describe('IS_AI_ENABLED widened (Phase 3)', () => {
   beforeEach(() => {
@@ -55,12 +27,10 @@ describe('IS_AI_ENABLED widened (Phase 3)', () => {
     expect(isAiEnabled()).toBe(false);
   });
 
-  it('local-mode (probe fails) falls back to build-time key', async () => {
+  it('local-mode (probe fails) keeps AI disabled so no secret enters the SPA', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('ECONNREFUSED'); }));
     await initAdapter();
-    const localResult = isAiEnabled();
-    expect(typeof localResult).toBe('boolean');
-    expect(localResult).toBe(IS_AI_ENABLED);
+    expect(isAiEnabled()).toBe(false);
   });
 
   it('GEMINI_MODEL constant matches server/routes/ai.ts GEMINI_MODEL_DEFAULT literal', () => {

@@ -13,3 +13,13 @@ server/dist/
 *.db
 *.db-wal
 *.db-shm
+
+# Local Claude Code config — not for public repo
+.claude/
+
+# Internal GSD planning workspace — not for public repo
+.planning/
+
+# Temp CI output
+.tmp_*
+__fixtures__

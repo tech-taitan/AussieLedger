@@ -32,15 +32,15 @@ describe('AiGateNote (DEP-01 + FND-04)', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('Test A.2: when isAiEnabled() is false and self-host, shows .env.local copy', () => {
+  it('Test A.2: when isAiEnabled() is false and self-host, shows server env copy', () => {
     vi.mocked(isAiEnabled).mockReturnValue(false);
     vi.mocked(isHostedMode).mockReturnValue(false);
     render(<AiGateNote />);
     const note = screen.getByTestId('ai-gate-note');
     expect(note.textContent).toMatch(/AI suggestions disabled/i);
-    expect(note.textContent).toMatch(/Gemini API key/i);
+    expect(note.textContent).toMatch(/GEMINI_API_KEY/);
     expect(note.textContent).toMatch(/optional/i);
-    expect(note.textContent).toMatch(/\.env\.local/);
+    expect(note.textContent).toMatch(/Express server/i);
   });
 
   it('Test A.3: when isAiEnabled() is false and hosted mode, shows hosted-version copy', () => {
